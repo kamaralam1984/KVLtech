@@ -304,20 +304,24 @@ enum TicketStatus {
 // CONTACT LEADS — website contact form
 // ─────────────────────────────────────────────
 model ContactLead {
-  id        String     @id @default(cuid())
-  clientId  String?
-  name      String
-  phone     String
-  email     String?
-  service   String?
-  budget    String?
-  message   String?    @db.Text
-  source    String     @default("contact_form")
-  status    LeadStatus @default(NEW)
-  notes     String?    @db.Text
+  id         String     @id @default(cuid())
+  clientId   String?
+  name       String
+  phone      String
+  email      String?
+  service    String?
+  budget     String?
+  message    String?    @db.Text
+  source     String     @default("contact_form")
+  status     LeadStatus @default(NEW)
+  notes      String?    @db.Text
   followUpAt DateTime?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  score      Int        @default(0)
+  scoreLabel String     @default("cold")
+  scoreNote  String?    @db.Text
+  scoredAt   DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
   client Client? @relation(fields: [clientId], references: [id])
 

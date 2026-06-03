@@ -2,18 +2,19 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Zap, Clock } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function ExitIntentPopup() {
+  const { t, formatPrice } = useLanguage();
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [countdown, setCountdown] = useState(300); // 5 minute countdown
+  const [countdown, setCountdown] = useState(300);
 
   useEffect(() => {
     if (typeof window === 'undefined' || dismissed) return;
 
-    // Check if shown in last 24 hours
     const lastShown = localStorage.getItem('exitPopupShown');
     if (lastShown && Date.now() - parseInt(lastShown) < 86400000) return;
 
@@ -24,7 +25,6 @@ export function ExitIntentPopup() {
       }
     };
 
-    // Also show after 45 seconds if user hasn't seen it
     const timer = setTimeout(() => {
       if (!show && !dismissed) {
         setShow(true);
@@ -59,6 +59,8 @@ export function ExitIntentPopup() {
     setTimeout(() => { setShow(false); setDismissed(true); }, 3000);
   };
 
+  const dismiss = () => { setShow(false); setDismissed(true); };
+
   return (
     <AnimatePresence>
       {show && (
@@ -67,7 +69,7 @@ export function ExitIntentPopup() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) { setShow(false); setDismissed(true); } }}
+          onClick={(e) => { if (e.target === e.currentTarget) dismiss(); }}
         >
           <motion.div
             initial={{ scale: 0.8, y: 50, opacity: 0 }}
@@ -77,7 +79,7 @@ export function ExitIntentPopup() {
             className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl relative"
           >
             <button
-              onClick={() => { setShow(false); setDismissed(true); }}
+              onClick={dismiss}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
             >
               <X size={20} />
@@ -87,14 +89,14 @@ export function ExitIntentPopup() {
             <div style={{ background: 'linear-gradient(135deg, #1a2035, #2d3a5f)' }} className="p-8 text-center">
               <img src="/kvl-tech-logo-white.png" alt="KVL TECH" className="h-8 w-auto object-contain mx-auto mb-3" />
               <div className="text-5xl mb-3">🎁</div>
-              <h2 className="text-2xl font-bold text-white mb-1">Ruko! Ek Special Offer Hai!</h2>
-              <p className="text-gray-300 text-sm">Sirf aaj ke liye — exclusive discount</p>
+              <h2 className="text-2xl font-bold text-white mb-1">{t.popup_heading}</h2>
+              <p className="text-gray-300 text-sm">{t.popup_sub}</p>
             </div>
 
             {/* Countdown */}
             <div style={{ background: '#d4a017' }} className="py-2 text-center">
               <p className="text-white font-bold flex items-center justify-center gap-2">
-                <Clock size={16} /> Offer expires in: <span className="font-mono text-lg">{formatTime(countdown)}</span>
+                <Clock size={16} /> {t.popup_expires} <span className="font-mono text-lg">{formatTime(countdown)}</span>
               </p>
             </div>
 
@@ -103,19 +105,21 @@ export function ExitIntentPopup() {
               {!submitted ? (
                 <>
                   <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg mb-6">
-                    <p className="font-bold text-gray-800 text-lg">🔥 FREE Domain + Hosting (1 Year)</p>
-                    <p className="text-gray-600 text-sm">Kisi bhi Premium Plan ke saath — aaj order karo!</p>
-                    <p className="text-2xl font-bold text-amber-600 mt-1">Value: ₹5,999 — BILKUL FREE!</p>
+                    <p className="font-bold text-gray-800 text-lg">{t.popup_offer_title}</p>
+                    <p className="text-gray-600 text-sm">{t.popup_offer_sub}</p>
+                    <p className="text-2xl font-bold text-amber-600 mt-1">
+                      {t.popup_offer_value.replace('$72', formatPrice(5999))}
+                    </p>
                   </div>
 
-                  <p className="text-gray-600 mb-4 text-sm">Apna email dein, hum aapko exclusive offer bhejenge:</p>
+                  <p className="text-gray-600 mb-4 text-sm">{t.popup_email_prompt}</p>
 
                   <form onSubmit={handleSubmit} className="space-y-3">
                     <input
                       type="email"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      placeholder="Aapka email address"
+                      placeholder={t.popup_email_placeholder}
                       required
                       className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-amber-400"
                     />
@@ -124,22 +128,22 @@ export function ExitIntentPopup() {
                       style={{ background: 'linear-gradient(135deg, #d4a017, #b8860b)' }}
                       className="w-full text-white py-3 rounded-lg font-bold text-lg hover:opacity-90 transition flex items-center justify-center gap-2"
                     >
-                      <Zap size={20} /> Haan! Free Offer Chahiye!
+                      <Zap size={20} /> {t.popup_submit}
                     </button>
                   </form>
 
                   <button
-                    onClick={() => { setShow(false); setDismissed(true); }}
+                    onClick={dismiss}
                     className="w-full text-center text-gray-400 text-xs mt-3 hover:text-gray-600"
                   >
-                    Nahi chahiye, miss karna hai mujhe
+                    {t.popup_dismiss}
                   </button>
                 </>
               ) : (
                 <div className="text-center py-6">
                   <div className="text-6xl mb-4">🎉</div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-2">Shukriya!</h3>
-                  <p className="text-gray-600">Offer details aapke email pe bhej diye hain. Jaldi check karein!</p>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">{t.popup_thanks}</h3>
+                  <p className="text-gray-600">{t.popup_thanks_msg}</p>
                 </div>
               )}
             </div>

@@ -1,24 +1,119 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight, Check, ChevronDown, Star,
-  Phone, MessageCircle, Zap, Shield, Clock, ArrowLeft
+  Phone, MessageCircle, Zap, Shield, Clock, ArrowLeft, Loader2, CreditCard, ExternalLink
 } from "lucide-react";
 import type { Product } from "@/lib/products";
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise(resolve => {
+    if (document.getElementById("razorpay-script")) return resolve(true);
+    const script = document.createElement("script");
+    script.id = "razorpay-script";
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export function ProductDetail({ product, related }: { product: Product; related: Product[] }) {
+  const router = useRouter();
   const [activePlan, setActivePlan] = useState(1);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", business: "", message: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", business: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [submittedOrderNo, setSubmittedOrderNo] = useState("");
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const planPriceMap: Record<string, number> = {
+    Basic: product.basicPrice,
+    Premium: product.premiumPrice,
+  };
+
+  const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setPayError("");
+    const currentPlan = product.plans[activePlan];
+    const isCustom = currentPlan.price === "Quote";
+
+    // Custom plan — just show WhatsApp
+    if (isCustom) {
+      window.open(`https://wa.me/919942000413?text=Hi! I want a custom quote for ${product.name}.`, "_blank");
+      return;
+    }
+
+    setPaying(true);
+    const amount = planPriceMap[currentPlan.name] || product.premiumPrice;
+
+    try {
+      // 1. Load Razorpay script
+      const loaded = await loadRazorpayScript();
+      if (!loaded) { setPayError("Payment gateway load nahi hua. Please refresh karein."); setPaying(false); return; }
+
+      // 2. Create Razorpay order on server
+      const orderRes = await fetch("/api/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, productSlug: product.slug, plan: currentPlan.name, ...form }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) { setPayError(orderData.error || "Order create nahi hua."); setPaying(false); return; }
+
+      // 3. Open Razorpay checkout
+      const rzp = new window.Razorpay({
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        order_id: orderData.orderId,
+        name: "KVL TECH",
+        description: `${product.name} — ${currentPlan.name} Plan`,
+        image: "/kvl-tech-logo-tight.png",
+        prefill: { name: form.name, contact: form.phone, email: form.email },
+        theme: { color: "#C9A227" },
+        handler: async (response: any) => {
+          // 4. Verify payment on server
+          const verifyRes = await fetch("/api/payment/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...response,
+              productSlug: product.slug,
+              plan: currentPlan.name,
+              amount,
+              ...form,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyRes.ok && verifyData.success) {
+            setSubmittedOrderNo(verifyData.orderNumber);
+            setSubmitted(true);
+            setTimeout(() => router.push("/client-portal"), 3000);
+          } else {
+            setPayError("Payment verify nahi hua. Support se contact karein.");
+          }
+          setPaying(false);
+        },
+        modal: { ondismiss: () => setPaying(false) },
+      });
+      rzp.open();
+    } catch {
+      setPayError("Kuch galat ho gaya. Please dobara try karein.");
+      setPaying(false);
+    }
   };
 
   return (
@@ -78,11 +173,17 @@ export function ProductDetail({ product, related }: { product: Product; related:
               </div>
 
               <div className="flex flex-wrap gap-3">
+                {product.demoUrl && (
+                  <a href={product.demoUrl} target="_blank" rel="noopener noreferrer"
+                    className="btn-outline flex items-center gap-2">
+                    Live Demo <ExternalLink size={15} />
+                  </a>
+                )}
                 <a href="#buy" className="btn-gold">Buy Now <ArrowRight size={16} /></a>
-                <a href={`https://wa.me/919876543210?text=Hi! I'm interested in ${product.name}.`} target="_blank" rel="noopener noreferrer" className="btn-outline flex items-center gap-2">
+                <a href={`https://wa.me/919942000413?text=Hi! I'm interested in ${product.name}.`} target="_blank" rel="noopener noreferrer" className="btn-outline flex items-center gap-2">
                   <MessageCircle size={16} /> WhatsApp Us
                 </a>
-                <a href="tel:+919876543210" className="btn-outline flex items-center gap-2">
+                <a href="tel:+919942000413" className="btn-outline flex items-center gap-2">
                   <Phone size={16} /> Call Now
                 </a>
               </div>
@@ -261,17 +362,21 @@ export function ProductDetail({ product, related }: { product: Product; related:
           <div className="card p-8">
             {submitted ? (
               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-[var(--color-success)]/10 flex items-center justify-center mx-auto mb-4">
-                  <Check size={32} className="text-[var(--color-success)]" />
+                <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+                  <Check size={32} className="text-green-500" />
                 </div>
-                <h3 className="font-display font-bold text-2xl text-[var(--color-text)] mb-2">Request Submitted! 🎉</h3>
-                <p className="text-[var(--color-text-secondary)] mb-6">
-                  Humari team aapko <strong>24 hours</strong> ke andar contact karegi.
+                <h3 className="font-display font-bold text-2xl text-[var(--color-text)] mb-2">Payment Successful!</h3>
+                {submittedOrderNo && (
+                  <p className="text-sm font-mono font-semibold text-[var(--color-gold)] mb-2">Order #{submittedOrderNo}</p>
+                )}
+                <p className="text-[var(--color-text-secondary)] mb-2">
+                  Aapka order confirm ho gaya hai. Client portal pe redirect ho raha hai...
                 </p>
+                <p className="text-xs text-[var(--color-text-muted)] mb-6">Login details aapke email pe bhej diye gaye hain.</p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <a href={`https://wa.me/919876543210?text=Hi! I just submitted a request for ${product.name}.`} target="_blank" rel="noopener noreferrer" className="btn-gold">
-                    <MessageCircle size={16} /> WhatsApp Now
-                  </a>
+                  <Link href="/client-portal" className="btn-gold">
+                    Client Portal <ArrowRight size={16} />
+                  </Link>
                   <Link href="/products" className="btn-outline">View More Products</Link>
                 </div>
               </motion.div>
@@ -279,12 +384,17 @@ export function ProductDetail({ product, related }: { product: Product; related:
               <>
                 <div className="text-center mb-6">
                   <h2 className="font-display font-bold text-2xl text-[var(--color-text)] mb-1">
-                    Get Started with {product.plans[activePlan].name} Plan
+                    {product.plans[activePlan].price === "Quote" ? "Request Custom Quote" : `Pay for ${product.plans[activePlan].name} Plan`}
                   </h2>
                   <p className="text-[var(--color-text-secondary)] text-sm">
-                    Price: <strong className="text-[var(--color-gold)]">{product.plans[activePlan].price}</strong> · {product.plans[activePlan].delivery} delivery
+                    {product.plans[activePlan].price === "Quote"
+                      ? "Team aapko custom price degi"
+                      : <>Price: <strong className="text-[var(--color-gold)]">{product.plans[activePlan].price}</strong> · {product.plans[activePlan].delivery} delivery</>
+                    }
                   </p>
                 </div>
+
+                {/* Plan selector */}
                 <div className="flex gap-2 mb-6">
                   {product.plans.map((p, i) => (
                     <button key={p.name} onClick={() => setActivePlan(i)}
@@ -293,7 +403,8 @@ export function ProductDetail({ product, related }: { product: Product; related:
                     </button>
                   ))}
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
+
+                <form onSubmit={handlePay} className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Your Name *</label>
@@ -309,21 +420,34 @@ export function ProductDetail({ product, related }: { product: Product; related:
                     </div>
                   </div>
                   <div>
+                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Email Address *</label>
+                    <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                      placeholder="aap@email.com"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
+                  </div>
+                  <div>
                     <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Business Name</label>
                     <input type="text" value={form.business} onChange={e => setForm(f => ({ ...f, business: e.target.value }))}
                       placeholder="Aapka business naam"
                       className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Message (optional)</label>
-                    <textarea rows={3} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-                      placeholder="Koi specific requirements ya questions..."
-                      className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all resize-none" />
-                  </div>
-                  <button type="submit" className="btn-gold w-full py-3.5 text-base">
-                    Submit Request <ArrowRight size={18} />
+
+                  {payError && (
+                    <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">{payError}</p>
+                  )}
+
+                  <button type="submit" disabled={paying}
+                    className="btn-gold w-full py-3.5 text-base flex items-center justify-center gap-2 disabled:opacity-60">
+                    {paying
+                      ? <><Loader2 size={18} className="animate-spin" /> Processing...</>
+                      : product.plans[activePlan].price === "Quote"
+                        ? <><MessageCircle size={18} /> Request Quote on WhatsApp</>
+                        : <><CreditCard size={18} /> Pay {product.plans[activePlan].price} Securely</>
+                    }
                   </button>
-                  <p className="text-center text-xs text-[var(--color-text-muted)]">Our team will contact you within 24 hours. No spam, ever.</p>
+                  <p className="text-center text-xs text-[var(--color-text-muted)]">
+                    Secured by Razorpay · UPI, Cards, Net Banking, Wallets
+                  </p>
                 </form>
               </>
             )}

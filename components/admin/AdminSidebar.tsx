@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Users, Package,
   Megaphone, BarChart3, Settings, LogOut,
-  ChevronLeft, Menu, Bell, Search, Shield,
+  ChevronLeft, Menu, Bell, Search, Shield, HeadphonesIcon, FileText,
 } from "lucide-react";
 
 const NAV = [
@@ -15,6 +15,8 @@ const NAV = [
   { href: "/admin/orders", icon: ShoppingBag, label: "Orders" },
   { href: "/admin/clients", icon: Users, label: "Clients & Leads" },
   { href: "/admin/products", icon: Package, label: "Products" },
+  { href: "/admin/support", icon: HeadphonesIcon, label: "Support Tickets" },
+  { href: "/admin/blog", icon: FileText, label: "Blog (AI)" },
   { href: "/admin/marketing", icon: Megaphone, label: "Marketing" },
   { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
@@ -33,21 +35,25 @@ export function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [admin, setAdmin] = useState<AdminUser | null>(null);
   const [pendingOrders, setPendingOrders] = useState(0);
+  const [openTickets, setOpenTickets] = useState(0);
 
   useEffect(() => {
-    // Load admin info from cookie token
     fetch("/api/admin/me", { credentials: "include" })
       .then(r => r.json())
       .then(d => { if (d.admin) setAdmin(d.admin); })
       .catch(() => {});
 
-    // Load pending orders count
     fetch("/api/admin/orders?status=PAYMENT_PENDING", {
       credentials: "include",
       headers: { Authorization: "Bearer admin-bypass" },
     })
       .then(r => r.json())
       .then(d => setPendingOrders(d.orders?.length || 0))
+      .catch(() => {});
+
+    fetch("/api/admin/support?status=OPEN", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setOpenTickets(d.tickets?.length || 0))
       .catch(() => {});
   }, []);
 
@@ -87,7 +93,9 @@ export function AdminSidebar() {
       <nav className="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto">
         {NAV.map(({ href, icon: Icon, label, exact }) => {
           const active = isActive(href, exact);
-          const badge = href === "/admin/orders" && pendingOrders > 0 ? pendingOrders : null;
+          const badge =
+            (href === "/admin/orders" && pendingOrders > 0) ? pendingOrders :
+            (href === "/admin/support" && openTickets > 0) ? openTickets : null;
           return (
             <Link
               key={href}

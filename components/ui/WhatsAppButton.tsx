@@ -2,10 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const WA_NUMBER = "919876543210";
-const WA_MESSAGE = "Namaste! Main KVL TECH se website/software ke baare mein jaanna chahta hoon. Kya aap help kar sakte hain?";
-const WA_URL = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(WA_MESSAGE)}`;
+const WA_NUMBER = "919942000413";
 
 const WhatsAppIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -14,14 +13,16 @@ const WhatsAppIcon = () => (
 );
 
 export function WhatsAppButton() {
+  const { t } = useLanguage();
   const [showTooltip, setShowTooltip] = useState(false);
   const [visible, setVisible] = useState(false);
 
-  // Show button after 1s
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setVisible(true), 1000);
+    return () => clearTimeout(timer);
   }, []);
+
+  const waUrl = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(t.wa_message)}`;
 
   return (
     <AnimatePresence>
@@ -44,8 +45,7 @@ export function WhatsAppButton() {
               >
                 <div className="bg-[#075E54] text-white text-xs font-medium px-3 py-2 rounded-xl shadow-lg flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
-                  Chat on WhatsApp
-                  {/* Arrow */}
+                  {t.wa_tooltip}
                   <div className="absolute -right-1.5 top-1/2 -translate-y-1/2 w-0 h-0"
                     style={{ borderTop: "5px solid transparent", borderBottom: "5px solid transparent", borderLeft: "6px solid #075E54" }} />
                 </div>
@@ -55,10 +55,10 @@ export function WhatsAppButton() {
 
           {/* Button */}
           <motion.a
-            href={WA_URL}
+            href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Chat on WhatsApp"
+            aria-label={t.wa_tooltip}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
             whileHover={{ scale: 1.1 }}
@@ -67,7 +67,6 @@ export function WhatsAppButton() {
             style={{ background: "linear-gradient(135deg, #25D366, #128C7E)" }}
           >
             <WhatsAppIcon />
-            {/* Pulse ring */}
             <span className="absolute inset-0 rounded-full border-2 border-[#25D366] animate-ping opacity-30" />
           </motion.a>
         </motion.div>

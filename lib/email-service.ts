@@ -71,7 +71,7 @@ export const EMAIL_TEMPLATES = {
     </p>
 
     <p style="text-align:center">
-      <a href="https://wa.me/919876543210?text=Hello KVL TECH, I need ${encodeURIComponent(service)}" class="whatsapp-btn">&#x1F4AC; WhatsApp Pe Baat Karein</a>
+      <a href="https://wa.me/919942000413?text=Hello KVL TECH, I need ${encodeURIComponent(service)}" class="whatsapp-btn">&#x1F4AC; WhatsApp Pe Baat Karein</a>
     </p>
   </div>
 
@@ -82,8 +82,8 @@ export const EMAIL_TEMPLATES = {
   </div>
 
   <div class="footer">
-    <p>KVL TECH Pvt. Ltd. | Noida, Uttar Pradesh, India</p>
-    <p>&#x1F4DE; +91 98765 43210 | &#x2709;&#xFE0F; info@kvlbusinesssolutions.com</p>
+    <p>KVL TECH Pvt. Ltd. | INDIA</p>
+    <p>&#x1F4DE; +91 9942000413 | &#x2709;&#xFE0F; kvlbusinesssolution@gmail.com</p>
     <p><a href="${process.env.SITE_URL}/unsubscribe" style="color:#888">Unsubscribe</a></p>
   </div>
 </div>
@@ -129,7 +129,7 @@ export const EMAIL_TEMPLATES = {
       <a href="${process.env.SITE_URL}/products" class="cta-button">Abhi Start Karein &#x2192;</a>
     </p>
 
-    <p>Koi sawaal hai? Direct reply karein ya WhatsApp: <strong>+91 98765 43210</strong></p>
+    <p>Koi sawaal hai? Direct reply karein ya WhatsApp: <strong>+91 9942000413</strong></p>
   </div>
   <div class="footer"><p>KVL TECH | <a href="${process.env.SITE_URL}/unsubscribe" style="color:#888">Unsubscribe</a></p></div>
 </div></body></html>`,
@@ -182,7 +182,7 @@ export const EMAIL_TEMPLATES = {
       <a href="${process.env.SITE_URL}/products" class="cta-button">Free Demo Dekhein &#x2192;</a>
     </p>
 
-    <p>Reply karein ya WhatsApp: <strong>+91 98765 43210</strong></p>
+    <p>Reply karein ya WhatsApp: <strong>+91 9942000413</strong></p>
     <p style="color:#888;font-size:13px">Main personally aapko project ke baare mein guide karungi.</p>
   </div>
   <div class="footer">

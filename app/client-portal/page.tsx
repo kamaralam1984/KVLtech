@@ -73,7 +73,7 @@ const STATUS_STEP: Record<string, number> = {
 const STEPS = ["Payment Confirmed", "Design Started", "Development", "Review & Testing", "Delivered"];
 
 const FAQS = [
-  { q: "Logo kaise bhejein?", a: "Apna logo PNG ya SVG format mein WhatsApp +91 98765 43210 pe bhejein. Min 500×500px preferred." },
+  { q: "Logo kaise bhejein?", a: "Apna logo PNG ya SVG format mein WhatsApp +91 9942000413 pe bhejein. Min 500×500px preferred." },
   { q: "Website kab live hogi?", a: "Premium plan: 1-2 din, Basic plan: 3-5 din. Live karne ke liye domain aur hosting details provide karni hogi." },
   { q: "Delivery ke baad content update kaise karein?", a: "Hum ek easy admin panel dete hain jisse aap khud content update kar sakte hain. Training bhi included." },
   { q: "Agar project mein koi issue aaye?", a: "Premium: 90 din free support. Basic: 30 din free support. WhatsApp ya email se contact karein." },
@@ -375,7 +375,7 @@ export default function ClientPortalPage() {
                   <Link href="/contact" className="btn-outline w-full justify-center text-sm">
                     Pehle Product Purchase Karein <ArrowRight size={14} />
                   </Link>
-                  <a href="https://wa.me/919876543210?text=Mujhe client portal access chahiye" target="_blank" rel="noopener noreferrer"
+                  <a href="https://wa.me/919942000413?text=Mujhe client portal access chahiye" target="_blank" rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                     <MessageCircle size={13} style={{ color: "#25D366" }} /> Help chahiye? WhatsApp karein
                   </a>
@@ -595,7 +595,7 @@ export default function ClientPortalPage() {
                     {[
                       { label: "Submit Branding", desc: "Logo, colors, details", icon: Palette, color: "#C9A227", bg: "#C9A22715", action: () => setActiveTab("branding") },
                       { label: "Track Orders", desc: "Status & progress", icon: Package, color: "#0891B2", bg: "#0891B215", action: () => setActiveTab("orders") },
-                      { label: "WhatsApp Support", desc: "Instant response", icon: MessageCircle, color: "#25D366", bg: "#25D36615", href: "https://wa.me/919876543210" },
+                      { label: "WhatsApp Support", desc: "Instant response", icon: MessageCircle, color: "#25D366", bg: "#25D36615", href: "https://wa.me/919942000413" },
                       { label: "Raise Ticket", desc: "Email support", icon: FileText, color: "#7C3AED", bg: "#7C3AED15", action: () => setActiveTab("support") },
                     ].map(({ label, desc, icon: Icon, color, bg, action, href }) => (
                       href
@@ -670,7 +670,7 @@ export default function ClientPortalPage() {
                           Hamaari team ne aapki details receive kar li hain. 24 hours ke andar apply kar denge.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                          <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="btn-gold">
+                          <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer" className="btn-gold">
                             <MessageCircle size={15} /> Track on WhatsApp
                           </a>
                           <button onClick={() => setBrandingSaved(false)} className="btn-outline">Edit Details</button>
@@ -767,8 +767,8 @@ export default function ClientPortalPage() {
                             <div>
                               <p className="text-sm font-semibold text-[var(--color-text)]">Logo WhatsApp pe bhejein</p>
                               <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">PNG / SVG format · Min 500×500px</p>
-                              <a href="https://wa.me/919876543210" className="text-xs text-[var(--color-gold)] hover:underline mt-1 inline-flex items-center gap-1" target="_blank" rel="noopener noreferrer">
-                                <MessageCircle size={11} /> +91 98765 43210
+                              <a href="https://wa.me/919942000413" className="text-xs text-[var(--color-gold)] hover:underline mt-1 inline-flex items-center gap-1" target="_blank" rel="noopener noreferrer">
+                                <MessageCircle size={11} /> +91 9942000413
                               </a>
                             </div>
                           </div>
@@ -890,12 +890,13 @@ export default function ClientPortalPage() {
                                 <ExternalLink size={12} /> Live Preview
                               </a>
                             )}
-                            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-all">
-                              <Download size={12} /> Download Files
-                            </button>
+                            <a href={`/api/invoice?orderId=${order.id}`} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-all">
+                              <Download size={12} /> Download Invoice
+                            </a>
                           </div>
                         ) : (
-                          <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer"
+                          <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer"
                             className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors">
                             <MessageCircle size={12} style={{ color: "#25D366" }} /> Ask for update
                           </a>
@@ -932,8 +933,8 @@ export default function ClientPortalPage() {
                       <h2 className="font-display font-bold text-lg text-[var(--color-text)] mb-4">Contact Support</h2>
                       <div className="grid sm:grid-cols-2 gap-3">
                         {[
-                          { icon: MessageCircle, label: "WhatsApp", sub: "+91 98765 43210", time: "Reply in 5 min", color: "#25D366", href: "https://wa.me/919876543210?text=Hi! I need support." },
-                          { icon: Phone, label: "Call Us", sub: "+91 98765 43210", time: "Mon–Sat 9AM–7PM", color: "#0891B2", href: "tel:+919876543210" },
+                          { icon: MessageCircle, label: "WhatsApp", sub: "+91 9942000413", time: "Reply in 5 min", color: "#25D366", href: "https://wa.me/919942000413?text=Hi! I need support." },
+                          { icon: Phone, label: "Call Us", sub: "+91 9942000413", time: "Mon–Sat 9AM–7PM", color: "#0891B2", href: "tel:+919942000413" },
                           { icon: Mail, label: "Email", sub: "support@kvl...", time: "Reply in 24 hrs", color: "#C9A227", href: "mailto:support@kvlbusinesssolutions.com" },
                           { icon: MapPin, label: "Office Visit", sub: "Sector 62, Noida", time: "Mon–Sat 10AM–6PM", color: "#7C3AED", href: "#" },
                         ].map(({ icon: Icon, label, sub, time, color, href }) => (
@@ -967,7 +968,7 @@ export default function ClientPortalPage() {
                             Ticket ID: <span className="font-mono font-semibold text-[var(--color-gold)]">#{ticketNo}</span>
                           </p>
                           <div className="flex gap-3 justify-center">
-                            <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="btn-gold text-sm">
+                            <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer" className="btn-gold text-sm">
                               <MessageCircle size={14} /> Follow up
                             </a>
                             <button onClick={() => { setTicketSent(false); setTicket({ subject: "", orderId: "", priority: "Medium", message: "" }); }} className="btn-outline text-sm">
@@ -1046,9 +1047,9 @@ export default function ClientPortalPage() {
                       </div>
                       <div className="mt-5 p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
                         <p className="text-xs text-[var(--color-text-secondary)] mb-2">Aur koi sawaal?</p>
-                        <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer"
+                        <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text)] hover:text-[var(--color-gold)] transition-colors">
-                          <MessageCircle size={13} style={{ color: "#25D366" }} /> WhatsApp: +91 98765 43210
+                          <MessageCircle size={13} style={{ color: "#25D366" }} /> WhatsApp: +91 9942000413
                         </a>
                       </div>
                     </div>

@@ -24,7 +24,7 @@ async function main() {
     },
     {
       name: "School Management Demo", type: "SMS" as const,
-      message: "KVL TECH: Aapke school ke liye FREE demo ready hai. Attendance, fees, parent app — sab ek jagah. Call: +91 98765 43210",
+      message: "KVL TECH: Aapke school ke liye FREE demo ready hai. Attendance, fees, parent app — sab ek jagah. Call: +91 9942000413",
       recipients: "QUALIFIED", status: "ACTIVE" as const,
       sentCount: 300, openCount: 210, clickCount: 67,
       sentAt: new Date("2024-12-28"),

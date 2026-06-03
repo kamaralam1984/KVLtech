@@ -7,144 +7,51 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-
-const categories = [
-  {
-    icon: Globe,
-    title: "Website Development",
-    desc: "Stunning, fast & SEO-friendly websites that convert visitors into customers.",
-    color: "#0F172A",
-    count: "25+ templates",
-    href: "/products/websites",
-  },
-  {
-    icon: Cpu,
-    title: "Software Solutions",
-    desc: "Custom software to automate and streamline your business operations.",
-    color: "#16A34A",
-    count: "15+ solutions",
-    href: "/products/software",
-  },
-  {
-    icon: BarChart3,
-    title: "SaaS Products",
-    desc: "Ready-to-use SaaS platforms to boost productivity and grow faster.",
-    color: "#7C3AED",
-    count: "10+ products",
-    href: "/products/saas",
-  },
-  {
-    icon: Smartphone,
-    title: "Mobile Applications",
-    desc: "Android & iOS apps that engage your customers and grow your brand.",
-    color: "#0891B2",
-    count: "20+ apps",
-    href: "/products/mobile",
-  },
-  {
-    icon: BarChart3,
-    title: "Marketing Automation",
-    desc: "Automate marketing, generate leads, and close deals on autopilot.",
-    color: "#DC2626",
-    count: "Full suite",
-    href: "/solutions/marketing",
-  },
-  {
-    icon: Bot,
-    title: "AI Business Tools",
-    desc: "AI-powered tools to scale your operations faster and smarter.",
-    color: "#C9A227",
-    count: "8+ tools",
-    href: "/solutions/ai",
-  },
-];
-
-const featuredProducts = [
-  {
-    icon: Utensils,
-    name: "Restaurant Website",
-    tag: "Most Popular",
-    basic: "₹12,999",
-    premium: "₹24,999",
-    category: "Food & Hospitality",
-    photo: "/photos/restaurant.jpg",
-    accentColor: "#FF6B35",
-  },
-  {
-    icon: GraduationCap,
-    name: "School Management System",
-    tag: "Best Seller",
-    basic: "₹29,999",
-    premium: "₹59,999",
-    category: "Education",
-    photo: "/photos/school.jpg",
-    accentColor: "#16A34A",
-  },
-  {
-    icon: Hospital,
-    name: "Hospital Management System",
-    tag: "Enterprise",
-    basic: "₹49,999",
-    premium: "₹99,999",
-    category: "Healthcare",
-    photo: "/photos/hospital.jpg",
-    accentColor: "#0891B2",
-  },
-  {
-    icon: ShoppingCart,
-    name: "E-commerce Platform",
-    tag: "New",
-    basic: "₹19,999",
-    premium: "₹39,999",
-    category: "Retail",
-    photo: "/photos/fashion.jpg",
-    accentColor: "#7C3AED",
-  },
-  {
-    icon: Building2,
-    name: "Real Estate Website",
-    tag: "Premium",
-    basic: "₹22,999",
-    premium: "₹44,999",
-    category: "Real Estate",
-    photo: "/photos/office-meeting.jpg",
-    accentColor: "#C9A227",
-  },
-  {
-    icon: Globe,
-    name: "Hotel Booking Website",
-    tag: "Popular",
-    basic: "₹24,999",
-    premium: "₹49,999",
-    category: "Hospitality",
-    photo: "/photos/person-laptop.jpg",
-    accentColor: "#0F172A",
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, delay: i * 0.08, ease: "easeOut" },
+    transition: { duration: 0.5, delay: i * 0.08, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
   }),
 };
 
+// INR base prices for featured products
+const FEATURED_PRODUCTS_RAW = [
+  { icon: Utensils, name: "Restaurant Website", tag: "Most Popular", basicINR: 12999, premiumINR: 24999, category: "Food & Hospitality", photo: "/photos/restaurant.jpg", accentColor: "#FF6B35", slug: "restaurant-website" },
+  { icon: GraduationCap, name: "School Management System", tag: "Best Seller", basicINR: 29999, premiumINR: 59999, category: "Education", photo: "/photos/school.jpg", accentColor: "#16A34A", slug: "school-management-system" },
+  { icon: Hospital, name: "Hospital Management System", tag: "Enterprise", basicINR: 49999, premiumINR: 99999, category: "Healthcare", photo: "/photos/hospital.jpg", accentColor: "#0891B2", slug: "hospital-management-system" },
+  { icon: ShoppingCart, name: "E-commerce Platform", tag: "New", basicINR: 19999, premiumINR: 39999, category: "Retail", photo: "/photos/fashion.jpg", accentColor: "#7C3AED", slug: "e-commerce-platform" },
+  { icon: Building2, name: "Real Estate Website", tag: "Premium", basicINR: 22999, premiumINR: 44999, category: "Real Estate", photo: "/photos/office-meeting.jpg", accentColor: "#C9A227", slug: "real-estate-website" },
+  { icon: Globe, name: "Hotel Booking Website", tag: "Popular", basicINR: 24999, premiumINR: 49999, category: "Hospitality", photo: "/photos/person-laptop.jpg", accentColor: "#0F172A", slug: "hotel-booking-website" },
+];
+
 export function ProductsEcosystem() {
+  const { t, formatPrice } = useLanguage();
+
+  const categories = [
+    { icon: Globe, title: t.cat_web_t, desc: t.cat_web_d, color: "#0F172A", count: t.cat_web_c, href: "/products/websites" },
+    { icon: Cpu, title: t.cat_soft_t, desc: t.cat_soft_d, color: "#16A34A", count: t.cat_soft_c, href: "/products/software" },
+    { icon: BarChart3, title: t.cat_saas_t, desc: t.cat_saas_d, color: "#7C3AED", count: t.cat_saas_c, href: "/products/saas" },
+    { icon: Smartphone, title: t.cat_mobile_t, desc: t.cat_mobile_d, color: "#0891B2", count: t.cat_mobile_c, href: "/products/mobile" },
+    { icon: BarChart3, title: t.cat_mktg_t, desc: t.cat_mktg_d, color: "#DC2626", count: t.cat_mktg_c, href: "/solutions/marketing" },
+    { icon: Bot, title: t.cat_ai_t, desc: t.cat_ai_d, color: "#C9A227", count: t.cat_ai_c, href: "/solutions/ai" },
+  ];
+
   return (
     <section className="py-20 lg:py-28 bg-[var(--color-bg)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-14">
-          <div className="section-badge mx-auto">Our Solutions</div>
+          <div className="section-badge mx-auto">{t.eco_badge}</div>
           <h2 className="font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-[var(--color-text)] mb-4">
-            Everything You Need to{" "}
-            <span className="text-gold-gradient">Grow Your Business</span>
+            {t.eco_title}{" "}
+            <span className="text-gold-gradient">{t.eco_title_gold}</span>
           </h2>
           <p className="text-[var(--color-text-secondary)] text-lg max-w-2xl mx-auto">
-            One Platform, Unlimited Possibilities. Buy, rent, or customize any solution
-            — fully branded with your company identity.
+            {t.eco_sub}
           </p>
         </div>
 
@@ -182,10 +89,10 @@ export function ProductsEcosystem() {
         {/* Featured products grid */}
         <div className="mb-8">
           <h3 className="font-display font-semibold text-xl text-[var(--color-text)] mb-6">
-            Featured Products
+            {t.eco_featured}
           </h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {featuredProducts.map((product, i) => (
+            {FEATURED_PRODUCTS_RAW.map((product, i) => (
               <motion.div
                 key={product.name}
                 custom={i}
@@ -205,54 +112,52 @@ export function ProductsEcosystem() {
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    {/* Tag badge */}
                     <span className="absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white border border-white/20">
                       {product.tag}
                     </span>
-                    {/* Accent line */}
                     <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: product.accentColor }} />
                   </div>
 
                   <div className="p-5">
-                  {/* Icon + name */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-                      style={{ background: `${product.accentColor}18` }}>
-                      <product.icon size={18} style={{ color: product.accentColor }} />
+                    {/* Icon + name */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
+                        style={{ background: `${product.accentColor}18` }}>
+                        <product.icon size={18} style={{ color: product.accentColor }} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[var(--color-text)] text-sm leading-tight">{product.name}</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">{product.category}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-[var(--color-text)] text-sm leading-tight">{product.name}</p>
-                      <p className="text-xs text-[var(--color-text-secondary)]">{product.category}</p>
-                    </div>
-                  </div>
 
-                  {/* Pricing */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <div className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-                      <p className="text-[10px] text-[var(--color-text-muted)] mb-0.5">Basic</p>
-                      <p className="font-bold text-sm text-[var(--color-text)]">{product.basic}</p>
+                    {/* Pricing — converted to user's currency */}
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                        <p className="text-[10px] text-[var(--color-text-muted)] mb-0.5">{t.product_basic}</p>
+                        <p className="font-bold text-sm text-[var(--color-text)]">{formatPrice(product.basicINR)}</p>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-[var(--color-gold)]/8 border border-[var(--color-gold)]/20">
+                        <p className="text-[10px] text-[var(--color-gold)] mb-0.5">{t.product_premium}</p>
+                        <p className="font-bold text-sm text-[var(--color-gold)]">{formatPrice(product.premiumINR)}</p>
+                      </div>
                     </div>
-                    <div className="p-2.5 rounded-lg bg-[var(--color-gold)]/8 border border-[var(--color-gold)]/20">
-                      <p className="text-[10px] text-[var(--color-gold)] mb-0.5">Premium</p>
-                      <p className="font-bold text-sm text-[var(--color-gold)]">{product.premium}</p>
-                    </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/products/${product.name.toLowerCase().replace(/\s+/g, "-")}`}
-                      className="flex-1 py-2 text-center text-xs font-semibold rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-all"
-                    >
-                      View Demo
-                    </Link>
-                    <Link
-                      href={`/products/${product.name.toLowerCase().replace(/\s+/g, "-")}#buy`}
-                      className="flex-1 py-2 text-center text-xs font-semibold rounded-lg bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-light)] transition-all"
-                    >
-                      Buy Now
-                    </Link>
-                  </div>
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <Link
+                        href={`/products/${product.slug}`}
+                        className="flex-1 py-2 text-center text-xs font-semibold rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-all"
+                      >
+                        {t.eco_view_demo}
+                      </Link>
+                      <Link
+                        href={`/products/${product.slug}#buy`}
+                        className="flex-1 py-2 text-center text-xs font-semibold rounded-lg bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-light)] transition-all"
+                      >
+                        {t.btn_buy_now}
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -263,7 +168,7 @@ export function ProductsEcosystem() {
         {/* CTA */}
         <div className="text-center">
           <Link href="/products" className="btn-outline inline-flex items-center gap-2">
-            Explore All Products <ArrowRight size={16} />
+            {t.eco_explore} <ArrowRight size={16} />
           </Link>
         </div>
       </div>

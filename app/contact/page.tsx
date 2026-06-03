@@ -7,6 +7,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getTranslations } from "@/lib/i18n/translations";
 
 const SERVICES = [
   "Website Development", "School Management System", "Hospital Management System",
@@ -14,19 +16,23 @@ const SERVICES = [
   "Mobile Application", "Custom Software", "Marketing Automation", "Other",
 ];
 
-const CONTACT_INFO = [
-  { icon: Phone, label: "Call Us", value: "+91 98765 43210", href: "tel:+919876543210", color: "#16A34A" },
-  { icon: MessageCircle, label: "WhatsApp", value: "+91 98765 43210", href: "https://wa.me/919876543210", color: "#25D366" },
-  { icon: Mail, label: "Email", value: "info@kvlbusinesssolutions.com", href: "mailto:info@kvlbusinesssolutions.com", color: "#0891B2" },
-  { icon: MapPin, label: "Office", value: "Noida, Uttar Pradesh, India", href: "#map", color: "#C9A227" },
-  { icon: Clock, label: "Working Hours", value: "Mon–Sat: 9AM – 7PM", href: "#", color: "#7C3AED" },
-];
-
 export default function ContactPage() {
+  const { language } = useLanguage();
+  // Language-aware translations for this page
+  const lt = getTranslations(language.code);
+
   const [form, setForm] = useState({ name: "", phone: "", email: "", service: "", budget: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const CONTACT_INFO = [
+    { icon: Phone, label: lt.contact_info_call, value: "+91 9942000413", href: "tel:+919942000413", color: "#16A34A" },
+    { icon: MessageCircle, label: lt.contact_info_wa, value: "+91 9942000413", href: "https://wa.me/919942000413", color: "#25D366" },
+    { icon: Mail, label: lt.contact_info_email, value: "kvlbusinesssolution@gmail.com", href: "mailto:kvlbusinesssolution@gmail.com", color: "#0891B2" },
+    { icon: MapPin, label: lt.contact_info_office, value: "INDIA", href: "#map", color: "#C9A227" },
+    { icon: Clock, label: lt.contact_info_hours, value: lt.contact_hours_val, href: "#", color: "#7C3AED" },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,13 +46,13 @@ export default function ContactPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Something went wrong. Please try again.");
+        setError(data.error || lt.error_try_again);
       } else {
         setSubmitted(true);
         setForm({ name: "", phone: "", email: "", service: "", budget: "", message: "" });
       }
     } catch {
-      setError("Network error. Please try again.");
+      setError(lt.error_try_again);
     }
     setLoading(false);
   };
@@ -61,25 +67,15 @@ export default function ContactPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="max-w-2xl">
               <div className="flex justify-start mb-6">
-                <img
-                  src="/kvl-tech-logo-tight.png"
-                  alt="KVL TECH"
-                  className="h-12 w-auto object-contain dark:hidden"
-                />
-                <img
-                  src="/kvl-tech-logo-white.png"
-                  alt="KVL TECH"
-                  className="h-12 w-auto object-contain hidden dark:block"
-                />
+                <img src="/kvl-tech-logo-tight.png" alt="KVL TECH" className="h-12 w-auto object-contain dark:hidden" />
+                <img src="/kvl-tech-logo-white.png" alt="KVL TECH" className="h-12 w-auto object-contain hidden dark:block" />
               </div>
-              <div className="section-badge">Contact Us</div>
+              <div className="section-badge">{lt.contact_badge}</div>
               <h1 className="font-display font-bold text-4xl sm:text-5xl text-[var(--color-text)] mb-4 leading-tight">
-                Let&apos;s Build Something{" "}
-                <span className="text-gold-gradient">Amazing Together</span>
+                {lt.contact_title}{" "}
+                <span className="text-gold-gradient">{lt.contact_title_gold}</span>
               </h1>
-              <p className="text-[var(--color-text-secondary)] text-lg">
-                Hamaari team 24 hours ke andar respond karti hai. Free consultation ke liye aaj hi contact karein.
-              </p>
+              <p className="text-[var(--color-text-secondary)] text-lg">{lt.contact_subtitle}</p>
             </div>
           </div>
         </section>
@@ -91,10 +87,8 @@ export default function ContactPage() {
 
               {/* Left — Contact info */}
               <div className="space-y-5">
-                <h2 className="font-display font-bold text-2xl text-[var(--color-text)]">Get in Touch</h2>
-                <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
-                  Koi bhi question ya project requirement ho — hum yahan hain. WhatsApp pe instant reply milta hai.
-                </p>
+                <h2 className="font-display font-bold text-2xl text-[var(--color-text)]">{lt.contact_get_in_touch}</h2>
+                <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">{lt.contact_touch_sub}</p>
 
                 <div className="space-y-3">
                   {CONTACT_INFO.map(({ icon: Icon, label, value, href, color }) => (
@@ -119,9 +113,9 @@ export default function ContactPage() {
                   ))}
                 </div>
 
-                {/* Quick WhatsApp CTA */}
+                {/* WhatsApp CTA */}
                 <a
-                  href="https://wa.me/919876543210?text=Hi! I want to discuss my project with KVL TECH."
+                  href={`https://wa.me/919942000413?text=${encodeURIComponent(lt.wa_message)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-4 rounded-2xl text-white transition-all hover:shadow-[0_8px_30px_rgba(37,211,102,0.35)] hover:-translate-y-0.5"
@@ -129,8 +123,8 @@ export default function ContactPage() {
                 >
                   <MessageCircle size={22} fill="white" />
                   <div>
-                    <p className="font-semibold text-sm">Chat on WhatsApp</p>
-                    <p className="text-white/70 text-xs">Instant reply guaranteed</p>
+                    <p className="font-semibold text-sm">{lt.contact_wa_title}</p>
+                    <p className="text-white/70 text-xs">{lt.contact_wa_sub}</p>
                   </div>
                   <ArrowRight size={18} className="ml-auto" />
                 </a>
@@ -144,76 +138,76 @@ export default function ContactPage() {
                       <div className="w-20 h-20 rounded-full bg-[var(--color-success)]/10 flex items-center justify-center mx-auto mb-6">
                         <CheckCircle2 size={40} className="text-[var(--color-success)]" />
                       </div>
-                      <h3 className="font-display font-bold text-2xl text-[var(--color-text)] mb-3">Message Sent! 🎉</h3>
-                      <p className="text-[var(--color-text-secondary)] mb-2">
-                        Shukriya! Hamaari team aapko <strong className="text-[var(--color-text)]">24 hours</strong> mein contact karegi.
-                      </p>
-                      <p className="text-sm text-[var(--color-text-muted)] mb-8">Jaldi reply chahiye? WhatsApp karein — instant response!</p>
+                      <h3 className="font-display font-bold text-2xl text-[var(--color-text)] mb-3">{lt.contact_success_title}</h3>
+                      <p className="text-[var(--color-text-secondary)] mb-2">{lt.contact_success_msg}</p>
+                      <p className="text-sm text-[var(--color-text-muted)] mb-8">{lt.contact_wa_sub}</p>
                       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                        <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="btn-gold">
-                          <MessageCircle size={16} /> WhatsApp Now
+                        <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer" className="btn-gold">
+                          <MessageCircle size={16} /> {lt.contact_success_wa}
                         </a>
-                        <button onClick={() => setSubmitted(false)} className="btn-outline">Send Another</button>
+                        <button onClick={() => setSubmitted(false)} className="btn-outline">{lt.contact_send_another}</button>
                       </div>
                     </motion.div>
                   ) : (
                     <>
-                      <h2 className="font-display font-bold text-2xl text-[var(--color-text)] mb-6">Send Us a Message</h2>
+                      <h2 className="font-display font-bold text-2xl text-[var(--color-text)] mb-6">{lt.contact_form_title}</h2>
                       <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Full Name *</label>
-                            <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Aapka naam"
+                            <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{lt.contact_full_name}</label>
+                            <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                              placeholder={lt.form_name}
                               className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Phone Number *</label>
-                            <input required type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+91 XXXXX XXXXX"
+                            <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{lt.contact_phone_label}</label>
+                            <input required type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                              placeholder="+91 XXXXX XXXXX"
                               className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                           </div>
                         </div>
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Email Address</label>
-                            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="aap@example.com"
+                            <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{lt.contact_email_label}</label>
+                            <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                              placeholder="you@example.com"
                               className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Budget Range</label>
+                            <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{lt.contact_budget_label}</label>
                             <select value={form.budget} onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
                               className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all">
-                              <option value="">Select budget</option>
-                              <option>Under ₹15,000</option>
-                              <option>₹15,000 – ₹30,000</option>
-                              <option>₹30,000 – ₹60,000</option>
-                              <option>₹60,000 – ₹1,00,000</option>
-                              <option>Above ₹1,00,000</option>
+                              <option value="">{lt.contact_budget_select}</option>
+                              <option>{lt.contact_budget_1}</option>
+                              <option>{lt.contact_budget_2}</option>
+                              <option>{lt.contact_budget_3}</option>
+                              <option>{lt.contact_budget_4}</option>
+                              <option>{lt.contact_budget_5}</option>
                             </select>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Service Interested In *</label>
+                          <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{lt.contact_service_label}</label>
                           <select required value={form.service} onChange={e => setForm(f => ({ ...f, service: e.target.value }))}
                             className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all">
-                            <option value="">Choose a service</option>
+                            <option value="">{lt.contact_service_select}</option>
                             {SERVICES.map(s => <option key={s}>{s}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Your Message</label>
-                          <textarea rows={4} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="Apni requirement detail mein batayein..."
+                          <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{lt.contact_msg_label}</label>
+                          <textarea rows={4} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                            placeholder={lt.contact_msg_placeholder}
                             className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all resize-none" />
                         </div>
                         {error && (
-                          <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3">
-                            {error}
-                          </p>
+                          <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3">{error}</p>
                         )}
                         <button type="submit" disabled={loading} className="btn-gold w-full py-4 text-base flex items-center justify-center gap-2 disabled:opacity-70">
                           {loading ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" /> : <Send size={18} />}
-                          {loading ? "Sending..." : "Send Message"}
+                          {loading ? lt.contact_sending : lt.contact_send_btn}
                         </button>
-                        <p className="text-center text-xs text-[var(--color-text-muted)]">We reply within 24 hours. Your data is safe with us. 🔒</p>
+                        <p className="text-center text-xs text-[var(--color-text-muted)]">{lt.contact_reply_note}</p>
                       </form>
                     </>
                   )}
@@ -223,14 +217,15 @@ export default function ContactPage() {
           </div>
         </section>
 
-        {/* Map placeholder */}
+        {/* Map */}
         <section id="map" className="h-72 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] flex items-center justify-center">
           <div className="text-center">
             <MapPin size={36} className="text-[var(--color-gold)] mx-auto mb-3" />
             <p className="font-semibold text-[var(--color-text)]">KVL TECH Pvt. Ltd.</p>
-            <p className="text-[var(--color-text-secondary)] text-sm mt-1">Sector 62, Noida, Uttar Pradesh – 201309</p>
-            <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-[var(--color-gold)] hover:underline">
-              Open in Google Maps <ArrowRight size={14} />
+            <p className="text-[var(--color-text-secondary)] text-sm mt-1">INDIA</p>
+            <a href="https://maps.google.com" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold text-[var(--color-gold)] hover:underline">
+              {lt.contact_map_open} <ArrowRight size={14} />
             </a>
           </div>
         </section>

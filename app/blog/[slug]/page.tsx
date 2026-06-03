@@ -302,7 +302,7 @@ export default function BlogPostPage() {
                   <Link href="/contact" className="btn-gold w-full justify-center text-sm">
                     Free Consultation <ArrowRight size={14} />
                   </Link>
-                  <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer"
+                  <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer"
                     className="mt-2 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white/80 hover:text-white text-xs font-medium transition-colors">
                     <MessageCircle size={14} style={{ color: "#25D366" }} /> WhatsApp Karein
                   </a>

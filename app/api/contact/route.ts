@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendWelcomeEmail } from "@/lib/email-service";
+import { scoreLeadFast } from "@/lib/lead-scoring";
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,8 +11,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name aur phone required hain" }, { status: 400 });
     }
 
+    const scoreData = scoreLeadFast({ name, phone, email, service, budget, message, source: "contact_form" });
+
     const lead = await db.contactLead.create({
-      data: { name, phone, email, service, budget, message },
+      data: {
+        name, phone, email, service, budget, message,
+        score: scoreData.score,
+        scoreLabel: scoreData.scoreLabel,
+        scoreNote: scoreData.scoreNote,
+        scoredAt: new Date(),
+      },
     });
 
     // Auto-send welcome email (fire-and-forget — never blocks the response)

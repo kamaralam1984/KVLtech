@@ -1,48 +1,46 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Play, CheckCircle2, TrendingUp, Users, Star, Zap } from "lucide-react";
+import { ArrowRight, Play, CheckCircle2, TrendingUp, Users, Star, Zap, ShoppingCart, GraduationCap, Utensils, Hospital, Building2, Globe } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
-
-const stats = [
-  { icon: Users, value: 5000, suffix: "+", label: "Happy Clients" },
-  { icon: TrendingUp, value: 12500, suffix: "+", label: "Projects Completed" },
-  { icon: CheckCircle2, value: 99.99, suffix: "%", label: "Uptime Guarantee" },
-  { icon: Star, value: 24, suffix: "/7", label: "Expert Support" },
-];
-
-const liveActivities = [
-  "Rajesh from Mumbai just purchased Restaurant Website",
-  "Priya from Delhi purchased School Management System",
-  "Amit from Bangalore upgraded to Premium Plan",
-  "Sunita from Pune purchased Hotel Booking Website",
-];
-
-const highlights = [
-  "Full source code ownership",
-  "Company branding included",
-  "30-day money back guarantee",
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   show: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, delay: i * 0.1, ease: "easeOut" },
+    transition: { duration: 0.6, delay: i * 0.1, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
   }),
 };
 
+const PRODUCT_CARDS = [
+  { icon: Utensils, name: "Restaurant Website", tag: "Most Popular", basic: 156, premium: 299, clients: 234, rating: 4.9, color: "#FF6B35", delay: 0, x: 0, y: 0 },
+  { icon: GraduationCap, name: "School Management", tag: "Best Seller", basic: 359, premium: 719, clients: 189, rating: 4.8, color: "#16A34A", delay: 0.15, x: 60, y: 100 },
+  { icon: Hospital, name: "Hospital System", tag: "Enterprise", basic: 599, premium: 1199, clients: 98, rating: 5.0, color: "#0891B2", delay: 0.3, x: -40, y: 200 },
+  { icon: ShoppingCart, name: "E-commerce Store", tag: "New", basic: 192, premium: 479, clients: 156, rating: 4.7, color: "#7C3AED", delay: 0.45, x: 80, y: 310 },
+  { icon: Building2, name: "Real Estate Site", tag: "Premium", basic: 275, premium: 539, clients: 112, rating: 4.9, color: "#C9A227", delay: 0.6, x: -20, y: 420 },
+];
+
 export function Hero() {
+  const { t } = useLanguage();
+
+  const stats = [
+    { icon: Users, value: 5000, suffix: "+", label: t.stat_clients },
+    { icon: TrendingUp, value: 12500, suffix: "+", label: t.stat_projects },
+    { icon: CheckCircle2, value: 99.99, suffix: "%", label: t.stat_uptime },
+    { icon: Star, value: 24, suffix: "/7", label: t.stat_support },
+  ];
+
+  const highlights = [t.hero_h1, t.hero_h2, t.hero_h3];
+
   return (
     <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20">
       {/* Subtle background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-[var(--color-gold)]/5 blur-[120px]" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-[var(--color-navy)]/5 blur-[100px]" />
-        {/* Dot grid */}
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -65,7 +63,7 @@ export function Hero() {
               className="section-badge w-fit"
             >
               <Zap size={12} />
-              All-in-One Digital Business Ecosystem
+              {t.hero_badge}
             </motion.div>
 
             {/* Headline */}
@@ -76,10 +74,8 @@ export function Hero() {
               animate="show"
               className="font-display font-bold text-4xl sm:text-5xl lg:text-[3.4rem] xl:text-[3.8rem] leading-[1.08] tracking-tight text-[var(--color-text)] mb-4"
             >
-              Build, Automate &{" "}
-              <br className="hidden sm:block" />
-              Scale Your Business{" "}
-              <span className="text-gold-gradient">With Confidence</span>
+              {t.hero_headline}{" "}
+              <span className="text-gold-gradient">{t.hero_headline_gold}</span>
             </motion.h1>
 
             {/* Subheadline */}
@@ -90,8 +86,7 @@ export function Hero() {
               animate="show"
               className="text-[var(--color-text-secondary)] text-lg leading-relaxed mb-8 max-w-lg"
             >
-              Websites, Software, SaaS, Marketing, Automation and AI Solutions
-              Built For Modern Businesses. Purchase once, brand it yours.
+              {t.hero_subtitle}
             </motion.p>
 
             {/* Highlights */}
@@ -119,16 +114,16 @@ export function Hero() {
               className="flex flex-wrap gap-3 mb-10"
             >
               <Link href="/products" className="btn-primary">
-                Explore Solutions <ArrowRight size={16} />
+                {t.hero_explore} <ArrowRight size={16} />
               </Link>
               <Link href="/contact" className="btn-gold">
-                Book Free Consultation
+                {t.hero_consult}
               </Link>
               <button className="btn-outline flex items-center gap-2">
                 <span className="w-8 h-8 rounded-full bg-[var(--color-navy)] flex items-center justify-center shrink-0">
                   <Play size={12} className="text-white ml-0.5" fill="white" />
                 </span>
-                Watch Demo
+                {t.hero_watch_demo}
               </button>
             </motion.div>
 
@@ -154,141 +149,145 @@ export function Hero() {
             </motion.div>
           </div>
 
-          {/* RIGHT — Laptop + Dashboard mockup */}
+          {/* RIGHT — Floating Product Cards */}
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-            className="relative hidden lg:block"
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+            className="relative hidden lg:flex items-center justify-center"
+            style={{ minHeight: "560px" }}
           >
-            {/* Glow */}
-            <div className="absolute -inset-6 rounded-3xl bg-[var(--color-gold)]/6 blur-3xl" />
-            {/* Laptop body bottom */}
-            <div className="absolute bottom-[-14px] left-[5%] right-[5%] h-4 bg-[#d4d4d4] dark:bg-[#3a3a3a] rounded-b-2xl shadow-lg z-10" />
-            <div className="absolute bottom-[-18px] left-[-2%] right-[-2%] h-2 bg-[#c0c0c0] dark:bg-[#2e2e2e] rounded-full z-10" />
-
-            {/* Main laptop frame */}
-            <div
-              className="relative rounded-2xl overflow-hidden shadow-[0_40px_100px_rgba(15,23,42,0.2)] border border-[var(--color-border)] bg-[var(--color-bg)] animate-float"
-            >
-              {/* Browser bar */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)]">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-400" />
-                <div className="flex-1 mx-4 h-7 rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] flex items-center px-3 gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[var(--color-gold)]/40" />
-                  <span className="text-xs text-[var(--color-text-muted)]">kvlbusinesssolutions.com</span>
-                </div>
-              </div>
-
-              {/* Dashboard content */}
-              <div className="p-5 bg-[var(--color-bg)]">
-                {/* Welcome bar */}
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <p className="text-xs text-[var(--color-text-muted)]">Welcome back,</p>
-                    <p className="font-display font-semibold text-[var(--color-text)]">John! 👋</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="section-badge !mb-0 !text-[10px] !py-1">Live</span>
-                  </div>
-                </div>
-
-                {/* Revenue cards */}
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label: "Total Revenue", value: "₹34,68,850", change: "+15.5%", up: true },
-                    { label: "New Orders", value: "12,458", change: "+3.2%", up: true },
-                    { label: "Active Clients", value: "842", change: "+22%", up: true },
-                  ].map((card) => (
-                    <div key={card.label} className="p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
-                      <p className="text-[10px] text-[var(--color-text-muted)] mb-1">{card.label}</p>
-                      <p className="font-display font-bold text-sm text-[var(--color-text)]">{card.value}</p>
-                      <span className="text-[10px] text-[var(--color-success)] font-medium">{card.change}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Chart placeholder */}
-                <div className="rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] p-4 mb-4">
-                  <div className="flex items-end justify-between gap-1 h-16">
-                    {[35, 55, 45, 70, 60, 80, 65, 90, 75, 95, 85, 100].map((h, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-sm"
-                        style={{
-                          height: `${h}%`,
-                          background: i === 11
-                            ? "linear-gradient(180deg, #C9A227, #E8C547)"
-                            : "var(--color-bg-tertiary)",
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-2">
-                    <span className="text-[9px] text-[var(--color-text-muted)]">Revenue Overview</span>
-                    <span className="text-[9px] text-[var(--color-gold)] font-semibold">+28% this month</span>
-                  </div>
-                </div>
-
-                {/* Recent orders */}
-                <div className="space-y-2">
-                  {[
-                    { name: "Restaurant Website", type: "Premium", amount: "₹24,999", status: "Delivered" },
-                    { name: "School Management", type: "Custom", amount: "₹89,999", status: "In Progress" },
-                    { name: "Hotel Booking App", type: "Basic", amount: "₹12,999", status: "Delivered" },
-                  ].map((order) => (
-                    <div key={order.name} className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-0">
-                      <div>
-                        <p className="text-xs font-medium text-[var(--color-text)]">{order.name}</p>
-                        <p className="text-[10px] text-[var(--color-text-muted)]">{order.type} Plan</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-semibold text-[var(--color-text)]">{order.amount}</p>
-                        <span
-                          className={`text-[10px] font-medium ${
-                            order.status === "Delivered"
-                              ? "text-[var(--color-success)]"
-                              : "text-[var(--color-gold)]"
-                          }`}
-                        >
-                          {order.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Central glow */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-[var(--color-gold)]/10 blur-[80px]" />
+              <div className="absolute top-1/4 right-0 w-48 h-48 rounded-full bg-blue-500/8 blur-[60px]" />
+              <div className="absolute bottom-1/4 left-0 w-40 h-40 rounded-full bg-purple-500/8 blur-[60px]" />
             </div>
 
-            {/* Floating live activity card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1, duration: 0.5 }}
-              className="absolute -bottom-4 -left-8 glass-card px-4 py-3 flex items-center gap-3 shadow-[var(--shadow-card)] max-w-xs"
-            >
-              <div className="live-dot shrink-0" />
-              <p className="text-xs text-[var(--color-text-secondary)]">
-                <strong className="text-[var(--color-text)]">Rajesh</strong> from Mumbai just purchased{" "}
-                <strong className="text-[var(--color-gold)]">Restaurant Website</strong>
-              </p>
-              <span className="text-[10px] text-[var(--color-text-muted)] shrink-0">2m ago</span>
-            </motion.div>
+            {/* Product cards stacked with offset */}
+            <div className="relative w-full max-w-sm">
+              {PRODUCT_CARDS.map((card, i) => (
+                <motion.div
+                  key={card.name}
+                  initial={{ opacity: 0, x: 60, scale: 0.85 }}
+                  animate={{
+                    opacity: 1,
+                    x: card.x,
+                    scale: 1,
+                    y: [0, -8, 0],
+                  }}
+                  transition={{
+                    opacity: { duration: 0.5, delay: 0.4 + card.delay },
+                    x: { duration: 0.6, delay: 0.4 + card.delay },
+                    scale: { duration: 0.6, delay: 0.4 + card.delay },
+                    y: {
+                      duration: 3 + i * 0.4,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: card.delay,
+                    },
+                  }}
+                  whileHover={{ scale: 1.04, zIndex: 50 }}
+                  className="absolute w-64 cursor-pointer"
+                  style={{ top: card.y, zIndex: 10 - i }}
+                >
+                  <div
+                    className="rounded-2xl p-4 border shadow-[var(--shadow-luxury)]"
+                    style={{
+                      background: "var(--color-bg)",
+                      borderColor: i === 0 ? `${card.color}40` : "var(--color-border)",
+                      boxShadow: i === 0 ? `0 8px 32px ${card.color}25` : undefined,
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: `${card.color}18` }}
+                        >
+                          <card.icon size={18} style={{ color: card.color }} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-xs text-[var(--color-text)] leading-tight">{card.name}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Star size={10} fill="#C9A227" className="text-[var(--color-gold)]" />
+                            <span className="text-[10px] text-[var(--color-text-muted)]">{card.rating} · {card.clients} clients</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        className="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ background: `${card.color}18`, color: card.color }}
+                      >
+                        {card.tag}
+                      </span>
+                    </div>
 
-            {/* Floating rating card */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                        <p className="text-[9px] text-[var(--color-text-muted)] mb-0.5">Basic</p>
+                        <p className="font-bold text-sm text-[var(--color-text)]">${card.basic}</p>
+                      </div>
+                      <div
+                        className="p-2 rounded-lg border"
+                        style={{ background: `${card.color}10`, borderColor: `${card.color}30` }}
+                      >
+                        <p className="text-[9px] mb-0.5" style={{ color: card.color }}>Premium</p>
+                        <p className="font-bold text-sm" style={{ color: card.color }}>${card.premium}</p>
+                      </div>
+                    </div>
+
+                    {i === 0 && (
+                      <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-[var(--color-border)]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                        <span className="text-[9px] text-[var(--color-text-muted)]">3 people viewing now</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Spacer to keep container height */}
+              <div style={{ height: "540px" }} />
+            </div>
+
+            {/* Floating badge — Live orders */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 1.2, duration: 0.5 }}
-              className="absolute -top-4 -right-6 glass-card px-4 py-3 text-center shadow-[var(--shadow-card)]"
+              transition={{ delay: 1.4, duration: 0.5 }}
+              className="absolute top-8 -left-6 glass-card px-3 py-2.5 shadow-[var(--shadow-card)] flex items-center gap-2 z-20"
             >
-              <div className="flex items-center gap-0.5 justify-center mb-0.5">
-                {[1,2,3,4,5].map(i => <Star key={i} size={12} fill="#C9A227" className="text-[var(--color-gold)]" />)}
+              <div className="live-dot shrink-0" />
+              <div>
+                <p className="text-[10px] font-bold text-[var(--color-text)]">Live Orders</p>
+                <p className="text-[10px] text-[var(--color-text-muted)]">+12 today</p>
+              </div>
+            </motion.div>
+
+            {/* Floating badge — Rating */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.6, duration: 0.5 }}
+              className="absolute bottom-28 -right-4 glass-card px-3 py-2.5 shadow-[var(--shadow-card)] text-center z-20"
+            >
+              <div className="flex gap-0.5 justify-center mb-0.5">
+                {[1,2,3,4,5].map(i => <Star key={i} size={11} fill="#C9A227" className="text-[var(--color-gold)]" />)}
               </div>
               <p className="text-xs font-bold text-[var(--color-text)]">4.9/5</p>
-              <p className="text-[10px] text-[var(--color-text-muted)]">Client Rating</p>
+              <p className="text-[9px] text-[var(--color-text-muted)]">1,200+ reviews</p>
+            </motion.div>
+
+            {/* Floating badge — Delivery */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.8, duration: 0.5 }}
+              className="absolute top-1/2 -right-8 glass-card px-3 py-2.5 shadow-[var(--shadow-card)] z-20"
+            >
+              <p className="text-[10px] font-bold text-[var(--color-text)]">⚡ Fast Delivery</p>
+              <p className="text-[9px] text-[var(--color-text-muted)]">1–5 business days</p>
             </motion.div>
           </motion.div>
         </div>

@@ -9,9 +9,12 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { ProductRecommender } from "@/components/ui/ProductRecommender";
 import { PRODUCTS, CATEGORIES } from "@/lib/products";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProductsPage() {
+  const { t, formatPrice } = useLanguage();
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("popular");
@@ -49,12 +52,11 @@ export default function ProductsPage() {
               </div>
               <div className="section-badge mx-auto">Our Products</div>
               <h1 className="font-display font-bold text-4xl sm:text-5xl text-[var(--color-text)] mb-4 leading-tight">
-                Ready-to-Launch{" "}
-                <span className="text-gold-gradient">Digital Solutions</span>
+                <span className="text-gold-gradient">Ready-to-Launch</span>{" "}
+                Digital Solutions
               </h1>
               <p className="text-[var(--color-text-secondary)] text-lg">
-                Buy, rent, or customize. Every product ships fully branded
-                with your company name — in days, not months.
+                {t.products_subtitle}
               </p>
             </div>
 
@@ -192,13 +194,13 @@ export default function ProductsPage() {
                             <div className="p-2.5 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
                               <p className="text-[10px] text-[var(--color-text-muted)] mb-0.5">Basic</p>
                               <p className="font-display font-bold text-sm text-[var(--color-text)]">
-                                ₹{product.basicPrice.toLocaleString("en-IN")}
+                                {formatPrice(product.basicPrice)}
                               </p>
                             </div>
                             <div className="p-2.5 rounded-xl bg-[var(--color-gold)]/8 border border-[var(--color-gold)]/20 text-center">
-                              <p className="text-[10px] text-[var(--color-gold)] mb-0.5">Premium</p>
+                              <p className="text-[10px] text-[var(--color-gold)] mb-0.5">{t.product_premium}</p>
                               <p className="font-display font-bold text-sm text-[var(--color-gold)]">
-                                ₹{product.premiumPrice.toLocaleString("en-IN")}
+                                {formatPrice(product.premiumPrice)}
                               </p>
                             </div>
                           </div>
@@ -247,6 +249,7 @@ export default function ProductsPage() {
       <Footer />
       <WhatsAppButton />
       <ChatWidget />
+      <ProductRecommender />
     </>
   );
 }

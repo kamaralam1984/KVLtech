@@ -21,12 +21,12 @@ export default function SettingsPage() {
 
   const [profile, setProfile] = useState({
     name: "Rahul Sharma", email: "admin@kvlbusinesssolutions.com",
-    phone: "+91 98765 43210", role: "Super Admin",
+    phone: "+91 9942000413", role: "Super Admin",
   });
   const [business, setBusiness] = useState({
     companyName: "KVL TECH Pvt. Ltd.", website: "kvlbusinesssolutions.com",
-    address: "Sector 62, Noida, Uttar Pradesh – 201309",
-    whatsapp: "+91 98765 43210", supportEmail: "support@kvlbusinesssolutions.com",
+    address: "INDIA",
+    whatsapp: "+91 9942000413", supportEmail: "support@kvlbusinesssolutions.com",
     gst: "09AABCK1234A1Z5",
   });
   const [notifications, setNotifications] = useState({

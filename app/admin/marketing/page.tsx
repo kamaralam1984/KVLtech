@@ -40,7 +40,7 @@ const TEMPLATES = [
   { name: "Welcome New Lead",      type: "Email",    msg: "Namaskar! KVL TECH mein aapka swagat hai. Aapki requirement ke baare mein baat karte hain — free consultation ke liye reply karein." },
   { name: "Product Demo Offer",    type: "WhatsApp", msg: "Hi! 👋 Kya aap hamare product ka FREE demo dekhna chahenge? 30 minutes mein sab clear ho jaayega. Reply 'DEMO' to book." },
   { name: "Follow-up (3 days)",    type: "Email",    msg: "Namaskar, pichli baar aapne hamse contact kiya tha. Kya aapko abhi bhi help chahiye? Hum yahan hain." },
-  { name: "Discount Alert",        type: "SMS",      msg: "KVL TECH: Sirf aaj ke liye 15% OFF! Website/Software book karein. Call: +91 98765 43210. Offer midnight tak." },
+  { name: "Discount Alert",        type: "SMS",      msg: "KVL TECH: Sirf aaj ke liye 15% OFF! Website/Software book karein. Call: +91 9942000413. Offer midnight tak." },
 ];
 
 const INDIAN_CITIES = [

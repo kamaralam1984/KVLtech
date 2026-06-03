@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { scoreLeadFast } from "@/lib/lead-scoring";
 
 export async function GET(req: NextRequest) {
   if (!requireAdmin(req))
@@ -47,6 +48,7 @@ export async function PATCH(req: NextRequest) {
     const { id, status, notes } = await req.json();
     if (!id) return NextResponse.json({ error: "Lead ID required" }, { status: 400 });
 
+    const existing = await db.contactLead.findUnique({ where: { id } });
     const lead = await db.contactLead.update({
       where: { id },
       data: {
@@ -54,6 +56,16 @@ export async function PATCH(req: NextRequest) {
         ...(notes !== undefined && { notes }),
       },
     });
+
+    // Re-score when status changes
+    if (status && existing) {
+      const merged = { ...existing, status };
+      const result = scoreLeadFast(merged);
+      await db.contactLead.update({
+        where: { id },
+        data: { score: result.score, scoreLabel: result.scoreLabel, scoreNote: result.scoreNote, scoredAt: new Date() },
+      });
+    }
 
     return NextResponse.json({ success: true, lead });
   } catch (err) {

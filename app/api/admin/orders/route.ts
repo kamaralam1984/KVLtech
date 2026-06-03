@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { sendOrderStatusEmail } from "@/lib/email";
+import { sendOrderStatusSMS } from "@/lib/sms";
 
 export async function GET(req: NextRequest) {
   if (!requireAdmin(req))
@@ -64,7 +66,7 @@ export async function PATCH(req: NextRequest) {
       await db.orderStatusHistory.create({
         data: { orderId: id, status, note: `Status updated to ${status} by admin` },
       });
-      // Notify client
+      // Notify client (in-app)
       await db.notification.create({
         data: {
           clientId: order.clientId,
@@ -74,6 +76,22 @@ export async function PATCH(req: NextRequest) {
           color: status === "DELIVERED" ? "#16A34A" : "#0891B2",
         },
       });
+      // Email notification (fire-and-forget)
+      const emailStatuses = ["DESIGN_STARTED", "DEVELOPMENT", "REVIEW_TESTING", "DELIVERED"];
+      if (emailStatuses.includes(status)) {
+        const client = await db.client.findUnique({ where: { id: order.clientId }, select: { name: true, email: true, phone: true } });
+        const product = await db.product.findUnique({ where: { id: order.productId }, select: { name: true } });
+        if (client && product) {
+          sendOrderStatusEmail({
+            to: client.email, name: client.name,
+            orderNumber: order.orderNumber, productName: product.name, status,
+          }).catch(err => console.error("Status email failed:", err));
+          if (client.phone) {
+            sendOrderStatusSMS(client.phone, client.name, order.orderNumber, status)
+              .catch(err => console.error("Status SMS failed:", err));
+          }
+        }
+      }
     }
 
     return NextResponse.json({ success: true, order });

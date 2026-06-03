@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/ui/ThemeProvider";
 import { ExitIntentPopup } from "@/components/ui/ExitIntentPopup";
 import { SocialProofToast } from "@/components/ui/SocialProofToast";
 import { UrgencyBanner } from "@/components/ui/UrgencyBanner";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -57,10 +58,12 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col antialiased">
-        <UrgencyBanner />
-        <ExitIntentPopup />
-        <SocialProofToast />
-        <ThemeProvider>{children}</ThemeProvider>
+        <LanguageProvider>
+          <UrgencyBanner />
+          <SocialProofToast />
+          <ExitIntentPopup />
+          <ThemeProvider>{children}</ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

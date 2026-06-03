@@ -4,14 +4,17 @@ import { motion } from "framer-motion";
 import { ArrowRight, Shield, Zap, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-
-const guarantees = [
-  { icon: Zap, text: "Quick Start — Get started in 24 hours" },
-  { icon: Shield, text: "Dedicated Support — We are always here to help" },
-  { icon: Clock, text: "Money Back Guarantee — 100% satisfaction guaranteed" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function CTASection() {
+  const { t } = useLanguage();
+
+  const guarantees = [
+    { icon: Zap, text: t.cta_g1 },
+    { icon: Shield, text: t.cta_g2 },
+    { icon: Clock, text: t.cta_g3 },
+  ];
+
   return (
     <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E2D4A 50%, #0F172A 100%)" }}>
       {/* Background effects */}
@@ -39,11 +42,11 @@ export function CTASection() {
             className="py-16 lg:py-20"
           >
             <h2 className="font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-white mb-3 leading-tight">
-              Ready to Transform{" "}
-              <span className="text-gold-gradient">Your Business?</span>
+              {t.cta_title}{" "}
+              <span className="text-gold-gradient">{t.cta_title_gold}</span>
             </h2>
             <p className="text-white/60 text-lg mb-8 leading-relaxed max-w-md">
-              Let&apos;s build something amazing together.
+              {t.cta_sub}
             </p>
 
             {/* Guarantees */}
@@ -61,13 +64,13 @@ export function CTASection() {
             {/* CTAs */}
             <div className="flex flex-wrap gap-3">
               <Link href="/contact" className="btn-gold">
-                Book Free Consultation <ArrowRight size={16} />
+                {t.cta_consult} <ArrowRight size={16} />
               </Link>
               <Link
                 href="/products"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/20 text-white font-semibold text-sm hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all"
               >
-                Start Your Project
+                {t.cta_project}
               </Link>
             </div>
           </motion.div>
