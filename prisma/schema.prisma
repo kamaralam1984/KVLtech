@@ -1,0 +1,444 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// ADMINS — KVL TECH internal team
+// ─────────────────────────────────────────────
+model Admin {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      AdminRole @default(SUPPORT)
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  SUPPORT
+  DEVELOPER
+}
+
+// ─────────────────────────────────────────────
+// CLIENTS — portal users (buyers)
+// ─────────────────────────────────────────────
+model Client {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  phone        String?
+  password     String
+  company      String?
+  city         String?
+  isActive     Boolean   @default(true)
+  emailVerified Boolean  @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  orders              Order[]
+  brandingSubmissions BrandingSubmission[]
+  supportTickets      SupportTicket[]
+  notifications       Notification[]
+  reviews             Review[]
+  contactLeads        ContactLead[]
+
+  @@map("clients")
+}
+
+// ─────────────────────────────────────────────
+// PRODUCTS — website & software catalog
+// ─────────────────────────────────────────────
+model Product {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  name         String
+  tagline      String
+  description  String      @db.Text
+  category     ProductCategory
+  photo        String
+  gallery      String[]
+  basicPrice   Int
+  premiumPrice Int
+  isActive     Boolean     @default(true)
+  tag          String?
+  techStack    String[]
+  deliverables String[]
+  highlights   String[]
+  sortOrder    Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  plans  ProductPlan[]
+  faqs   ProductFaq[]
+  orders Order[]
+
+  @@map("products")
+}
+
+enum ProductCategory {
+  WEBSITE
+  SOFTWARE
+  SAAS
+  MOBILE
+}
+
+model ProductPlan {
+  id        String   @id @default(cuid())
+  productId String
+  name      PlanType
+  price     String
+  delivery  String
+  support   String
+  features  String[]
+  sortOrder Int      @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_plans")
+}
+
+model ProductFaq {
+  id        String @id @default(cuid())
+  productId String
+  question  String
+  answer    String @db.Text
+  sortOrder Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_faqs")
+}
+
+enum PlanType {
+  BASIC
+  PREMIUM
+  CUSTOM
+}
+
+// ─────────────────────────────────────────────
+// ORDERS — purchase records
+// ─────────────────────────────────────────────
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber String      @unique
+  clientId    String
+  productId   String
+  plan        PlanType
+  status      OrderStatus @default(PAYMENT_PENDING)
+  progress    Int         @default(0)
+  amount      Int
+  currency    String      @default("INR")
+  notes       String?     @db.Text
+  deliveryEst DateTime?
+  deliveredAt DateTime?
+  liveUrl     String?
+  filesUrl    String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  client   Client  @relation(fields: [clientId], references: [id])
+  product  Product @relation(fields: [productId], references: [id])
+  payment  Payment?
+  branding BrandingSubmission?
+  review   Review?
+  statusHistory OrderStatusHistory[]
+  tickets  SupportTicket[]
+
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  DESIGN_STARTED
+  DEVELOPMENT
+  REVIEW_TESTING
+  DELIVERED
+  CANCELLED
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?
+  changedAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_status_history")
+}
+
+// ─────────────────────────────────────────────
+// PAYMENTS — Razorpay / Stripe records
+// ─────────────────────────────────────────────
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String        @unique
+  amount            Int
+  currency          String        @default("INR")
+  status            PaymentStatus @default(PENDING)
+  gateway           String        @default("razorpay")
+  gatewayOrderId    String?
+  gatewayPaymentId  String?
+  gatewaySignature  String?
+  method            String?
+  paidAt            DateTime?
+  failureReason     String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+// ─────────────────────────────────────────────
+// BRANDING SUBMISSIONS — client branding details
+// ─────────────────────────────────────────────
+model BrandingSubmission {
+  id             String           @id @default(cuid())
+  orderId        String           @unique
+  clientId       String
+  companyName    String
+  tagline        String?
+  primaryColor   String           @default("#C9A227")
+  secondaryColor String           @default("#0F172A")
+  fontPreference String?
+  phone          String?
+  email          String?
+  address        String?
+  website        String?
+  logoNote       String?          @db.Text
+  logoUrl        String?
+  status         BrandingStatus   @default(SUBMITTED)
+  appliedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  order  Order  @relation(fields: [orderId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@map("branding_submissions")
+}
+
+enum BrandingStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPLIED
+  REVISION_NEEDED
+}
+
+// ─────────────────────────────────────────────
+// SUPPORT TICKETS
+// ─────────────────────────────────────────────
+model SupportTicket {
+  id       String         @id @default(cuid())
+  ticketNo String         @unique
+  clientId String
+  orderId  String?
+  subject  String
+  message  String         @db.Text
+  priority TicketPriority @default(MEDIUM)
+  status   TicketStatus   @default(OPEN)
+  closedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  client  Client          @relation(fields: [clientId], references: [id])
+  order   Order?          @relation(fields: [orderId], references: [id])
+  replies TicketReply[]
+
+  @@map("support_tickets")
+}
+
+model TicketReply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  authorId  String
+  authorType String  @default("client")
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_replies")
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CLIENT
+  RESOLVED
+  CLOSED
+}
+
+// ─────────────────────────────────────────────
+// CONTACT LEADS — website contact form
+// ─────────────────────────────────────────────
+model ContactLead {
+  id        String     @id @default(cuid())
+  clientId  String?
+  name      String
+  phone     String
+  email     String?
+  service   String?
+  budget    String?
+  message   String?    @db.Text
+  source    String     @default("contact_form")
+  status    LeadStatus @default(NEW)
+  notes     String?    @db.Text
+  followUpAt DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  client Client? @relation(fields: [clientId], references: [id])
+
+  @@map("contact_leads")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATIONS — client bell notifications
+// ─────────────────────────────────────────────
+model Notification {
+  id        String           @id @default(cuid())
+  clientId  String
+  title     String
+  body      String
+  type      NotificationType @default(INFO)
+  color     String           @default("#C9A227")
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ORDER_UPDATE
+  PAYMENT
+  BRANDING
+  SUPPORT
+}
+
+// ─────────────────────────────────────────────
+// REVIEWS — order star ratings
+// ─────────────────────────────────────────────
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  clientId  String
+  rating    Int
+  title     String?
+  comment   String?  @db.Text
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  order  Order  @relation(fields: [orderId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@map("reviews")
+}
+
+// ─────────────────────────────────────────────
+// BLOG POSTS
+// ─────────────────────────────────────────────
+model BlogPost {
+  id          String     @id @default(cuid())
+  slug        String     @unique
+  title       String
+  excerpt     String     @db.Text
+  content     String     @db.Text
+  category    String
+  photo       String
+  author      String
+  authorRole  String?
+  readTime    String?
+  isFeatured  Boolean    @default(false)
+  isPublished Boolean    @default(false)
+  publishedAt DateTime?
+  metaTitle   String?
+  metaDesc    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("blog_posts")
+}
+
+// ─────────────────────────────────────────────
+// CAMPAIGNS — marketing broadcasts
+// ─────────────────────────────────────────────
+model Campaign {
+  id           String         @id @default(cuid())
+  name         String
+  type         CampaignType
+  subject      String?
+  message      String         @db.Text
+  recipients   String         @default("ALL_LEADS")
+  status       CampaignStatus @default(DRAFT)
+  sentCount    Int            @default(0)
+  openCount    Int            @default(0)
+  clickCount   Int            @default(0)
+  scheduledAt  DateTime?
+  sentAt       DateTime?
+  createdBy    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("campaigns")
+}
+
+enum CampaignType {
+  EMAIL
+  WHATSAPP
+  SMS
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  FAILED
+}
