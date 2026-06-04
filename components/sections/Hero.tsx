@@ -50,7 +50,7 @@ export function Hero() {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-24 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* LEFT — Content */}
           <div>
@@ -154,14 +154,13 @@ export function Hero() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="lg:hidden mt-8 -mx-4 px-4 overflow-x-auto pb-3"
-              style={{ scrollbarWidth: "none" }}
+              className="lg:hidden mt-8 flex gap-3 overflow-x-auto pb-3"
+              style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
             >
-              <div className="flex gap-3" style={{ width: "max-content" }}>
                 {PRODUCT_CARDS.map((card) => (
                   <div
                     key={card.name}
-                    className="w-52 rounded-2xl p-4 border"
+                    className="shrink-0 w-48 rounded-2xl p-4 border"
                     style={{ background: "var(--color-bg)", borderColor: "var(--color-border)" }}
                   >
                     <div className="flex items-start justify-between mb-3">
@@ -202,7 +201,6 @@ export function Hero() {
                     </div>
                   </div>
                 ))}
-              </div>
             </motion.div>
           </div>
 
