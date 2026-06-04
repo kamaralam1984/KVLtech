@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -28,6 +28,55 @@ function loadRazorpayScript(): Promise<boolean> {
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
+}
+
+const YEARLY_MSGS = [
+  "🎉 Recurring add-ons billed annually at 50% discount!",
+  "💰 Save up to 50% by switching to yearly billing!",
+  "🚀 Best value — commit yearly, pay half!",
+  "⚡ Yearly plan: double the time, half the price!",
+  "🏆 Smart choice! Yearly = maximum savings!",
+];
+
+function YearlyTyping() {
+  const [displayed, setDisplayed] = useState("");
+  const [msgIdx, setMsgIdx] = useState(0);
+  const [phase, setPhase] = useState<"typing" | "pause" | "erasing">("typing");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const msg = YEARLY_MSGS[msgIdx];
+
+    if (phase === "typing") {
+      if (displayed.length < msg.length) {
+        const delay = 30 + Math.random() * 40; // random speed per char
+        timerRef.current = setTimeout(() => setDisplayed(msg.slice(0, displayed.length + 1)), delay);
+      } else {
+        timerRef.current = setTimeout(() => setPhase("pause"), 2200);
+      }
+    } else if (phase === "pause") {
+      timerRef.current = setTimeout(() => setPhase("erasing"), 400);
+    } else {
+      if (displayed.length > 0) {
+        timerRef.current = setTimeout(() => setDisplayed(d => d.slice(0, -1)), 18);
+      } else {
+        setMsgIdx(i => (i + 1) % YEARLY_MSGS.length);
+        setPhase("typing");
+      }
+    }
+
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [displayed, phase, msgIdx]);
+
+  // reset on mount
+  useEffect(() => { setDisplayed(""); setPhase("typing"); setMsgIdx(0); }, []);
+
+  return (
+    <p className="text-xs text-green-600 font-medium mt-2 h-4 flex items-center justify-center gap-0.5">
+      {displayed}
+      <span className="inline-block w-0.5 h-3.5 bg-green-500 ml-0.5 animate-pulse" />
+    </p>
+  );
 }
 
 export function ProductDetail({ product, related }: { product: Product; related: Product[] }) {
@@ -399,9 +448,7 @@ export function ProductDetail({ product, related }: { product: Product; related:
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-500 text-white">50% OFF</span>
               </button>
             </div>
-            {billingCycle === "yearly" && (
-              <p className="text-xs text-green-600 font-medium mt-2">🎉 Recurring add-ons billed annually at 50% discount!</p>
-            )}
+            {billingCycle === "yearly" && <YearlyTyping />}
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
