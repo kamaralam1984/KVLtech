@@ -73,40 +73,16 @@ export function ChatWidget() {
   const audioChunksRef = useRef<Blob[]>([]);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Kaviya's greeting changes with selected language (Hinglish / Arabic / English)
-  const GREETINGS: Record<string, { msg: string; qr: string[] }> = {
-    en: {
-      msg: "Hello! 🙏 I'm Kaviya, KVL TECH's business consultant. I'd love to help find the best digital solution for your business. What kind of business do you have?",
-      qr: ["Restaurant website needed", "School management system", "Build an online store", "Tell me the price first"],
-    },
-    hi: {
-      msg: "Adaab! 🙏 Main Kaviya hoon — KVL TECH ki aapki apni consultant. Aapke business ke liye dil se kaam karna chahti hoon. Batayein, kya khayal hai aapka? 😊",
-      qr: ["Restaurant ki website chahiye", "School management system", "Online store banana hai", "Pehle price batao"],
-    },
-    ar: {
-      msg: "أهلاً! 🙏 أنا كافيا، مستشارة KVL TECH. أود مساعدتك في إيجاد أفضل حل رقمي لعملك. ما نوع عملك؟",
-      qr: ["أحتاج موقع مطعم", "نظام إدارة مدرسة", "إنشاء متجر إلكتروني", "أخبرني بالأسعار أولاً"],
-    },
-    ru: {
-      msg: "Здравствуйте! 🙏 Я Kaviya, консультант KVL TECH. Рада помочь вам найти лучшее цифровое решение. Какой у вас бизнес?",
-      qr: ["Нужен сайт ресторана", "Система управления школой", "Создать интернет-магазин", "Сначала скажите цену"],
-    },
-    de: {
-      msg: "Hallo! 🙏 Ich bin Kaviya, KVL TECH Beraterin. Ich helfe Ihnen gerne, die beste digitale Lösung zu finden. Was für ein Unternehmen haben Sie?",
-      qr: ["Restaurant-Website benötigt", "Schulverwaltungssystem", "Online-Shop erstellen", "Erst Preise nennen"],
-    },
-  };
-
+  // Reset greeting when language changes — use t (translations) so Kaviya follows selected language
   useEffect(() => {
-    const g = GREETINGS[language.code] || GREETINGS.en;
+    const qr = [t.chat_qr_restaurant, t.chat_qr_school, t.chat_qr_store, t.chat_qr_price];
     setMessages(prev => {
       if (prev.length <= 1) {
-        return [{ role: "assistant", content: g.msg, time: now(), quickReplies: g.qr }];
+        return [{ role: "assistant", content: t.chat_initial_msg, time: now(), quickReplies: qr }];
       }
       return prev;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language.code]);
+  }, [t]);
 
   // Kaviya badge cycle: show → 30s → hide → 60s → show → repeat until user responds
   useEffect(() => {

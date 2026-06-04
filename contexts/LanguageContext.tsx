@@ -1,11 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import { Language, DEFAULT_LANGUAGE, getLanguage, Currency } from "@/lib/i18n/languages";
 import { Translations, getTranslations } from "@/lib/i18n/translations";
-
-// Website always uses English translations
-const EN = getTranslations("en");
 
 // Prices always in USD
 const USD: Currency = { code: "USD", symbol: "$", name: "US Dollar", rate: 1, position: "before", countryCode: "+1" };
@@ -14,6 +11,8 @@ function formatUSD(inrPrice: number): string {
   const usd = Math.round(inrPrice / 83.5);
   return `$${usd.toLocaleString("en-US")}`;
 }
+
+const EN = getTranslations("en");
 
 interface LanguageContextType {
   language: Language;
@@ -43,18 +42,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const lang = getLanguage(code);
     setLang(lang);
     localStorage.setItem("kvl_lang", code);
-    // RTL only for Arabic
     document.documentElement.dir = lang.dir;
-    document.documentElement.lang = "en"; // keep html lang as English for SEO
+    document.documentElement.lang = code === "en" ? "en" : code;
   };
+
+  // t updates whenever language changes
+  const t = useMemo(() => getTranslations(language.code), [language.code]);
 
   return (
     <LanguageContext.Provider value={{
       language,
       currency: USD,
-      t: EN,               // website always English
+      t,
       setLanguage,
-      formatPrice: formatUSD, // prices always USD
+      formatPrice: formatUSD,
     }}>
       {children}
     </LanguageContext.Provider>
