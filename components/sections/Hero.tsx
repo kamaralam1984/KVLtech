@@ -147,6 +147,63 @@ export function Hero() {
                 </div>
               ))}
             </motion.div>
+
+            {/* Mobile — horizontal scroll product cards */}
+            <motion.div
+              custom={6}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="lg:hidden mt-8 -mx-4 px-4 overflow-x-auto pb-3"
+              style={{ scrollbarWidth: "none" }}
+            >
+              <div className="flex gap-3" style={{ width: "max-content" }}>
+                {PRODUCT_CARDS.map((card) => (
+                  <div
+                    key={card.name}
+                    className="w-52 rounded-2xl p-4 border"
+                    style={{ background: "var(--color-bg)", borderColor: "var(--color-border)" }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: `${card.color}18` }}
+                        >
+                          <card.icon size={18} style={{ color: card.color }} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-xs text-[var(--color-text)] leading-tight">{card.name}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Star size={10} fill="#C9A227" className="text-[var(--color-gold)]" />
+                            <span className="text-[10px] text-[var(--color-text-muted)]">{card.rating} · {card.clients} clients</span>
+                          </div>
+                        </div>
+                      </div>
+                      <span
+                        className="text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ background: `${card.color}18`, color: card.color }}
+                      >
+                        {card.tag}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 rounded-lg bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                        <p className="text-[9px] text-[var(--color-text-muted)] mb-0.5">Basic</p>
+                        <p className="font-bold text-sm text-[var(--color-text)]">${card.basic}</p>
+                      </div>
+                      <div
+                        className="p-2 rounded-lg border"
+                        style={{ background: `${card.color}10`, borderColor: `${card.color}30` }}
+                      >
+                        <p className="text-[9px] mb-0.5" style={{ color: card.color }}>Premium</p>
+                        <p className="font-bold text-sm" style={{ color: card.color }}>${card.premium}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           </div>
 
           {/* RIGHT — Floating Product Cards */}
