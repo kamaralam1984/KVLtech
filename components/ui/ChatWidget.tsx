@@ -332,7 +332,7 @@ export function ChatWidget() {
   return (
     <>
       {/* Floating launcher */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+      <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-3">
         <AnimatePresence>
           {showBadge && !open && (
             <motion.div
@@ -388,7 +388,7 @@ export function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.92 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed bottom-24 right-6 z-50 w-[360px] sm:w-[390px] flex flex-col rounded-2xl overflow-hidden border border-[var(--color-border)]"
+            className="fixed bottom-24 left-6 z-50 w-[360px] sm:w-[390px] flex flex-col rounded-2xl overflow-hidden border border-[var(--color-border)]"
             style={{ maxHeight: minimized ? "64px" : "calc(100dvh - 5rem - 6rem)", boxShadow: "0 24px 80px rgba(0,0,0,0.28), 0 0 0 1px rgba(201,162,39,0.15)" }}
           >
             {/* Header */}
