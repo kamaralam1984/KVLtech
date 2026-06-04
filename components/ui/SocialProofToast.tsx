@@ -53,10 +53,10 @@ export function SocialProofToast() {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ x: -300, opacity: 0 }}
+          initial={{ x: 300, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -300, opacity: 0 }}
-          className="fixed bottom-24 left-4 z-50 max-w-xs"
+          exit={{ x: 300, opacity: 0 }}
+          className="fixed right-4 top-1/2 -translate-y-1/2 z-50 max-w-xs"
         >
           <div className="bg-white dark:bg-[var(--color-bg-secondary)] rounded-xl shadow-2xl border border-gray-100 dark:border-[var(--color-border)] p-4 flex items-center gap-3">
             <div
