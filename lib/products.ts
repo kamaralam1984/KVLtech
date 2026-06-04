@@ -176,7 +176,7 @@ export const PRODUCTS: Product[] = [
     ],
   },
   {
-    slug: "ecommerce-platform",
+    slug: "e-commerce-platform",
     name: "E-commerce Platform",
     tagline: "Sell anything online with zero commission",
     description: "A complete online store with product catalog, cart, payments, order management, inventory tracking, and marketing tools — your brand, your revenue.",
