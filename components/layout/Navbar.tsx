@@ -98,7 +98,7 @@ export function Navbar() {
 
   return (
     <>
-    <div className="fixed left-0 right-0 z-50" style={{ top: '40px' }}>
+    <div className="fixed left-0 right-0 z-50" style={{ top: 'var(--banner-h, 40px)', transition: 'top 0.35s ease' }}>
     <motion.header
       initial={{ y: -40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
