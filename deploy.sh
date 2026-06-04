@@ -12,6 +12,7 @@ npm run build
 npx prisma generate
 
 # Standalone mode requires these to be copied manually after every build
+rm -rf "$STANDALONE/.next/static" "$STANDALONE/public"
 cp -r "$DEPLOY_DIR/.next/static" "$STANDALONE/.next/static"
 cp -r "$DEPLOY_DIR/public" "$STANDALONE/public"
 
