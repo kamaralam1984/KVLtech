@@ -596,19 +596,21 @@ export interface Addon {
   icon: string;
   name: string;
   description: string;
-  price: number;
-  priceLabel: string;
+  monthlyPrice: number;   // base monthly / one-time price
+  isRecurring: boolean;   // true = monthly subscription (yearly gives 50% off)
 }
 
+// Yearly price = monthlyPrice × 12 × 0.5 (50% off) for recurring
+// One-time add-ons: same price regardless of billing cycle
 export const ADDONS: Addon[] = [
-  { id: "annual-maintenance",   icon: "🔧", name: "Annual Maintenance",    description: "Bug fixes, updates, minor changes",      price: 36,  priceLabel: "$36/yr"  },
-  { id: "extended-support",     icon: "🎯", name: "Extended Support (1yr)", description: "Priority support + same-day response",   price: 60,  priceLabel: "$60/yr"  },
-  { id: "google-ads-setup",     icon: "📢", name: "Google Ads Setup",      description: "Campaign setup + $24 ad credit",          price: 48,  priceLabel: "$48"     },
-  { id: "whatsapp-marketing",   icon: "💬", name: "WhatsApp Marketing",    description: "Bulk messages to 1,000 contacts",         price: 24,  priceLabel: "$24/mo"  },
-  { id: "extra-language",       icon: "🌐", name: "Extra Language",        description: "Add Hindi / Arabic / regional language",  price: 60,  priceLabel: "$60"     },
-  { id: "mobile-app-basic",     icon: "📱", name: "Mobile App (Basic)",    description: "Android APK for your website",            price: 180, priceLabel: "$180"    },
-  { id: "social-media-kit",     icon: "📸", name: "Social Media Kit",      description: "20 branded posts + templates",            price: 30,  priceLabel: "$30"     },
-  { id: "logo-design",          icon: "🎨", name: "Logo Design",           description: "Professional logo + 3 revisions",         price: 24,  priceLabel: "$24"     },
+  { id: "annual-maintenance",  icon: "🔧", name: "Annual Maintenance",     description: "Bug fixes, updates, minor changes",      monthlyPrice: 3,   isRecurring: true  },
+  { id: "extended-support",    icon: "🎯", name: "Extended Support",        description: "Priority support + same-day response",   monthlyPrice: 5,   isRecurring: true  },
+  { id: "google-ads-setup",    icon: "📢", name: "Google Ads Setup",        description: "Campaign setup + $24 ad credit",          monthlyPrice: 48,  isRecurring: false },
+  { id: "whatsapp-marketing",  icon: "💬", name: "WhatsApp Marketing",      description: "Bulk messages to 1,000 contacts",         monthlyPrice: 24,  isRecurring: true  },
+  { id: "extra-language",      icon: "🌐", name: "Extra Language",          description: "Add Hindi / Arabic / regional language",  monthlyPrice: 60,  isRecurring: false },
+  { id: "mobile-app-basic",    icon: "📱", name: "Mobile App (Basic)",      description: "Android APK for your website",            monthlyPrice: 180, isRecurring: false },
+  { id: "social-media-kit",    icon: "📸", name: "Social Media Kit",        description: "20 branded posts + templates",            monthlyPrice: 30,  isRecurring: false },
+  { id: "logo-design",         icon: "🎨", name: "Logo Design",             description: "Professional logo + 3 revisions",         monthlyPrice: 24,  isRecurring: false },
 ];
 
 export function getProduct(slug: string): Product | undefined {

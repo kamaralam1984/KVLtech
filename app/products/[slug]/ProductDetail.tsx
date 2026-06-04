@@ -40,11 +40,19 @@ export function ProductDetail({ product, related }: { product: Product; related:
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState("");
   const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
 
   const toggleAddon = (id: string) =>
     setSelectedAddons(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
-  const addonTotal = ADDONS.filter(a => selectedAddons.has(a.id)).reduce((sum, a) => sum + a.price, 0);
+  const getAddonPrice = (addon: typeof ADDONS[0]) => {
+    if (!addon.isRecurring) return addon.monthlyPrice;
+    return billingCycle === "yearly"
+      ? Math.round(addon.monthlyPrice * 12 * 0.5)  // 50% off yearly
+      : addon.monthlyPrice;
+  };
+
+  const addonTotal = ADDONS.filter(a => selectedAddons.has(a.id)).reduce((sum, a) => sum + getAddonPrice(a), 0);
 
   const planPriceMap: Record<string, number> = {
     Basic: product.basicPrice,
@@ -368,16 +376,42 @@ export function ProductDetail({ product, related }: { product: Product; related:
       {/* Add-ons */}
       <section className="py-16 bg-[var(--color-bg-secondary)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
+          <div className="text-center mb-8">
             <div className="section-badge mx-auto">Optional Add-ons</div>
             <h2 className="font-display font-bold text-3xl text-[var(--color-text)] mb-2">
               Power Up Your <span className="text-gold-gradient">Package</span>
             </h2>
-            <p className="text-[var(--color-text-secondary)]">Select add-ons to include with your order — added to your total at checkout</p>
+            <p className="text-[var(--color-text-secondary)] mb-6">Select add-ons to include with your order — added to your total at checkout</p>
+
+            {/* Billing toggle */}
+            <div className="inline-flex items-center gap-1 p-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]">
+              <button
+                onClick={() => setBillingCycle("monthly")}
+                className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all ${billingCycle === "monthly" ? "bg-[var(--color-navy)] text-white shadow-sm" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"}`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingCycle("yearly")}
+                className={`px-5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${billingCycle === "yearly" ? "bg-[var(--color-gold)] text-black shadow-sm" : "text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"}`}
+              >
+                Yearly
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-500 text-white">50% OFF</span>
+              </button>
+            </div>
+            {billingCycle === "yearly" && (
+              <p className="text-xs text-green-600 font-medium mt-2">🎉 Recurring add-ons billed annually at 50% discount!</p>
+            )}
           </div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {ADDONS.map(addon => {
               const checked = selectedAddons.has(addon.id);
+              const price = getAddonPrice(addon);
+              const originalPrice = addon.isRecurring && billingCycle === "yearly" ? addon.monthlyPrice * 12 : null;
+              const label = addon.isRecurring
+                ? billingCycle === "yearly" ? `$${price}/yr` : `$${price}/mo`
+                : `$${price}`;
               return (
                 <motion.div
                   key={addon.id}
@@ -395,7 +429,15 @@ export function ProductDetail({ product, related }: { product: Product; related:
                   </div>
                   <p className="font-display font-bold text-sm text-[var(--color-text)] mb-1">{addon.name}</p>
                   <p className="text-xs text-[var(--color-text-muted)] mb-3">{addon.description}</p>
-                  <p className="font-bold text-[var(--color-gold)] text-base">{addon.priceLabel}</p>
+                  <div className="flex items-end gap-2">
+                    <p className="font-bold text-[var(--color-gold)] text-base">{label}</p>
+                    {originalPrice && (
+                      <p className="text-xs text-[var(--color-text-muted)] line-through mb-0.5">${originalPrice}/yr</p>
+                    )}
+                  </div>
+                  {addon.isRecurring && billingCycle === "yearly" && (
+                    <span className="text-[10px] font-bold text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full mt-1 inline-block">Save 50%</span>
+                  )}
                 </motion.div>
               );
             })}
