@@ -10,6 +10,7 @@ import {
   Phone, MessageCircle, Zap, Shield, Clock, ArrowLeft, Loader2, CreditCard, ExternalLink
 } from "lucide-react";
 import type { Product } from "@/lib/products";
+import { ADDONS } from "@/lib/products";
 
 declare global {
   interface Window {
@@ -38,6 +39,12 @@ export function ProductDetail({ product, related }: { product: Product; related:
   const [submittedOrderNo, setSubmittedOrderNo] = useState("");
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState("");
+  const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
+
+  const toggleAddon = (id: string) =>
+    setSelectedAddons(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+
+  const addonTotal = ADDONS.filter(a => selectedAddons.has(a.id)).reduce((sum, a) => sum + a.price, 0);
 
   const planPriceMap: Record<string, number> = {
     Basic: product.basicPrice,
@@ -57,7 +64,9 @@ export function ProductDetail({ product, related }: { product: Product; related:
     }
 
     setPaying(true);
-    const amount = planPriceMap[currentPlan.name] || product.premiumPrice;
+    const baseAmount = planPriceMap[currentPlan.name] || product.premiumPrice;
+    const amount = baseAmount + addonTotal;
+    const addonsSelected = ADDONS.filter(a => selectedAddons.has(a.id)).map(a => a.name);
 
     try {
       // 1. Load Razorpay script
@@ -68,7 +77,7 @@ export function ProductDetail({ product, related }: { product: Product; related:
       const orderRes = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, productSlug: product.slug, plan: currentPlan.name, ...form }),
+        body: JSON.stringify({ amount, productSlug: product.slug, plan: currentPlan.name, addons: addonsSelected, ...form }),
       });
       const orderData = await orderRes.json();
       if (!orderRes.ok) { setPayError(orderData.error || "Order create nahi hua."); setPaying(false); return; }
@@ -356,6 +365,54 @@ export function ProductDetail({ product, related }: { product: Product; related:
         </div>
       </section>
 
+      {/* Add-ons */}
+      <section className="py-16 bg-[var(--color-bg-secondary)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <div className="section-badge mx-auto">Optional Add-ons</div>
+            <h2 className="font-display font-bold text-3xl text-[var(--color-text)] mb-2">
+              Power Up Your <span className="text-gold-gradient">Package</span>
+            </h2>
+            <p className="text-[var(--color-text-secondary)]">Select add-ons to include with your order — added to your total at checkout</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {ADDONS.map(addon => {
+              const checked = selectedAddons.has(addon.id);
+              return (
+                <motion.div
+                  key={addon.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  onClick={() => toggleAddon(addon.id)}
+                  className={`card p-5 cursor-pointer transition-all select-none ${checked ? "border-2 border-[var(--color-gold)] shadow-[var(--shadow-gold)]" : "hover:border-[var(--color-gold)]/40"}`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-3xl">{addon.icon}</span>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${checked ? "bg-[var(--color-gold)] border-[var(--color-gold)]" : "border-[var(--color-border)]"}`}>
+                      {checked && <Check size={11} className="text-white" strokeWidth={3} />}
+                    </div>
+                  </div>
+                  <p className="font-display font-bold text-sm text-[var(--color-text)] mb-1">{addon.name}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mb-3">{addon.description}</p>
+                  <p className="font-bold text-[var(--color-gold)] text-base">{addon.priceLabel}</p>
+                </motion.div>
+              );
+            })}
+          </div>
+          {selectedAddons.size > 0 && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-4 rounded-2xl border border-[var(--color-gold)]/40 bg-[var(--color-gold)]/5 flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <p className="text-sm font-semibold text-[var(--color-text)]">Selected: {selectedAddons.size} add-on{selectedAddons.size > 1 ? "s" : ""}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">{ADDONS.filter(a => selectedAddons.has(a.id)).map(a => a.name).join(", ")}</p>
+              </div>
+              <p className="font-display font-bold text-xl text-[var(--color-gold)]">+${addonTotal} extra</p>
+            </motion.div>
+          )}
+        </div>
+      </section>
+
       {/* Order Form */}
       <section id="order-form" className="py-16 bg-[var(--color-bg)]">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -389,7 +446,11 @@ export function ProductDetail({ product, related }: { product: Product; related:
                   <p className="text-[var(--color-text-secondary)] text-sm">
                     {product.plans[activePlan].price === "Quote"
                       ? "Team aapko custom price degi"
-                      : <>Price: <strong className="text-[var(--color-gold)]">{product.plans[activePlan].price}</strong> · {product.plans[activePlan].delivery} delivery</>
+                      : <>
+                          Plan: <strong className="text-[var(--color-gold)]">{product.plans[activePlan].price}</strong>
+                          {addonTotal > 0 && <> + Add-ons: <strong className="text-[var(--color-gold)]">${addonTotal}</strong> = <strong className="text-[var(--color-gold)]">${(planPriceMap[product.plans[activePlan].name] || 0) + addonTotal} total</strong></>}
+                          {" · "}{product.plans[activePlan].delivery} delivery
+                        </>
                     }
                   </p>
                 </div>

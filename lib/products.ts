@@ -591,6 +591,26 @@ export const PRODUCTS: Product[] = [
   },
 ];
 
+export interface Addon {
+  id: string;
+  icon: string;
+  name: string;
+  description: string;
+  price: number;
+  priceLabel: string;
+}
+
+export const ADDONS: Addon[] = [
+  { id: "annual-maintenance",   icon: "🔧", name: "Annual Maintenance",    description: "Bug fixes, updates, minor changes",      price: 36,  priceLabel: "$36/yr"  },
+  { id: "extended-support",     icon: "🎯", name: "Extended Support (1yr)", description: "Priority support + same-day response",   price: 60,  priceLabel: "$60/yr"  },
+  { id: "google-ads-setup",     icon: "📢", name: "Google Ads Setup",      description: "Campaign setup + $24 ad credit",          price: 48,  priceLabel: "$48"     },
+  { id: "whatsapp-marketing",   icon: "💬", name: "WhatsApp Marketing",    description: "Bulk messages to 1,000 contacts",         price: 24,  priceLabel: "$24/mo"  },
+  { id: "extra-language",       icon: "🌐", name: "Extra Language",        description: "Add Hindi / Arabic / regional language",  price: 60,  priceLabel: "$60"     },
+  { id: "mobile-app-basic",     icon: "📱", name: "Mobile App (Basic)",    description: "Android APK for your website",            price: 180, priceLabel: "$180"    },
+  { id: "social-media-kit",     icon: "📸", name: "Social Media Kit",      description: "20 branded posts + templates",            price: 30,  priceLabel: "$30"     },
+  { id: "logo-design",          icon: "🎨", name: "Logo Design",           description: "Professional logo + 3 revisions",         price: 24,  priceLabel: "$24"     },
+];
+
 export function getProduct(slug: string): Product | undefined {
   return PRODUCTS.find(p => p.slug === slug);
 }
