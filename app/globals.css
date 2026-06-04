@@ -91,7 +91,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; --banner-h: 40px; }
+html { scroll-behavior: smooth; --banner-h: 40px; overflow-x: hidden; max-width: 100%; }
 
 body {
   background: var(--color-bg);

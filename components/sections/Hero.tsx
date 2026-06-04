@@ -39,8 +39,8 @@ export function Hero() {
     <section className="relative min-h-screen flex flex-col justify-start lg:justify-center overflow-hidden pt-[104px]">
       {/* Subtle background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-[var(--color-gold)]/5 blur-[120px]" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-[var(--color-navy)]/5 blur-[100px]" />
+        <div className="absolute top-0 right-0 w-[280px] sm:w-[600px] h-[280px] sm:h-[600px] rounded-full bg-[var(--color-gold)]/5 blur-[80px] sm:blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[200px] sm:w-[400px] h-[200px] sm:h-[400px] rounded-full bg-[var(--color-navy)]/5 blur-[60px] sm:blur-[100px]" />
         <div
           className="absolute inset-0 opacity-[0.025]"
           style={{
@@ -72,7 +72,7 @@ export function Hero() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="font-display font-bold text-4xl sm:text-5xl lg:text-[3.4rem] xl:text-[3.8rem] leading-[1.08] tracking-tight text-[var(--color-text)] mb-4"
+              className="font-display font-bold text-[2rem] sm:text-4xl lg:text-[3.4rem] xl:text-[3.8rem] leading-[1.1] tracking-tight text-[var(--color-text)] mb-4"
             >
               {t.hero_headline}{" "}
               <span className="text-gold-gradient">{t.hero_headline_gold}</span>
@@ -84,7 +84,7 @@ export function Hero() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="text-[var(--color-text-secondary)] text-lg leading-relaxed mb-8 max-w-lg"
+              className="text-[var(--color-text-secondary)] text-base sm:text-lg leading-relaxed mb-8 max-w-lg"
             >
               {t.hero_subtitle}
             </motion.p>
@@ -111,15 +111,15 @@ export function Hero() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="flex flex-wrap gap-3 mb-10"
+              className="flex flex-col sm:flex-row flex-wrap gap-3 mb-10"
             >
-              <Link href="/products" className="btn-primary">
+              <Link href="/products" className="btn-primary justify-center sm:justify-start">
                 {t.hero_explore} <ArrowRight size={16} />
               </Link>
-              <Link href="/contact" className="btn-gold">
+              <Link href="/contact" className="btn-gold text-center sm:text-left">
                 {t.hero_consult}
               </Link>
-              <button className="btn-outline flex items-center gap-2">
+              <button className="btn-outline flex items-center justify-center gap-2">
                 <span className="w-8 h-8 rounded-full bg-[var(--color-navy)] flex items-center justify-center shrink-0">
                   <Play size={12} className="text-white ml-0.5" fill="white" />
                 </span>
