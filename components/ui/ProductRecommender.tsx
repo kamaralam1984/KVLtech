@@ -94,7 +94,7 @@ export function ProductRecommender() {
                 {step === 1 && (
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2">Aapka business kya hai? *</label>
+                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2">What is your business? *</label>
                       <div className="grid grid-cols-2 gap-2">
                         {BUSINESS_TYPES.map(bt => (
                           <button key={bt} onClick={() => setForm(f => ({ ...f, businessType: bt }))}
@@ -126,7 +126,7 @@ export function ProductRecommender() {
                 {step === 2 && (
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2">Kya kya chahiye? (optional)</label>
+                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2">Any specific requirements? (optional)</label>
                       <textarea value={form.requirement} onChange={e => setForm(f => ({ ...f, requirement: e.target.value }))}
                         rows={3} placeholder="e.g. Online booking, payment gateway, admin panel, mobile app..."
                         className={INPUT + " resize-none"} />
@@ -134,7 +134,7 @@ export function ProductRecommender() {
                     <div>
                       <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-2">Timeline?</label>
                       <div className="grid grid-cols-3 gap-2">
-                        {["Jaldi chahiye (1-3 days)", "1-2 weeks", "1 month+"].map(t => (
+                        {["Urgent (1-3 days)", "1-2 weeks", "1 month+"].map(t => (
                           <button key={t} onClick={() => setForm(f => ({ ...f, timeline: t }))}
                             className={`px-3 py-2 rounded-xl text-xs font-medium transition-all border ${form.timeline === t ? "border-[var(--color-gold)] bg-[var(--color-gold)]/10 text-[var(--color-gold)]" : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-gold)]/50"}`}>
                             {t}

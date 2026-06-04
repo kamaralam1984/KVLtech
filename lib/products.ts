@@ -20,7 +20,7 @@ export interface Product {
   basicPrice: number;
   premiumPrice: number;
   tag?: string;
-  demoUrl?: string;  // Real demo website link — yahan paste karo
+  demoUrl?: string;  // Real demo website link — paste here
   plans: Plan[];
   highlights: string[];
   techStack: string[];
@@ -77,10 +77,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Kya main apna menu khud update kar sakta hoon?", a: "Haan! Admin panel se aap menu items, prices aur photos akele update kar sakte hain — koi technical knowledge nahi chahiye." },
-      { q: "Payment gateway kaunsa milta hai?", a: "Premium plan mein Razorpay (UPI, cards, netbanking) included hai. International ke liye Stripe bhi add kar sakte hain." },
-      { q: "Delivery ke baad kya support milta hai?", a: "Basic mein 30 days, Premium mein 90 days free support milta hai. Uske baad AMC plan ₹2,999/year mein available hai." },
-      { q: "Kya domain aur hosting included hai?", a: "Domain registration aur first year hosting Premium plan mein free hai. Basic mein setup guidance milti hai." },
+      { q: "Can I update my menu myself?", a: "Yes! You can update menu items, prices, and photos on your own from the admin panel — no technical knowledge required." },
+      { q: "Which payment gateway is included?", a: "Razorpay (UPI, cards, netbanking) is included in the Premium plan. Stripe can also be added for international payments." },
+      { q: "What support is provided after delivery?", a: "Basic includes 30 days and Premium includes 90 days of free support. After that, an AMC plan is available at ₹2,999/year." },
+      { q: "Is domain and hosting included?", a: "Domain registration and first-year hosting are free with the Premium plan. The Basic plan includes setup guidance." },
     ],
   },
   {
@@ -123,10 +123,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Kitne students handle kar sakta hai?", a: "Basic plan 500 students tak, Premium 5000+ students efficiently handle karta hai. Custom mein unlimited." },
-      { q: "Kya parents apne bachche ka data dekh sakte hain?", a: "Haan! Premium mein parents ka dedicated mobile app milta hai — attendance, results, fees sab ek jagah." },
-      { q: "Data secure hai?", a: "Bilkul! Bank-grade encryption, daily backups, aur private server deployment available hai." },
-      { q: "Training milegi kya?", a: "Haan! Delivery ke time 2-hour video training aur documentation provide karte hain. Premium mein on-site training bhi available hai." },
+      { q: "How many students can it handle?", a: "The Basic plan handles up to 500 students efficiently, Premium handles 5,000+, and Custom supports unlimited students." },
+      { q: "Can parents view their child's data?", a: "Yes! Premium includes a dedicated mobile app for parents — attendance, results, and fees all in one place." },
+      { q: "Is the data secure?", a: "Absolutely! Bank-grade encryption, daily backups, and private server deployment are all available." },
+      { q: "Will training be provided?", a: "Yes! At the time of delivery we provide a 2-hour video training session and documentation. On-site training is also available with the Premium plan." },
     ],
   },
   {
@@ -169,10 +169,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Kya system HIPAA compliant hai?", a: "Haan, Premium aur Custom plans mein full data security, encryption, aur audit trails included hain." },
-      { q: "Multiple departments handle ho sakte hain?", a: "Bilkul! Cardiology, ortho, gynae — sab departments independently manage ho sakte hain ek dashboard se." },
-      { q: "Existing data import ho sakta hai?", a: "Haan, Excel/CSV format se existing patient records import karne ki facility milti hai." },
-      { q: "24/7 support milta hai?", a: "Premium mein 90 days, Custom mein 1 year 24/7 support. Hospital ke liye emergency support bhi available hai." },
+      { q: "Is the system HIPAA compliant?", a: "Yes, full data security, encryption, and audit trails are included in the Premium and Custom plans." },
+      { q: "Can multiple departments be managed?", a: "Absolutely! Cardiology, orthopaedics, gynaecology — all departments can be managed independently from a single dashboard." },
+      { q: "Can existing data be imported?", a: "Yes, existing patient records can be imported from Excel/CSV format." },
+      { q: "Is 24/7 support available?", a: "Premium includes 90 days and Custom includes 1 year of 24/7 support. Emergency support is also available for hospitals." },
     ],
   },
   {
@@ -215,10 +215,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Kitne products add kar sakte hain?", a: "Basic mein 100 products, Premium mein unlimited. Custom mein multi-vendor bhi possible hai." },
-      { q: "Kaunse payment methods supported hain?", a: "UPI, debit/credit cards, netbanking, EMI, wallets — Razorpay ke through sab kuch." },
-      { q: "Inventory automatically update hoti hai?", a: "Haan! Har order ke baad inventory auto-deduct hoti hai. Low stock alerts bhi milte hain." },
-      { q: "Kya mobile app bhi milegi?", a: "Custom plan mein Android + iOS app included hai. Basic/Premium mein PWA (progressive web app) milti hai." },
+      { q: "How many products can be added?", a: "Basic supports 100 products and Premium supports unlimited. A multi-vendor setup is also possible with the Custom plan." },
+      { q: "Which payment methods are supported?", a: "UPI, debit/credit cards, netbanking, EMI, and wallets — everything through Razorpay." },
+      { q: "Is inventory updated automatically?", a: "Yes! Inventory is auto-deducted after every order. Low stock alerts are also included." },
+      { q: "Is a mobile app available?", a: "Android + iOS app is included in the Custom plan. Basic and Premium include a PWA (Progressive Web App)." },
     ],
   },
   {
@@ -261,10 +261,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Booking engine ke liye extra monthly fees hain?", a: "Nahi! Ek baar payment karo aur booking engine lifetime aapka. Zero commission, zero monthly fees." },
-      { q: "MakeMyTrip/OYO se sync hoga?", a: "Custom plan mein channel manager integration available hai jo OTA platforms se sync karta hai." },
-      { q: "Kya guest khud booking modify/cancel kar sakte hain?", a: "Haan! Premium mein guest portal milta hai jahan woh booking manage kar sakte hain." },
-      { q: "Multi-property support hai?", a: "Custom plan mein multiple properties ek dashboard se manage ho sakti hain." },
+      { q: "Are there extra monthly fees for the booking engine?", a: "No! Pay once and the booking engine is yours for life. Zero commission, zero monthly fees." },
+      { q: "Will it sync with MakeMyTrip/OYO?", a: "A channel manager integration is available in the Custom plan that syncs with OTA platforms." },
+      { q: "Can guests modify or cancel bookings themselves?", a: "Yes! Premium includes a guest portal where guests can manage their bookings." },
+      { q: "Is multi-property support available?", a: "With the Custom plan, multiple properties can be managed from a single dashboard." },
     ],
   },
   {
@@ -307,10 +307,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Kitni properties add kar sakta hoon?", a: "Basic mein 50 properties, Premium mein unlimited. Custom mein multi-city bhi." },
-      { q: "Virtual tour kaise kaam karta hai?", a: "Premium mein 360° virtual tour iframe embed karne ki facility hai. Matterport/YouTube 360 videos support hote hain." },
-      { q: "Leads kaise track hote hain?", a: "Premium mein built-in CRM milta hai — sab inquiries ek jagah, follow-up reminders ke saath." },
-      { q: "Google Ads se integration hoti hai?", a: "Haan, Google Ads conversion tracking aur Analytics 4 integration included hai." },
+      { q: "How many properties can I add?", a: "Basic supports 50 properties and Premium supports unlimited. Multi-city listings are also possible with the Custom plan." },
+      { q: "How does the virtual tour work?", a: "Premium includes the ability to embed 360° virtual tour iframes. Matterport and YouTube 360 videos are both supported." },
+      { q: "How are leads tracked?", a: "Premium includes a built-in CRM — all inquiries in one place, with follow-up reminders." },
+      { q: "Is there Google Ads integration?", a: "Yes, Google Ads conversion tracking and Analytics 4 integration are included." },
     ],
   },
   {
@@ -353,10 +353,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Kya members online membership le sakte hain?", a: "Haan! Premium mein UPI, cards, netbanking se online payment milta hai." },
-      { q: "Class booking kaise kaam karta hai?", a: "Members apne preferred class aur time slot book kar sakte hain. Trainer ko bhi notification jaati hai." },
-      { q: "Mobile app bhi milega?", a: "Custom plan mein dedicated Android/iOS app bhi develop karte hain." },
-      { q: "Multiple trainers manage ho sakte hain?", a: "Haan! Har trainer ka alag profile, availability calendar aur booking manage hota hai." },
+      { q: "Can members purchase membership online?", a: "Yes! Premium supports online payment via UPI, cards, and netbanking." },
+      { q: "How does class booking work?", a: "Members can book their preferred class and time slot. The trainer also receives a notification." },
+      { q: "Is a mobile app available?", a: "A dedicated Android/iOS app is developed as part of the Custom plan." },
+      { q: "Can multiple trainers be managed?", a: "Yes! Each trainer gets a separate profile, availability calendar, and booking management." },
     ],
   },
   {
@@ -399,10 +399,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Apna content khud update kar sakta hoon?", a: "Haan! Premium mein simple content management system milta hai." },
-      { q: "Custom domain kaise connect karein?", a: "Hum aapko step-by-step guide denge. GoDaddy/Namecheap pe domain lena hai." },
-      { q: "Kya blog section hoga?", a: "Haan! Premium mein blog section included hai — articles, tutorials, updates likhne ke liye." },
-      { q: "Loading speed kaisi hogi?", a: "Next.js + image optimization se 90+ Lighthouse score guarantee karte hain." },
+      { q: "Can I update my own content?", a: "Yes! Premium includes a simple content management system." },
+      { q: "How do I connect a custom domain?", a: "We will provide you with a step-by-step guide. You can purchase a domain from GoDaddy or Namecheap." },
+      { q: "Will there be a blog section?", a: "Yes! A blog section is included in Premium — for writing articles, tutorials, and updates." },
+      { q: "How fast will the site load?", a: "We guarantee a 90+ Lighthouse score through Next.js and image optimization." },
     ],
   },
   {
@@ -445,10 +445,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "Barcode scanner support hai?", a: "Haan! Premium mein USB barcode scanner aur mobile camera scanner dono supported hain." },
-      { q: "Multiple warehouses manage ho sakte hain?", a: "Premium plan mein unlimited warehouses/locations ek dashboard se manage ho sakti hain." },
-      { q: "GST compliant reports milenge?", a: "Haan! GSTR-1, GSTR-3B ke liye ready-to-file reports automatically generate hoti hain." },
-      { q: "Existing data import kar sakte hain?", a: "Haan! Excel/CSV se bulk import supported hai. Migration support bhi milti hai." },
+      { q: "Is barcode scanner support available?", a: "Yes! Both USB barcode scanners and mobile camera scanners are supported in the Premium plan." },
+      { q: "Can multiple warehouses be managed?", a: "The Premium plan supports unlimited warehouses/locations managed from a single dashboard." },
+      { q: "Are GST-compliant reports available?", a: "Yes! Ready-to-file reports for GSTR-1 and GSTR-3B are automatically generated." },
+      { q: "Can existing data be imported?", a: "Yes! Bulk import from Excel/CSV is supported. Migration support is also available." },
     ],
   },
   {
@@ -491,10 +491,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "PF aur ESI automatically calculate hoti hai?", a: "Haan! Premium mein statutory deductions — PF, ESI, TDS — auto-calculate hoti hain as per current rules." },
-      { q: "Biometric machine se connect ho sakta hai?", a: "Haan! ZKTeco, eSSL jaise popular biometric devices ke saath integration milti hai." },
-      { q: "Salary slip employee ko kaise milegi?", a: "Ek click mein PDF salary slip generate hoti hai. Employee portal se khud download bhi kar sakte hain." },
-      { q: "Kitne employees handle kar sakta hai?", a: "Basic 100 tak, Premium 1000+ employees efficiently handle karta hai." },
+      { q: "Are PF and ESI calculated automatically?", a: "Yes! In Premium, statutory deductions — PF, ESI, TDS — are auto-calculated according to current rules." },
+      { q: "Can it connect to a biometric machine?", a: "Yes! Integration with popular biometric devices like ZKTeco and eSSL is available." },
+      { q: "How does an employee receive their salary slip?", a: "A PDF salary slip is generated in one click. Employees can also download it themselves from the employee portal." },
+      { q: "How many employees can it handle?", a: "Basic handles up to 100 employees and Premium handles 1,000+ employees efficiently." },
     ],
   },
   {
@@ -537,10 +537,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "WhatsApp se leads automatically follow up ho sakti hain?", a: "Haan! Premium mein WhatsApp Business API se auto-messages schedule kar sakte hain." },
-      { q: "Excel se leads import kar sakte hain?", a: "Haan! CSV/Excel se bulk import ek minute mein ho jata hai." },
-      { q: "Mobile pe bhi kaam karta hai?", a: "Premium mein Android/iOS app milti hai — field sales team ke liye perfect." },
-      { q: "Kitne users use kar sakte hain?", a: "Basic mein 5 users, Premium mein 25 users. Custom mein unlimited." },
+      { q: "Can leads be automatically followed up via WhatsApp?", a: "Yes! In Premium, auto-messages can be scheduled using the WhatsApp Business API." },
+      { q: "Can leads be imported from Excel?", a: "Yes! Bulk import from CSV/Excel is done in under a minute." },
+      { q: "Does it work on mobile?", a: "Premium includes an Android/iOS app — perfect for field sales teams." },
+      { q: "How many users can use it?", a: "Basic supports 5 users, Premium supports 25 users, and Custom supports unlimited users." },
     ],
   },
   {
@@ -583,10 +583,10 @@ export const PRODUCTS: Product[] = [
       },
     ],
     faqs: [
-      { q: "GST return file karne mein help milegi?", a: "Haan! GSTR-1 aur GSTR-3B ke liye ready reports milti hain jo directly upload ho sakti hain." },
-      { q: "Purane Tally data import ho sakta hai?", a: "Custom plan mein Tally migration support included hai." },
-      { q: "WhatsApp pe invoice bhej sakte hain?", a: "Haan! Ek click mein PDF invoice WhatsApp pe share ho jaati hai." },
-      { q: "Internet nahi ho to kaam karta hai?", a: "Custom plan mein offline mode available hai — data baad mein sync ho jaata hai." },
+      { q: "Will I get help filing GST returns?", a: "Yes! Ready reports for GSTR-1 and GSTR-3B are available that can be directly uploaded." },
+      { q: "Can old Tally data be imported?", a: "Tally migration support is included in the Custom plan." },
+      { q: "Can invoices be sent via WhatsApp?", a: "Yes! A PDF invoice can be shared on WhatsApp in one click." },
+      { q: "Does it work without internet?", a: "An offline mode is available in the Custom plan — data syncs automatically once back online." },
     ],
   },
 ];

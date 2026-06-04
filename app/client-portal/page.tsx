@@ -344,7 +344,7 @@ export default function ClientPortalPage() {
                     <label className={LABEL}>Email Address</label>
                     <input required type="email" value={loginForm.email}
                       onChange={e => setLoginForm(f => ({ ...f, email: e.target.value }))}
-                      placeholder="aap@company.com" className={INPUT} />
+                      placeholder="you@company.com" className={INPUT} />
                   </div>
                   <div>
                     <div className="flex justify-between mb-1.5">
@@ -375,7 +375,7 @@ export default function ClientPortalPage() {
                   <Link href="/contact" className="btn-outline w-full justify-center text-sm">
                     Pehle Product Purchase Karein <ArrowRight size={14} />
                   </Link>
-                  <a href="https://wa.me/919942000413?text=Mujhe client portal access chahiye" target="_blank" rel="noopener noreferrer"
+                  <a href="https://wa.me/919942000413?text=I need client portal access" target="_blank" rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
                     <MessageCircle size={13} style={{ color: "#25D366" }} /> Need help? WhatsApp us
                   </a>
@@ -452,7 +452,7 @@ export default function ClientPortalPage() {
                           {notifLoading ? (
                             <div className="p-6 flex justify-center"><Loader2 size={20} className="animate-spin text-[var(--color-gold)]" /></div>
                           ) : notifications.length === 0 ? (
-                            <p className="p-6 text-center text-xs text-[var(--color-text-muted)]">Koi notification nahi</p>
+                            <p className="p-6 text-center text-xs text-[var(--color-text-muted)]">No notifications</p>
                           ) : notifications.map(n => (
                             <div key={n.id} className={`px-4 py-3 border-b border-[var(--color-border)] last:border-0 flex gap-3 ${!n.isRead ? "bg-[var(--color-gold)]/[0.03]" : ""}`}>
                               <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: n.color }} />
@@ -582,7 +582,7 @@ export default function ClientPortalPage() {
                 ) : (
                   <div className="card p-10 text-center text-[var(--color-text-muted)]">
                     <Package size={32} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Koi active order nahi hai</p>
+                    <p className="text-sm">No active orders</p>
                     <Link href="/products" className="btn-gold inline-flex items-center gap-2 mt-4 text-sm">Browse Products <ArrowRight size={14} /></Link>
                   </div>
                 )}
@@ -655,7 +655,7 @@ export default function ClientPortalPage() {
                       </div>
                       <div>
                         <h2 className="font-display font-bold text-xl text-[var(--color-text)]">Branding Details</h2>
-                        <p className="text-xs text-[var(--color-text-secondary)]">Yeh details aapki website mein apply ki jayengi</p>
+                        <p className="text-xs text-[var(--color-text-secondary)]">These details will be applied to your website</p>
                       </div>
                     </div>
 
@@ -666,7 +666,7 @@ export default function ClientPortalPage() {
                         </div>
                         <h3 className="font-display font-bold text-xl text-[var(--color-text)] mb-2">Branding Submitted!</h3>
                         <p className="text-sm text-[var(--color-text-secondary)] mb-6 max-w-sm mx-auto">
-                          Hamaari team ne aapki details receive kar li hain. 24 hours ke andar apply kar denge.
+                          Our team has received your details. We'll apply them within 24 hours.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                           <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer" className="btn-gold">
@@ -809,7 +809,7 @@ export default function ClientPortalPage() {
                 ) : orders.length === 0 ? (
                   <div className="card p-10 text-center text-[var(--color-text-muted)]">
                     <Package size={32} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm mb-4">Koi order nahi mila</p>
+                    <p className="text-sm mb-4">No orders found</p>
                     <Link href="/products" className="btn-gold inline-flex items-center gap-2 text-sm">Browse Products <ArrowRight size={14} /></Link>
                   </div>
                 ) : orders.map(order => {

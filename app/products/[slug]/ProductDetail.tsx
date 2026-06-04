@@ -130,7 +130,7 @@ export function ProductDetail({ product, related }: { product: Product; related:
     try {
       // 1. Load Razorpay script
       const loaded = await loadRazorpayScript();
-      if (!loaded) { setPayError("Payment gateway load nahi hua. Please refresh karein."); setPaying(false); return; }
+      if (!loaded) { setPayError("Payment gateway failed to load. Please refresh."); setPaying(false); return; }
 
       // 2. Create Razorpay order on server
       const orderRes = await fetch("/api/payment/create-order", {
@@ -139,7 +139,7 @@ export function ProductDetail({ product, related }: { product: Product; related:
         body: JSON.stringify({ amount, productSlug: product.slug, plan: currentPlan.name, addons: addonsSelected, ...form }),
       });
       const orderData = await orderRes.json();
-      if (!orderRes.ok) { setPayError(orderData.error || "Order create nahi hua."); setPaying(false); return; }
+      if (!orderRes.ok) { setPayError(orderData.error || "Order could not be created."); setPaying(false); return; }
 
       // 3. Open Razorpay checkout
       const rzp = new window.Razorpay({
@@ -171,7 +171,7 @@ export function ProductDetail({ product, related }: { product: Product; related:
             setSubmitted(true);
             setTimeout(() => router.push("/client-portal"), 3000);
           } else {
-            setPayError("Payment verify nahi hua. Support se contact karein.");
+            setPayError("Payment could not be verified. Please contact support.");
           }
           setPaying(false);
         },
@@ -518,9 +518,9 @@ export function ProductDetail({ product, related }: { product: Product; related:
                   <p className="text-sm font-mono font-semibold text-[var(--color-gold)] mb-2">Order #{submittedOrderNo}</p>
                 )}
                 <p className="text-[var(--color-text-secondary)] mb-2">
-                  Aapka order confirm ho gaya hai. Client portal pe redirect ho raha hai...
+                  Your order is confirmed! Redirecting to client portal...
                 </p>
-                <p className="text-xs text-[var(--color-text-muted)] mb-6">Login details aapke email pe bhej diye gaye hain.</p>
+                <p className="text-xs text-[var(--color-text-muted)] mb-6">Login details have been sent to your email.</p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Link href="/client-portal" className="btn-gold">
                     Client Portal <ArrowRight size={16} />
@@ -536,7 +536,7 @@ export function ProductDetail({ product, related }: { product: Product; related:
                   </h2>
                   <p className="text-[var(--color-text-secondary)] text-sm">
                     {product.plans[activePlan].price === "Quote"
-                      ? "Team aapko custom price degi"
+                      ? "Our team will provide you a custom quote"
                       : <>
                           Plan: <strong className="text-[var(--color-gold)]">{product.plans[activePlan].price}</strong>
                           {addonTotal > 0 && <> + Add-ons: <strong className="text-[var(--color-gold)]">${addonTotal}</strong> = <strong className="text-[var(--color-gold)]">${(planPriceMap[product.plans[activePlan].name] || 0) + addonTotal} total</strong></>}
