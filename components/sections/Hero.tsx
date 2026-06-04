@@ -7,8 +7,8 @@ import { useState, useEffect } from "react";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-// YouTube video ID — KVL TECH business demo reel
-const DEMO_VIDEO_ID = "RpOOOlwHIX4";
+// YouTube video ID — business automation demo (replace with KVL TECH's own video later)
+const DEMO_VIDEO_ID = "UL76TS335Vs";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
