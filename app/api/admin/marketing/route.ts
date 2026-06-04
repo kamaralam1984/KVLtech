@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Aggregate stats from campaigns
-    const emailSent   = campaigns.filter(c => c.type === "EMAIL").reduce((s, c) => s + c.sentCount, 0);
-    const waSent      = campaigns.filter(c => c.type === "WHATSAPP").reduce((s, c) => s + c.sentCount, 0);
-    const smsSent     = campaigns.filter(c => c.type === "SMS").reduce((s, c) => s + c.sentCount, 0);
+    const emailSent   = campaigns.filter((c: { type: string; sentCount: number }) => c.type === "EMAIL").reduce((s: number, c: { sentCount: number }) => s + c.sentCount, 0);
+    const waSent      = campaigns.filter((c: { type: string; sentCount: number }) => c.type === "WHATSAPP").reduce((s: number, c: { sentCount: number }) => s + c.sentCount, 0);
+    const smsSent     = campaigns.filter((c: { type: string; sentCount: number }) => c.type === "SMS").reduce((s: number, c: { sentCount: number }) => s + c.sentCount, 0);
     const conversions = orderCount;
 
     const leadCountMap: Record<string, number> = {};
