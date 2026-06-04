@@ -173,18 +173,21 @@ export function Navbar() {
             <Link href="/contact" className="btn-gold text-sm py-2 px-5 !text-black !font-bold">
               {t.nav_book_demo}
             </Link>
-            <Link
-              href="/login"
-              className="text-sm font-medium px-4 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/signup"
-              className="text-sm font-medium px-4 py-2 rounded-xl bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy)]/80 transition-all"
-            >
-              Sign Up
-            </Link>
+            <div className="flex items-center rounded-xl border border-[var(--color-border)] overflow-hidden text-sm font-medium">
+              <Link
+                href="/login"
+                className="px-4 py-2 text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] transition-all"
+              >
+                Sign In
+              </Link>
+              <span className="w-px h-5 bg-[var(--color-border)]" />
+              <Link
+                href="/signup"
+                className="px-4 py-2 bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy)]/80 transition-all"
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
 
           {/* Mobile hamburger */}
