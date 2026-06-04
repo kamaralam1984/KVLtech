@@ -63,7 +63,7 @@ export const EMAIL_TEMPLATES = {
       <div class="benefit-item">&#x2705; Aapki company branding ke saath fully customized</div>
       <div class="benefit-item">&#x2705; 1,200+ satisfied clients across India</div>
       <div class="benefit-item">&#x2705; Lifetime technical support</div>
-      <div class="benefit-item">&#x2705; 100% money-back guarantee</div>
+      <div class="benefit-item">&#x2705; 100% quality guaranteed</div>
     </div>
 
     <p style="text-align:center">

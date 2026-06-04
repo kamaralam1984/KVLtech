@@ -96,7 +96,7 @@ ONLY output subject line + email body. No extra explanation.`;
     // Template fallback
     return NextResponse.json({
       subject: `${businessName} ke liye professional website — KVL TECH Special Offer`,
-      body: `Namaste ${ownerName || businessName} Ji,\n\nMain Kavya hoon, KVL TECH se. Aapka ${businessName} ${city} mein dekha — bahut achha ${businessType} hai!\n\nLekin kya aapka ${businessType} online hai? ${city} mein aapke competitors already digital ho gaye hain. Professional website se daily naye customers milte hain.\n\nKVL TECH mein ${businessType} website sirf ₹12,999 mein — 3-5 din mein ready, aapke naam ke saath!\n\n✅ Premium plan mein FREE Domain + Hosting (1 year)\n✅ 1,200+ satisfied clients\n✅ 100% money-back guarantee\n\nAaj hi reply karein ya call karein: +91 9942000413\n\nKavya\nKVL TECH`,
+      body: `Namaste ${ownerName || businessName} Ji,\n\nMain Kavya hoon, KVL TECH se. Aapka ${businessName} ${city} mein dekha — bahut achha ${businessType} hai!\n\nLekin kya aapka ${businessType} online hai? ${city} mein aapke competitors already digital ho gaye hain. Professional website se daily naye customers milte hain.\n\nKVL TECH mein ${businessType} website sirf ₹12,999 mein — 3-5 din mein ready, aapke naam ke saath!\n\n✅ Premium plan mein FREE Domain + Hosting (1 year)\n✅ 1,200+ satisfied clients\n✅ 100% quality guaranteed\n\nAaj hi reply karein ya call karein: +91 9942000413\n\nKavya\nKVL TECH`,
       provider: 'template'
     });
   }

@@ -231,7 +231,7 @@ export default function CareersPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
 
         {/* ── Hero ── */}
         <section className="py-20 lg:py-28 bg-[var(--color-bg-secondary)] relative overflow-hidden">

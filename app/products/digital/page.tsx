@@ -172,7 +172,7 @@ export default function DigitalAssetsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
 
         {/* Hero Section */}
         <section className="relative bg-[var(--color-bg)] overflow-hidden py-24 md:py-32">

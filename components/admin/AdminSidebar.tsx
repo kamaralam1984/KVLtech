@@ -38,24 +38,23 @@ export function AdminSidebar() {
   const [openTickets, setOpenTickets] = useState(0);
 
   useEffect(() => {
+    if (pathname === "/admin/login") return;
+
     fetch("/api/admin/me", { credentials: "include" })
-      .then(r => r.json())
-      .then(d => { if (d.admin) setAdmin(d.admin); })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.admin) setAdmin(d.admin); })
       .catch(() => {});
 
-    fetch("/api/admin/orders?status=PAYMENT_PENDING", {
-      credentials: "include",
-      headers: { Authorization: "Bearer admin-bypass" },
-    })
-      .then(r => r.json())
-      .then(d => setPendingOrders(d.orders?.length || 0))
+    fetch("/api/admin/orders?status=PAYMENT_PENDING", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setPendingOrders(d?.orders?.length || 0))
       .catch(() => {});
 
     fetch("/api/admin/support?status=OPEN", { credentials: "include" })
-      .then(r => r.json())
-      .then(d => setOpenTickets(d.tickets?.length || 0))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setOpenTickets(d?.tickets?.length || 0))
       .catch(() => {});
-  }, []);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST", credentials: "include" });

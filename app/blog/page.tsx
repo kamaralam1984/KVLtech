@@ -37,7 +37,7 @@ export default function BlogPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
         {/* Hero */}
         <section className="py-16 bg-[var(--color-bg-secondary)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

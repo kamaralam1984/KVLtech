@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Menu, X, ChevronDown, Search, Phone, ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
@@ -99,12 +98,12 @@ export function Navbar() {
 
   return (
     <>
+    <div className="fixed left-0 right-0 z-50" style={{ top: '40px' }}>
     <motion.header
-      initial={{ y: -80, opacity: 0 }}
+      initial={{ y: -40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      style={{ top: 'var(--banner-h, 0px)' }}
-      className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className={`transition-all duration-300 ${
         scrolled
           ? "bg-[var(--color-bg)]/90 backdrop-blur-xl shadow-[0_2px_20px_rgba(0,0,0,0.08)] border-b border-[var(--color-border)]"
           : "bg-transparent"
@@ -112,26 +111,6 @@ export function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-18">
-          {/* Logo */}
-          <Link href="/" className="flex items-center shrink-0">
-            <Image
-              src="/kvl-tech-logo-tight.png"
-              alt="KVL TECH — Empowering Your Digital Future"
-              width={220}
-              height={100}
-              className="h-[50px] w-auto object-contain dark:hidden"
-              priority
-            />
-            <Image
-              src="/kvl-tech-logo-white.png"
-              alt="KVL TECH — Empowering Your Digital Future"
-              width={220}
-              height={100}
-              className="h-[50px] w-auto object-contain hidden dark:block"
-              priority
-            />
-          </Link>
-
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-1">
             {navItems.map((item) => (
@@ -195,10 +174,16 @@ export function Navbar() {
               {t.nav_book_demo}
             </Link>
             <Link
-              href="/client-portal"
+              href="/login"
               className="text-sm font-medium px-4 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all"
             >
-              {t.nav_dashboard}
+              Sign In
+            </Link>
+            <Link
+              href="/signup"
+              className="text-sm font-medium px-4 py-2 rounded-xl bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy)]/80 transition-all"
+            >
+              Sign Up
             </Link>
           </div>
 
@@ -240,8 +225,11 @@ export function Navbar() {
                 <Link href="/contact" className="btn-gold text-sm text-center !text-black !font-bold" onClick={() => setMobileOpen(false)}>
                   {t.nav_book_demo}
                 </Link>
-                <Link href="/client-portal" className="btn-outline text-sm text-center" onClick={() => setMobileOpen(false)}>
-                  {t.nav_dashboard}
+                <Link href="/login" className="btn-outline text-sm text-center" onClick={() => setMobileOpen(false)}>
+                  Sign In
+                </Link>
+                <Link href="/signup" className="text-sm text-center px-4 py-2.5 rounded-xl bg-[var(--color-navy)] text-white font-medium" onClick={() => setMobileOpen(false)}>
+                  Sign Up Free
                 </Link>
               </div>
             </div>
@@ -249,6 +237,7 @@ export function Navbar() {
         )}
       </AnimatePresence>
     </motion.header>
+    </div>
 
     {/* ── Search Modal ── */}
     <AnimatePresence>

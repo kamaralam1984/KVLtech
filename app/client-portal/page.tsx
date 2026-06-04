@@ -73,11 +73,11 @@ const STATUS_STEP: Record<string, number> = {
 const STEPS = ["Payment Confirmed", "Design Started", "Development", "Review & Testing", "Delivered"];
 
 const FAQS = [
-  { q: "Logo kaise bhejein?", a: "Apna logo PNG ya SVG format mein WhatsApp +91 9942000413 pe bhejein. Min 500×500px preferred." },
-  { q: "Website kab live hogi?", a: "Premium plan: 1-2 din, Basic plan: 3-5 din. Live karne ke liye domain aur hosting details provide karni hogi." },
-  { q: "Delivery ke baad content update kaise karein?", a: "Hum ek easy admin panel dete hain jisse aap khud content update kar sakte hain. Training bhi included." },
-  { q: "Agar project mein koi issue aaye?", a: "Premium: 90 din free support. Basic: 30 din free support. WhatsApp ya email se contact karein." },
-  { q: "Domain aur hosting kahan se lein?", a: "Hum Hostinger ya GoDaddy recommend karte hain. Chahein toh hum kharid ke setup bhi kar sakte hain." },
+  { q: "How do I send my logo?", a: "Send your logo in PNG or SVG format via WhatsApp +91 9942000413. Min 500×500px preferred." },
+  { q: "When will my website go live?", a: "Premium plan: 1-2 days, Basic plan: 3-5 days. You will need to provide domain and hosting details to go live." },
+  { q: "How do I update content after delivery?", a: "We provide an easy admin panel so you can update content yourself. Training is included." },
+  { q: "What if there is an issue with my project?", a: "Premium: 90 days free support. Basic: 30 days free support. Contact us via WhatsApp or email." },
+  { q: "Where should I buy domain and hosting?", a: "We recommend Hostinger or GoDaddy. We can also purchase and set it up for you if needed." },
 ];
 
 const INPUT = "w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-tertiary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] focus:ring-2 focus:ring-[var(--color-gold)]/10 transition-all placeholder:text-[var(--color-text-muted)]";
@@ -327,7 +327,7 @@ export default function ClientPortalPage() {
                     <Shield size={30} className="text-[var(--color-gold)]" />
                   </div>
                   <h1 className="font-display font-bold text-2xl text-[var(--color-text)] mb-1">Client Portal</h1>
-                  <p className="text-sm text-[var(--color-text-secondary)]">Apna project track karein, branding submit karein</p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">Track your project, submit branding details</p>
                 </div>
 
                 <AnimatePresence>
@@ -377,7 +377,7 @@ export default function ClientPortalPage() {
                   </Link>
                   <a href="https://wa.me/919942000413?text=Mujhe client portal access chahiye" target="_blank" rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
-                    <MessageCircle size={13} style={{ color: "#25D366" }} /> Help chahiye? WhatsApp karein
+                    <MessageCircle size={13} style={{ color: "#25D366" }} /> Need help? WhatsApp us
                   </a>
                 </div>
               </div>
@@ -392,8 +392,7 @@ export default function ClientPortalPage() {
   /* ─── DASHBOARD ─── */
   return (
     <>
-      <Navbar />
-      <main className="pt-16 min-h-screen bg-[var(--color-bg-secondary)]">
+      <main className="min-h-screen bg-[var(--color-bg-secondary)]" style={{ paddingTop: '40px' }}>
 
         {/* Top bar */}
         <div className="bg-[var(--color-navy)] border-b border-white/5">
@@ -681,9 +680,9 @@ export default function ClientPortalPage() {
                         {/* Order selection */}
                         {orders.length > 0 && (
                           <div>
-                            <label className={LABEL}>Related Order *</label>
-                            <select required value={branding.orderId} onChange={e => setBranding(b => ({ ...b, orderId: e.target.value }))} className={INPUT}>
-                              <option value="">Select your order</option>
+                            <label className={LABEL}>Related Order</label>
+                            <select value={branding.orderId} onChange={e => setBranding(b => ({ ...b, orderId: e.target.value }))} className={INPUT}>
+                              <option value="">Select your order (optional)</option>
                               {orders.filter(o => o.status !== "CANCELLED").map(o => (
                                 <option key={o.id} value={o.id}>#{o.orderNumber} — {o.product.name}</option>
                               ))}
@@ -694,7 +693,7 @@ export default function ClientPortalPage() {
                           <div>
                             <label className={LABEL}>Company Name *</label>
                             <input required value={branding.companyName} onChange={e => setBranding(b => ({ ...b, companyName: e.target.value }))}
-                              placeholder="Aapki company ka naam" className={INPUT} />
+                              placeholder="Your company name" className={INPUT} />
                           </div>
                           <div>
                             <label className={LABEL}>Tagline / Slogan</label>
@@ -755,7 +754,7 @@ export default function ClientPortalPage() {
                             <option>Professional & Clean (Inter)</option>
                             <option>Elegant & Serif (Playfair Display)</option>
                             <option>Friendly & Rounded (Nunito)</option>
-                            <option>No preference — team decide kare</option>
+                            <option>No preference — let the team decide</option>
                           </select>
                         </div>
                         <div>
@@ -765,7 +764,7 @@ export default function ClientPortalPage() {
                               <Upload size={18} className="text-[var(--color-gold)]" />
                             </div>
                             <div>
-                              <p className="text-sm font-semibold text-[var(--color-text)]">Logo WhatsApp pe bhejein</p>
+                              <p className="text-sm font-semibold text-[var(--color-text)]">Send Logo via WhatsApp</p>
                               <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">PNG / SVG format · Min 500×500px</p>
                               <a href="https://wa.me/919942000413" className="text-xs text-[var(--color-gold)] hover:underline mt-1 inline-flex items-center gap-1" target="_blank" rel="noopener noreferrer">
                                 <MessageCircle size={11} /> +91 9942000413
@@ -776,7 +775,7 @@ export default function ClientPortalPage() {
                         <div>
                           <label className={LABEL}>Additional Notes</label>
                           <textarea rows={3} value={branding.logoNote} onChange={e => setBranding(b => ({ ...b, logoNote: e.target.value }))}
-                            placeholder="Koi specific requirement? Reference websites, style preferences..." className={INPUT + " resize-none"} />
+                            placeholder="Any specific requirements? Reference websites, style preferences..." className={INPUT + " resize-none"} />
                         </div>
 
                         {brandingError && (
@@ -956,7 +955,7 @@ export default function ClientPortalPage() {
 
                     <div className="card p-6">
                       <h2 className="font-display font-bold text-lg text-[var(--color-text)] mb-1">Raise a Ticket</h2>
-                      <p className="text-xs text-[var(--color-text-secondary)] mb-5">Apni problem describe karein — 24 hrs mein reply milegi</p>
+                      <p className="text-xs text-[var(--color-text-secondary)] mb-5">Describe your issue — we reply within 24 hours</p>
 
                       {ticketSent ? (
                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
@@ -1010,7 +1009,7 @@ export default function ClientPortalPage() {
                           <div>
                             <label className={LABEL}>Describe Your Issue *</label>
                             <textarea required rows={4} value={ticket.message} onChange={e => setTicket(t => ({ ...t, message: e.target.value }))}
-                              placeholder="Apni problem detail mein batayein..." className={INPUT + " resize-none"} />
+                              placeholder="Describe your issue in detail..." className={INPUT + " resize-none"} />
                           </div>
                           {ticketError && <p className="text-sm text-red-500 flex items-center gap-2"><AlertCircle size={14} /> {ticketError}</p>}
                           <button type="submit" disabled={ticketLoading}

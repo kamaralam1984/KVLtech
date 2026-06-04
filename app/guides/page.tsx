@@ -195,7 +195,7 @@ export default function GuidesPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
         {/* Hero Section */}
         <section className="bg-[var(--color-bg)] py-20 md:py-28 relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">

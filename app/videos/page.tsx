@@ -207,7 +207,7 @@ export default function VideosPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
         {/* ─── Hero ─── */}
         <section className="bg-[var(--color-bg)] py-24 px-4 overflow-hidden relative">
           <div className="absolute inset-0 pointer-events-none">

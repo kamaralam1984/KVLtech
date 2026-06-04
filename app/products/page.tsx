@@ -38,7 +38,7 @@ export default function ProductsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
         {/* Hero */}
         <section className="py-16 lg:py-20 bg-[var(--color-bg-secondary)] relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
@@ -47,8 +47,8 @@ export default function ProductsPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="max-w-2xl mx-auto text-center mb-10">
               <div className="flex justify-center mb-6">
-                <img src="/kvl-tech-logo-tight.png" alt="KVL TECH" className="h-10 w-auto object-contain dark:hidden" />
-                <img src="/kvl-tech-logo-white.png" alt="KVL TECH" className="h-10 w-auto object-contain hidden dark:block" />
+                <img src="/kvl-tech-logo-tight.png" alt="KVL TECH" className="h-[60px] w-auto object-contain dark:hidden" />
+                <img src="/kvl-tech-logo-white.png" alt="KVL TECH" className="h-[60px] w-auto object-contain hidden dark:block" />
               </div>
               <div className="section-badge mx-auto">Our Products</div>
               <h1 className="font-display font-bold text-4xl sm:text-5xl text-[var(--color-text)] mb-4 leading-tight">

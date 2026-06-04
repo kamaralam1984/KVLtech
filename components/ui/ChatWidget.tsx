@@ -216,14 +216,15 @@ export function ChatWidget() {
     setLoading(true);
 
     try {
-      const allMessages = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
+      // Last 6 messages as history (excluding the new userMsg already being sent)
+      const history = messages.slice(-6).map(m => ({ role: m.role, content: m.content }));
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: allMessages, sessionId, leadInfo: leadInfo.phone ? leadInfo : undefined }),
+        body: JSON.stringify({ message: text, history, sessionId, leadInfo: leadInfo.phone ? leadInfo : undefined }),
       });
-      const data = await res.json() as { content: string; fallback?: boolean };
-      const aiText = data.content || t.error_try_again;
+      const data = await res.json() as { reply: string; content?: string; fallback?: boolean };
+      const aiText = data.reply || data.content || t.error_try_again;
 
       let qr: string[] | undefined;
       const detectedNow = detected || currentInterest;
@@ -370,7 +371,7 @@ export function ChatWidget() {
             exit={{ opacity: 0, y: 30, scale: 0.92 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="fixed bottom-24 right-6 z-50 w-[360px] sm:w-[390px] flex flex-col rounded-2xl overflow-hidden border border-[var(--color-border)]"
-            style={{ maxHeight: minimized ? "64px" : "580px", boxShadow: "0 24px 80px rgba(0,0,0,0.28), 0 0 0 1px rgba(201,162,39,0.15)" }}
+            style={{ maxHeight: minimized ? "64px" : "calc(100dvh - 5rem - 6rem)", boxShadow: "0 24px 80px rgba(0,0,0,0.28), 0 0 0 1px rgba(201,162,39,0.15)" }}
           >
             {/* Header */}
             <div
@@ -409,7 +410,7 @@ export function ChatWidget() {
             {!minimized && (
               <>
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--color-bg)] min-h-0" style={{ maxHeight: "360px" }}>
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--color-bg)] min-h-0">
                   {messages.map((msg, i) => (
                     <div key={i}>
                       <div className={`flex gap-2.5 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>

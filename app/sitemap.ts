@@ -3,6 +3,12 @@ import { PRODUCTS } from "@/lib/products";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || "https://kvlbusinesssolutions.com";
 
+const CITY_SLUGS = [
+  "mumbai", "delhi", "bangalore", "hyderabad", "chennai",
+  "pune", "kolkata", "ahmedabad", "jaipur", "surat",
+  "lucknow", "noida", "gurgaon", "chandigarh", "indore",
+];
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages = [
     { url: BASE, priority: 1.0, changeFrequency: "weekly" as const },
@@ -20,7 +26,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly" as const,
   }));
 
-  return [...staticPages, ...productPages].map(p => ({
+  const cityPages = CITY_SLUGS.map(city => ({
+    url: `${BASE}/city/${city}`,
+    priority: 0.8,
+    changeFrequency: "monthly" as const,
+  }));
+
+  return [...staticPages, ...productPages, ...cityPages].map(p => ({
     url: p.url,
     lastModified: new Date(),
     changeFrequency: p.changeFrequency,

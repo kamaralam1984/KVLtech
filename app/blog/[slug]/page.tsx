@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, notFound } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -177,29 +177,12 @@ export default function BlogPostPage() {
   const slug = params?.slug as string;
   const post = POSTS.find(p => p.slug === slug);
 
-  if (!post) {
-    return (
-      <>
-        <Navbar />
-        <main className="pt-16 min-h-[80vh] flex items-center justify-center">
-          <div className="text-center px-4">
-            <p className="text-6xl mb-4">📄</p>
-            <h1 className="font-display font-bold text-2xl text-[var(--color-text)] mb-3">Article Not Found</h1>
-            <p className="text-[var(--color-text-secondary)] mb-6">Yeh article abhi available nahi hai.</p>
-            <Link href="/blog" className="btn-gold inline-flex items-center gap-2">
-              <ArrowLeft size={16} /> Back to Blog
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </>
-    );
-  }
+  if (!post) notFound();
 
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
         {/* Hero */}
         <section className="relative bg-[var(--color-bg-secondary)]">
           <div className="h-64 sm:h-80 lg:h-96 relative overflow-hidden">

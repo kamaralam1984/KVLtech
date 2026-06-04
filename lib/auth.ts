@@ -32,9 +32,6 @@ export function requireAdmin(req: NextRequest) {
   const auth = req.headers.get("authorization");
   const token = auth?.startsWith("Bearer ") ? auth.slice(7) : req.cookies.get("kvl_admin_token")?.value || null;
   if (!token) return null;
-  // Dev bypass
-  if (process.env.NODE_ENV !== "production" && token === "admin-bypass")
-    return { id: "dev", email: "admin@kvlbusinesssolutions.com", type: "admin" };
   const user = verifyToken(token);
   if (!user || user.type !== "admin") return null;
   return user;

@@ -30,7 +30,7 @@ export default function PortfolioPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
         {/* Hero */}
         <section className="py-16 bg-[var(--color-bg-secondary)] relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-[var(--color-gold)]/5 blur-[80px] pointer-events-none" />

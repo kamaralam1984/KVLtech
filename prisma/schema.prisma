@@ -218,7 +218,7 @@ enum PaymentStatus {
 // ─────────────────────────────────────────────
 model BrandingSubmission {
   id             String           @id @default(cuid())
-  orderId        String           @unique
+  orderId        String?          @unique
   clientId       String
   companyName    String
   tagline        String?
@@ -236,8 +236,8 @@ model BrandingSubmission {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  order  Order  @relation(fields: [orderId], references: [id])
-  client Client @relation(fields: [clientId], references: [id])
+  order  Order?  @relation(fields: [orderId], references: [id])
+  client Client  @relation(fields: [clientId], references: [id])
 
   @@map("branding_submissions")
 }

@@ -218,7 +218,7 @@ export default function AutomationPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
         {/* Hero Section */}
         <section className="bg-[var(--color-bg)] py-24 px-4 overflow-hidden relative">
           <div className="absolute inset-0 pointer-events-none">
@@ -890,7 +890,7 @@ export default function AutomationPage() {
                 {[
                   "No credit card required",
                   "Setup in 2-3 business days",
-                  "30-day money-back guarantee",
+                  "expert support included",
                 ].map((item) => (
                   <span key={item} className="flex items-center gap-2">
                     <CheckCircle2

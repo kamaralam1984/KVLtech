@@ -248,7 +248,7 @@ export default function AISolutionsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
 
         {/* Hero Section */}
         <section className="bg-[var(--color-bg)] relative overflow-hidden">

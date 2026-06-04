@@ -192,14 +192,32 @@ async function callAI(messages: {role: string, content: string}[], systemPrompt:
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, sessionId, leadInfo } = body as {
-      messages: { role: "user" | "assistant"; content: string }[];
-      sessionId?: string;
-      leadInfo?: { name?: string; phone?: string; email?: string; interest?: string };
-    };
 
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ content: FALLBACKS[0] });
+    // Support both input shapes:
+    //   New: { message: string, history: {role, content}[] }
+    //   Legacy: { messages: {role, content}[], sessionId?, leadInfo? }
+    let messages: { role: "user" | "assistant"; content: string }[];
+    let sessionId: string | undefined;
+    let leadInfo: { name?: string; phone?: string; email?: string; interest?: string } | undefined;
+
+    if (typeof body.message === "string") {
+      // New format: { message, history }
+      const history: { role: "user" | "assistant"; content: string }[] = Array.isArray(body.history)
+        ? body.history
+        : [];
+      messages = [...history, { role: "user", content: body.message }];
+      sessionId = body.sessionId;
+      leadInfo = body.leadInfo;
+    } else {
+      // Legacy format: { messages, sessionId, leadInfo }
+      messages = Array.isArray(body.messages) ? body.messages : [];
+      sessionId = body.sessionId;
+      leadInfo = body.leadInfo;
+    }
+
+    if (messages.length === 0) {
+      const fallbackText = FALLBACKS[0];
+      return NextResponse.json({ reply: fallbackText });
     }
 
     // Save lead to DB when phone collected
@@ -228,7 +246,7 @@ export async function POST(request: NextRequest) {
     // Only call AI when: message is complex OR conversation is 3+ turns deep
     const keywordReply = smartFallback(lastMsg);
     if (keywordReply && msgCount <= 2) {
-      return NextResponse.json({ content: keywordReply, fallback: true });
+      return NextResponse.json({ reply: keywordReply, fallback: true });
     }
 
     const hasAnyKey =
@@ -239,28 +257,22 @@ export async function POST(request: NextRequest) {
 
     if (!hasAnyKey) {
       // No API keys — use keyword match or generic fallback
-      return NextResponse.json({
-        content: keywordReply || FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)],
-        fallback: true,
-      });
+      const fallbackText = keywordReply || FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+      return NextResponse.json({ reply: fallbackText, fallback: true });
     }
 
     // Multi-model AI call with automatic failover
     try {
-      const content = await callAI(messages, SYSTEM_PROMPT);
-      return NextResponse.json({ content });
+      const text = await callAI(messages, SYSTEM_PROMPT);
+      return NextResponse.json({ reply: text });
     } catch {
       // All AI providers failed — use keyword or generic fallback
-      return NextResponse.json({
-        content: keywordReply || FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)],
-        fallback: true,
-      });
+      const fallbackText = keywordReply || FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+      return NextResponse.json({ reply: fallbackText, fallback: true });
     }
   } catch (error: unknown) {
     console.error("Chat API error:", error);
-    return NextResponse.json({
-      content: FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)],
-      fallback: true,
-    });
+    const fallbackText = FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+    return NextResponse.json({ reply: fallbackText, fallback: true });
   }
 }

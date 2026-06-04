@@ -227,7 +227,7 @@ export default function CRMSolutionsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
 
         {/* Hero */}
         <section className="bg-[var(--color-bg)] py-24 px-4 overflow-hidden relative">

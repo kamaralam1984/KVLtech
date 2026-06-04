@@ -233,7 +233,7 @@ const faqs = [
   {
     question: "What if I am not satisfied with the website?",
     answer:
-      "We offer a 30-day money-back guarantee. If the delivered website does not match the agreed requirements or has unfixable issues within the support window, we will issue a full refund. We stand behind the quality of our work — your satisfaction is our priority.",
+      "We offer a expert support included. If the delivered website does not match the agreed requirements or has unfixable issues within the support window, we will issue a full refund. We stand behind the quality of our work — your satisfaction is our priority.",
   },
 ];
 
@@ -1105,7 +1105,7 @@ export default function WebsiteTemplatesPage() {
                 >
                   Join 5,000+ businesses who already trust KVL Tech to deliver
                   fast, professional, code-owned websites. Protected by our
-                  30-day money-back guarantee — zero risk to you.
+                  expert support included — zero risk to you.
                 </motion.p>
                 <motion.div
                   className="flex flex-col sm:flex-row gap-4 justify-center"
@@ -1124,7 +1124,7 @@ export default function WebsiteTemplatesPage() {
                 >
                   {[
                     { icon: Clock, text: "24-hour delivery" },
-                    { icon: Shield, text: "30-day money-back" },
+                    { icon: Shield, text: "Expert support included" },
                     { icon: Code2, text: "Full source code" },
                   ].map((item) => {
                     const Icon = item.icon;

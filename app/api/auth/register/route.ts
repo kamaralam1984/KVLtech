@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { signToken } from "@/lib/auth";
+import { sendWelcomeSequenceEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,6 +28,11 @@ export async function POST(req: NextRequest) {
         password: hash,
       },
     });
+
+    // Fire-and-forget welcome email — never blocks registration
+    sendWelcomeSequenceEmail({ name: client.name, email: client.email, company: client.company ?? undefined }).catch(
+      (err) => console.error("[email] sendWelcomeSequenceEmail failed:", err)
+    );
 
     const token = signToken({ id: client.id, email: client.email, type: "client" });
 

@@ -152,7 +152,7 @@ const FAQS = [
   },
   {
     q: "What if I'm not satisfied with the result?",
-    a: "We offer a 7-day money-back guarantee after delivery. If you're not happy, you get a full refund — no questions asked. In our 10+ year history, we have maintained 1,200+ happy clients with near-zero refund rate.",
+    a: "Every plan includes dedicated post-delivery support — 30 days for Basic, 90 days for Premium, and 1 year for Custom. Our team is available via WhatsApp, email, and phone to ensure your product works perfectly. In our 10+ year history we have maintained 1,200+ happy clients.",
   },
   {
     q: "What can be built with the Custom plan?",
@@ -169,7 +169,7 @@ const FAQS = [
 ];
 
 const TRUST = [
-  { icon: Shield, label: "100% Money-back Guarantee", sub: "7-day no-questions-asked" },
+  { icon: Shield, label: "100% Quality Guaranteed", sub: "30 days free support" },
   { icon: Clock, label: "Fast Delivery", sub: "Basic in 3–5 days" },
   { icon: Star, label: "4.9★ Rating", sub: "From 1,200+ clients" },
   { icon: Award, label: "Full Source Code", sub: "Zero lock-in" },
@@ -181,7 +181,7 @@ export default function PricingPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
 
         {/* ── Hero ── */}
         <section className="py-16 lg:py-24 bg-[var(--color-bg-secondary)] relative overflow-hidden">
@@ -664,7 +664,7 @@ export default function PricingPage() {
                 </Link>
               </div>
               <div className="flex flex-wrap justify-center gap-6 text-sm text-white/40">
-                <span>✅ 7-day money-back guarantee</span>
+                <span>✅ dedicated post-delivery support</span>
                 <span>🔒 Secure payment</span>
                 <span>⚡ Delivery in days, not months</span>
                 <span>🏆 1,200+ happy clients</span>

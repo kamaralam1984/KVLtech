@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendWelcomeEmail } from "@/lib/email-service";
+import { sendLeadFollowupEmail } from "@/lib/email";
 import { scoreLeadFast } from "@/lib/lead-scoring";
 
 export async function POST(req: NextRequest) {
@@ -26,6 +27,10 @@ export async function POST(req: NextRequest) {
     // Auto-send welcome email (fire-and-forget — never blocks the response)
     if (email) {
       sendWelcomeEmail(email, name, service ?? "our services").catch(console.error);
+      // Lead follow-up confirmation email via Resend
+      sendLeadFollowupEmail({ name, email, phone: phone ?? undefined }).catch(
+        (err) => console.error("[email] sendLeadFollowupEmail failed:", err)
+      );
     }
 
     return NextResponse.json({ success: true, id: lead.id });

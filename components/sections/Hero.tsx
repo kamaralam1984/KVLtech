@@ -36,7 +36,7 @@ export function Hero() {
   const highlights = [t.hero_h1, t.hero_h2, t.hero_h3];
 
   return (
-    <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20">
+    <section className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-[104px]">
       {/* Subtle background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-[var(--color-gold)]/5 blur-[120px]" />

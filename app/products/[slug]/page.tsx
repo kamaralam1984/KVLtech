@@ -15,8 +15,21 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const product = getProduct(slug);
   if (!product) return {};
   return {
-    title: `${product.name} — KVL TECH`,
+    title: `${product.name} — Buy, Rent or Customize | KVL TECH`,
     description: product.description,
+    openGraph: {
+      title: `${product.name} | KVL TECH`,
+      description: product.description,
+      url: `https://kvlbusinesssolutions.com/products/${slug}`,
+      siteName: "KVL TECH",
+      images: [{ url: `https://kvlbusinesssolutions.com${product.photo}`, width: 1200, height: 630 }],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | KVL TECH`,
+      description: product.description,
+    },
   };
 }
 
@@ -30,7 +43,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
         <ProductDetail product={product} related={related} />
       </main>
       <Footer />

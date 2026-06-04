@@ -232,7 +232,7 @@ export default function DocsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
 
         {/* ── HERO ─────────────────────────────────────────────────── */}
         <section className="bg-[var(--color-bg)] py-24 px-4 text-center relative overflow-hidden">

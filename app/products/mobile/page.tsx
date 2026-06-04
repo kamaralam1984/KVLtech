@@ -183,7 +183,7 @@ export default function MobileAppsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-[104px]">
 
         {/* Hero Section */}
         <section className="bg-[var(--color-bg)] py-24 px-4 relative overflow-hidden">
