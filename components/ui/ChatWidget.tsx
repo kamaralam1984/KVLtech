@@ -108,14 +108,32 @@ export function ChatWidget() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language.code]);
 
-  // Auto-open & badge
+  // Kaviya badge cycle: show → 30s → hide → 60s → show → repeat until user responds
   useEffect(() => {
-    const t1 = setTimeout(() => setShowBadge(true), 4000);
-    const t2 = setTimeout(() => {
-      if (!autoOpenDone) { setOpen(true); setShowBadge(false); setAutoOpenDone(true); }
-    }, 8000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [autoOpenDone]);
+    if (messageCount > 0 || open) {
+      setShowBadge(false);
+      return;
+    }
+
+    let hideTimer: ReturnType<typeof setTimeout>;
+    let reshowTimer: ReturnType<typeof setTimeout>;
+
+    const startCycle = () => {
+      setShowBadge(true);
+      hideTimer = setTimeout(() => {
+        setShowBadge(false);
+        reshowTimer = setTimeout(startCycle, 60000); // 1 minute baad phir aaye
+      }, 30000); // 30 second me hat jaye
+    };
+
+    const initialTimer = setTimeout(startCycle, 4000); // page load ke 4s baad pehli baar
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearTimeout(hideTimer);
+      clearTimeout(reshowTimer);
+    };
+  }, [messageCount, open]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
   useEffect(() => { if (open && !minimized) setTimeout(() => inputRef.current?.focus(), 300); }, [open, minimized]);
