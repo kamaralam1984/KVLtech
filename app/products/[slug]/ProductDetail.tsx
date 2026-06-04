@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { Product } from "@/lib/products";
 import { ADDONS } from "@/lib/products";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 declare global {
   interface Window {
@@ -81,6 +82,7 @@ function YearlyTyping() {
 
 export function ProductDetail({ product, related }: { product: Product; related: Product[] }) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activePlan, setActivePlan] = useState(1);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", business: "" });
@@ -557,28 +559,28 @@ export function ProductDetail({ product, related }: { product: Product; related:
                 <form onSubmit={handlePay} className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Your Name *</label>
+                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{t.form_name} *</label>
                       <input required type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                        placeholder="Aapka naam"
+                        placeholder={t.form_name}
                         className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Phone Number *</label>
+                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{t.form_phone} *</label>
                       <input required type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                        placeholder="+91 XXXXX XXXXX"
+                        placeholder={t.contact_phone_label.replace(" *", "")}
                         className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Email Address *</label>
+                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{t.form_email} *</label>
                     <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                      placeholder="aap@email.com"
+                      placeholder={t.form_email}
                       className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Business Name</label>
+                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">{t.form_business}</label>
                     <input type="text" value={form.business} onChange={e => setForm(f => ({ ...f, business: e.target.value }))}
-                      placeholder="Aapka business naam"
+                      placeholder={t.form_business}
                       className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                   </div>
 

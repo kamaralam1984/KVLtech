@@ -215,7 +215,7 @@ export function ChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history, sessionId, leadInfo: leadInfo.phone ? leadInfo : undefined }),
+        body: JSON.stringify({ message: text, history, sessionId, lang: language.code, leadInfo: leadInfo.phone ? leadInfo : undefined }),
       });
       const data = await res.json() as { reply: string; content?: string; fallback?: boolean };
       const aiText = data.reply || data.content || t.error_try_again;

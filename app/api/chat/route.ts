@@ -200,6 +200,8 @@ export async function POST(request: NextRequest) {
     let sessionId: string | undefined;
     let leadInfo: { name?: string; phone?: string; email?: string; interest?: string } | undefined;
 
+    const selectedLang: string = body.lang || "en";
+
     if (typeof body.message === "string") {
       // New format: { message, history }
       const history: { role: "user" | "assistant"; content: string }[] = Array.isArray(body.history)
@@ -261,9 +263,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ reply: fallbackText, fallback: true });
     }
 
+    // Language-specific mandatory override
+    const LANG_NAMES: Record<string, string> = {
+      en: "English only — no Hindi, no Hinglish, no Urdu. Every word in English.",
+      hi: "Hindi / Hinglish (Roman script) — warm Hinglish style.",
+      ar: "Arabic only — every word in Arabic script.",
+      ru: "Russian only.",
+      de: "German only.",
+    };
+    const langInstruction = `\n\n⚠️ MANDATORY LANGUAGE RULE (overrides all else): Respond in ${LANG_NAMES[selectedLang] || "English only."}`;
+    const activePrompt = SYSTEM_PROMPT + langInstruction;
+
     // Multi-model AI call with automatic failover
     try {
-      const text = await callAI(messages, SYSTEM_PROMPT);
+      const text = await callAI(messages, activePrompt);
       return NextResponse.json({ reply: text });
     } catch {
       // All AI providers failed — use keyword or generic fallback
