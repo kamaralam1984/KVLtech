@@ -1,10 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight, Play, CheckCircle2, TrendingUp, Users, Star, Zap, ShoppingCart, GraduationCap, Utensils, Hospital, Building2, Globe } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Play, CheckCircle2, TrendingUp, Users, Star, Zap, ShoppingCart, GraduationCap, Utensils, Hospital, Building2, X } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+// YouTube video ID — KVL TECH business demo reel
+const DEMO_VIDEO_ID = "RpOOOlwHIX4";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -25,6 +29,13 @@ const PRODUCT_CARDS = [
 
 export function Hero() {
   const { t } = useLanguage();
+  const [videoOpen, setVideoOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setVideoOpen(false); };
+    if (videoOpen) document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [videoOpen]);
 
   const stats = [
     { icon: Users, value: 5000, suffix: "+", label: t.stat_clients },
@@ -119,7 +130,10 @@ export function Hero() {
               <Link href="/contact" className="btn-gold text-center sm:text-left">
                 {t.hero_consult}
               </Link>
-              <button className="btn-outline flex items-center justify-center gap-2">
+              <button
+                onClick={() => setVideoOpen(true)}
+                className="btn-outline flex items-center justify-center gap-2"
+              >
                 <span className="w-8 h-8 rounded-full bg-[var(--color-navy)] flex items-center justify-center shrink-0">
                   <Play size={12} className="text-white ml-0.5" fill="white" />
                 </span>
@@ -352,6 +366,49 @@ export function Hero() {
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
         <hr className="divider-gold" />
       </div>
+
+      {/* Video Modal */}
+      <AnimatePresence>
+        {videoOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center px-4"
+            style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}
+            onClick={() => setVideoOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+              className="relative w-full max-w-4xl"
+              style={{ aspectRatio: "16/9" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setVideoOpen(false)}
+                className="absolute -top-10 right-0 text-white/70 hover:text-white transition-colors flex items-center gap-1.5 text-sm"
+              >
+                <X size={18} /> Close
+              </button>
+
+              {/* YouTube iframe */}
+              <iframe
+                src={`https://www.youtube.com/embed/${DEMO_VIDEO_ID}?autoplay=1&rel=0&modestbranding=1`}
+                title="KVL TECH Demo"
+                allow="autoplay; encrypted-media; fullscreen"
+                allowFullScreen
+                className="w-full h-full rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
+                style={{ border: "none" }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
