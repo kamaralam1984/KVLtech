@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const conversions = orderCount;
 
     const leadCountMap: Record<string, number> = {};
-    leadCounts.forEach(l => { leadCountMap[l.status] = l._count.id; });
+    leadCounts.forEach((l: { status: string; _count: { id: number } }) => { leadCountMap[l.status] = l._count.id; });
     const totalLeads = Object.values(leadCountMap).reduce((a, b) => a + b, 0);
 
     return NextResponse.json({
