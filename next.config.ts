@@ -87,6 +87,9 @@ const nextConfig: NextConfig = {
   // Heavy server-only packages: exclude from client bundle
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "bcryptjs", "nodemailer", "sharp", "razorpay"],
 
+  // Turbopack config (Next.js 16 default for production builds)
+  turbopack: {},
+
   // Experimental features
   experimental: {
     optimizeCss: true,
@@ -100,7 +103,7 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Webpack bundle optimisation
+  // Webpack — dev only (Turbopack handles production)
   webpack: (config, { dev, isServer }) => {
     if (dev) {
       config.watchOptions = {
