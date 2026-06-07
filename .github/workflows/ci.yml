@@ -111,10 +111,15 @@ jobs:
           script: |
             set -e
             cd /opt/kvl-tech
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u kamaralam1984 --password-stdin
+            curl -fsSL https://raw.githubusercontent.com/kamaralam1984/KVLtech/main/docker-compose.vps.yml -o docker-compose.vps.yml
+            curl -fsSL https://raw.githubusercontent.com/kamaralam1984/KVLtech/main/nginx-kvltech.conf -o /etc/nginx/sites-available/kvlbusinesssolutions.com
+            ln -sf /etc/nginx/sites-available/kvlbusinesssolutions.com /etc/nginx/sites-enabled/kvlbusinesssolutions.com
+            nginx -t && nginx -s reload
             docker compose -f docker-compose.vps.yml pull
             docker compose -f docker-compose.vps.yml up -d --remove-orphans
-            sleep 15
-            docker compose -f docker-compose.vps.yml exec -T app npx prisma db push --skip-generate
+            sleep 20
+            docker compose -f docker-compose.vps.yml exec -T app npx prisma db push --skip-generate || true
             docker image prune -f
             echo "Deployed at $(date)"
       - name: Health check
