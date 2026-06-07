@@ -109,16 +109,18 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
+            set -e
             cd /opt/kvl-tech
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker compose exec -T app npx prisma migrate deploy
+            docker compose -f docker-compose.vps.yml pull
+            docker compose -f docker-compose.vps.yml up -d --remove-orphans
+            sleep 15
+            docker compose -f docker-compose.vps.yml exec -T app npx prisma db push --skip-generate
             docker image prune -f
-            echo "Deployed successfully at $(date)"
+            echo "Deployed at $(date)"
       - name: Health check
         if: ${{ secrets.DEPLOY_HOST != '' }}
         run: |
-          sleep 30
+          sleep 45
           curl -f https://kvlbusinesssolutions.com/api/health || exit 1
           echo "Health check passed"
 
