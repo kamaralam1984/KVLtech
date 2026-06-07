@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, ChevronRight, BookOpen, Eye, Bot, ToggleLeft, ToggleRight, Loader2, X } from "lucide-react";
 
@@ -43,7 +43,7 @@ function SkeletonCard() {
   );
 }
 
-export default function KnowledgeBasePage() {
+function KnowledgeBaseContent() {
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredArticles, setFeaturedArticles] = useState<Article[]>([]);
@@ -359,5 +359,13 @@ export default function KnowledgeBasePage() {
         </section>
       </div>
     </div>
+  );
+}
+
+export default function KnowledgeBasePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--color-bg)]" />}>
+      <KnowledgeBaseContent />
+    </Suspense>
   );
 }
