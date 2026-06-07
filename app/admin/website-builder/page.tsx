@@ -379,7 +379,7 @@ export default function WebsiteBuilderPage() {
       <AdminTopbar title="AI Website Builder" />
 
       {/* Confetti */}
-      {showConfetti && <Confetti />}
+      {showConfetti && <Confetti trigger={showConfetti} />}
 
       {/* Toast */}
       {toast && (

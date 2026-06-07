@@ -5,10 +5,6 @@ const stripe = process.env.STRIPE_SECRET_KEY
   ? new (require("stripe").default)(process.env.STRIPE_SECRET_KEY)
   : null;
 
-// Required for raw body access in Next.js App Router
-export const config = {
-  api: { bodyParser: false },
-};
 
 export async function POST(req: NextRequest) {
   if (!stripe) {
