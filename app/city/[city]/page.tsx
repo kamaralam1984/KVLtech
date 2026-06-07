@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
+// ISR: regenerate every 24 hours (city pages are mostly static)
+export const revalidate = 86400
+
 /* ─────────────────────────────────────────────
    City data
 ───────────────────────────────────────────── */

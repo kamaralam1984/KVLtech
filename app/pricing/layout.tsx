@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+// ISR: regenerate every 24 hours (pricing rarely changes)
+export const revalidate = 86400
+
 export const metadata: Metadata = {
   title: "Pricing — Basic, Premium & Custom Plans | KVL TECH",
   description:

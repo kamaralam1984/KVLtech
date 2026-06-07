@@ -4,10 +4,29 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   TrendingUp, TrendingDown, ShoppingBag, Users, IndianRupee,
-  Star, Zap, BarChart2, Loader2, RefreshCw,
+  Star, Zap, BarChart2, Loader2, RefreshCw, Brain, Flame, AlertTriangle, MessageCircle, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { AdminTopbar } from "@/components/admin/AdminSidebar";
+import { SupportInsightsWidget } from "@/components/admin/SupportInsightsWidget";
+import { DashboardSkeleton } from "@/components/ui/Skeleton";
+import { CurrencySelector } from "@/components/ui/CurrencySelector";
+import { PremiumStatCard } from "@/components/ui/PremiumStatCard";
+
+interface ForecastMonth {
+  month: string
+  pessimistic: number
+  base: number
+  optimistic: number
+}
+
+interface ForecastData {
+  historical: { month: string; revenue: number }[]
+  forecast: ForecastMonth[]
+  pipelineValue: number
+  hotLeadsPotential: number
+  growthRate: number
+}
 
 const STATUS_COLOR: Record<string, string> = {
   PAYMENT_PENDING: "#9CA3AF",
@@ -41,41 +60,91 @@ const fadeUp = (i: number) => ({
 
  // Dev bypass — replace with real auth
 
+interface AIAlertItem {
+  id: string;
+  type: string;
+  title: string;
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  actionUrl?: string;
+  actionLabel?: string;
+  generatedAt: string;
+}
+
+const ALERT_SEVERITY_COLOR: Record<string, string> = {
+  CRITICAL: "#EF4444",
+  HIGH: "#F97316",
+  MEDIUM: "#EAB308",
+  LOW: "#3B82F6",
+};
+
 export default function AdminDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [forecast, setForecast] = useState<ForecastData | null>(null);
+  const [forecastLoading, setForecastLoading] = useState(true);
+  const [recentAlerts, setRecentAlerts] = useState<AIAlertItem[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(true);
+  const [chatStats, setChatStats] = useState<{ chatLeadsThisMonth: number; chatLeadsLast30: number; chatEscalations: number; summary: string } | null>(null);
 
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // Try with admin cookie, fallback to bypass for dev
-      const res = await fetch("/api/admin/stats", {
-        credentials: "include",
-        
-      });
+      const res = await fetch("/api/admin/stats", { credentials: "include" });
       if (res.ok) setData(await res.json());
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  useEffect(() => { fetchStats(); }, []);
+  const fetchForecast = async () => {
+    setForecastLoading(true);
+    try {
+      const res = await fetch("/api/admin/forecast", { credentials: "include" });
+      if (res.ok) setForecast(await res.json());
+    } catch {}
+    setForecastLoading(false);
+  };
+
+  const fetchRecentAlerts = async () => {
+    setAlertsLoading(true);
+    try {
+      // Fetch top unread HIGH+CRITICAL alerts for dashboard widget
+      const res = await fetch("/api/admin/ai-alerts?unread=true&severity=HIGH,CRITICAL&limit=3", {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setRecentAlerts(d.alerts ?? []);
+      }
+    } catch {}
+    setAlertsLoading(false);
+  };
+
+  const fetchChatAnalytics = async () => {
+    try {
+      const res = await fetch("/api/admin/chat-analytics", { credentials: "include" });
+      if (res.ok) setChatStats(await res.json());
+    } catch {}
+  };
+
+  useEffect(() => { fetchStats(); fetchForecast(); fetchRecentAlerts(); fetchChatAnalytics(); }, []);
 
   const STAT_CARDS = [
     {
       key: "revenue", icon: IndianRupee, color: "#C9A227",
+      premiumColor: "gold" as const,
       format: (v: number) => v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : `₹${(v / 1000).toFixed(0)}K`,
     },
-    { key: "orders", icon: ShoppingBag, color: "#0F172A", format: (v: number) => v.toString() },
-    { key: "leads", icon: Users, color: "#0891B2", format: (v: number) => v.toString() },
-    { key: "conversion", icon: BarChart2, color: "#16A34A", format: (v: number) => `${v}%` },
+    { key: "orders", icon: ShoppingBag, color: "#0F172A", premiumColor: "blue" as const, format: (v: number) => v.toString() },
+    { key: "leads", icon: Users, color: "#0891B2", premiumColor: "purple" as const, format: (v: number) => v.toString() },
+    { key: "conversion", icon: BarChart2, color: "#16A34A", premiumColor: "green" as const, format: (v: number) => `${v}%` },
   ];
 
   if (loading) {
     return (
       <>
         <AdminTopbar title="Dashboard" />
-        <div className="flex items-center justify-center h-[80vh]">
-          <Loader2 size={32} className="animate-spin text-[var(--color-gold)]" />
+        <div className="p-6 max-w-[1400px]">
+          <DashboardSkeleton />
         </div>
       </>
     );
@@ -91,40 +160,74 @@ export default function AdminDashboard() {
   return (
     <>
       <AdminTopbar title="Dashboard" />
-      <div className="p-6 space-y-6 max-w-[1400px]">
+      <div className="p-6 space-y-6 max-w-[1400px] grid-bg min-h-screen">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between glass-dark rounded-2xl px-5 py-4">
           <div>
             <h1 className="font-display font-bold text-xl text-[var(--color-text)]">Good morning 👋</h1>
             <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Here's what's happening with KVL TECH today.</p>
           </div>
-          <button onClick={fetchStats} className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text)] border border-[var(--color-border)] px-3 py-2 rounded-xl transition-all hover:border-[var(--color-gold)]">
-            <RefreshCw size={13} /> Refresh
-          </button>
+          <div className="flex items-center gap-3">
+            <CurrencySelector />
+            <button onClick={fetchStats} className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text)] border border-[var(--color-border)] px-3 py-2 rounded-xl transition-all hover:border-[var(--color-gold)]">
+              <RefreshCw size={13} /> Refresh
+            </button>
+          </div>
         </div>
 
+        {/* AI Command Center featured card */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.02 }}
+          className="relative overflow-hidden rounded-2xl border-2 border-[var(--color-gold)]/40 bg-gradient-to-r from-[var(--color-gold)]/8 via-[var(--color-bg-secondary)] to-[var(--color-bg-secondary)] p-5 flex items-center justify-between gap-4"
+          style={{ boxShadow: "0 0 0 1px rgba(201,162,39,0.12), 0 4px 24px rgba(201,162,39,0.08)" }}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--color-gold)] to-amber-400 flex items-center justify-center shadow-lg shrink-0">
+              <Sparkles size={22} className="text-white" />
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-base text-[var(--color-text)]">AI Command Center</h2>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Access all AI tools — blog, proposals, leads, campaigns, automation, SEO &amp; more</p>
+            </div>
+          </div>
+          <Link
+            href="/admin/ai-hub"
+            className="btn-gold flex items-center gap-2 text-sm shrink-0 whitespace-nowrap"
+          >
+            <Sparkles size={14} /> Open AI Hub
+          </Link>
+        </motion.div>
+
         {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {STAT_CARDS.map(({ key, icon: Icon, color, format }, i) => {
+        <motion.div
+          variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          {STAT_CARDS.map(({ key, icon, premiumColor, format }) => {
             const stat = stats[key] || { value: 0, change: 0, label: key };
             return (
-              <motion.div key={key} {...fadeUp(i)} className="card p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${color}15` }}>
-                    <Icon size={20} style={{ color }} />
-                  </div>
-                  <span className={`flex items-center gap-1 text-xs font-semibold ${stat.change >= 0 ? "text-[var(--color-success)]" : "text-red-500"}`}>
-                    {stat.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                    {Math.abs(stat.change)}%
-                  </span>
-                </div>
-                <p className="font-display font-bold text-2xl text-[var(--color-text)]">{format(stat.value)}</p>
-                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{stat.label}</p>
-              </motion.div>
+              <PremiumStatCard
+                key={key}
+                title={stat.label || key}
+                value={format(stat.value)}
+                rawValue={typeof stat.value === "number" ? stat.value : undefined}
+                change={`${Math.abs(stat.change)}%`}
+                changePositive={stat.change >= 0}
+                icon={icon}
+                color={premiumColor}
+                animated={false}
+              />
             );
           })}
-        </div>
+        </motion.div>
+
+        {/* Support Health Widget */}
+        <SupportInsightsWidget />
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Revenue chart */}
@@ -327,6 +430,222 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </motion.div>
+
+        {/* AI Alerts — compact inline section */}
+        <motion.div {...fadeUp(9)} className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center">
+                <AlertTriangle size={16} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-base text-[var(--color-text)]">Active Alerts</h3>
+                <p className="text-xs text-[var(--color-text-muted)]">Unread HIGH &amp; CRITICAL alerts</p>
+              </div>
+            </div>
+            <Link href="/admin/alerts" className="text-xs font-semibold text-[var(--color-gold)] hover:underline">
+              View all alerts
+            </Link>
+          </div>
+
+          {alertsLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 size={20} className="animate-spin text-[var(--color-gold)]" />
+            </div>
+          ) : recentAlerts.length === 0 ? (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-green-500/5 border border-green-500/20">
+              <div className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500 text-sm font-bold shrink-0">✓</div>
+              <p className="text-xs text-[var(--color-text-secondary)]">All systems normal — no critical alerts.</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {recentAlerts.map((alert) => {
+                const color = ALERT_SEVERITY_COLOR[alert.severity] || "#9CA3AF";
+                return (
+                  <div key={alert.id} className="flex items-center gap-3 p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-gold)]/40 transition-all">
+                    <div className="w-2 h-full min-h-[36px] rounded-full shrink-0" style={{ background: color, width: "3px" }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-[var(--color-text)] truncate">{alert.title}</p>
+                      <span
+                        className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full"
+                        style={{ color, background: `${color}18` }}
+                      >
+                        {alert.severity}
+                      </span>
+                    </div>
+                    {alert.actionUrl && alert.actionLabel && (
+                      <Link
+                        href={alert.actionUrl}
+                        className="text-[10px] font-semibold text-[var(--color-gold)] hover:underline shrink-0"
+                      >
+                        {alert.actionLabel} →
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* AI Insights */}
+        <motion.div {...fadeUp(10)} className="card p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-[var(--color-gold)]/15 flex items-center justify-center">
+                <Brain size={18} className="text-[var(--color-gold)]" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-base text-[var(--color-text)]">AI Insights</h3>
+                <p className="text-xs text-[var(--color-text-muted)]">Revenue forecast + smart recommendations</p>
+              </div>
+            </div>
+            <Link href="/admin/proposals" className="text-xs font-semibold text-[var(--color-gold)] hover:underline flex items-center gap-1">
+              <Zap size={12} /> Generate Proposal
+            </Link>
+          </div>
+
+          {forecastLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 size={24} className="animate-spin text-[var(--color-gold)]" />
+            </div>
+          ) : forecast ? (
+            <div className="grid lg:grid-cols-3 gap-5">
+              <div className="lg:col-span-2">
+                <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-3 uppercase tracking-wide">
+                  Revenue Forecast — Next 3 Months
+                </p>
+                <div className="flex items-end gap-3 h-32 mb-2">
+                  {forecast.forecast.map((m, i) => {
+                    const maxVal = Math.max(...forecast.forecast.map(f => f.optimistic), 1)
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+                        <div className="w-full flex flex-col gap-0.5 items-center justify-end" style={{ height: "100%" }}>
+                          <div className="w-full rounded-t-lg relative group-hover:opacity-90 transition-opacity"
+                            style={{
+                              height: `${Math.max((m.base / maxVal) * 100, 6)}%`,
+                              background: "linear-gradient(180deg, #C9A227, #E8C547)",
+                            }}>
+                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[var(--color-navy)] text-white text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                              ₹{(m.base / 1000).toFixed(0)}K
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-[var(--color-text-muted)]">{m.month}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex justify-between text-[10px] text-[var(--color-text-muted)] mt-1">
+                  {forecast.forecast.map((m, i) => (
+                    <div key={i} className="flex-1 text-center">
+                      <p className="font-semibold text-[var(--color-text)]">₹{(m.base / 1000).toFixed(0)}K</p>
+                      <p className="text-[9px]">₹{(m.pessimistic / 1000).toFixed(0)}K – ₹{(m.optimistic / 1000).toFixed(0)}K</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mt-4">
+                  <div className="p-3 rounded-xl bg-[var(--color-bg-secondary)]">
+                    <p className="text-[10px] text-[var(--color-text-muted)] mb-1">Pipeline Value</p>
+                    <p className="text-sm font-bold text-[var(--color-text)]">₹{(forecast.pipelineValue / 1000).toFixed(0)}K</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[var(--color-bg-secondary)]">
+                    <p className="text-[10px] text-[var(--color-text-muted)] mb-1">Hot Leads Potential</p>
+                    <p className="text-sm font-bold text-[var(--color-gold)]">₹{(forecast.hotLeadsPotential / 1000).toFixed(0)}K</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[var(--color-bg-secondary)]">
+                    <p className="text-[10px] text-[var(--color-text-muted)] mb-1">Growth Rate</p>
+                    <p className={`text-sm font-bold ${forecast.growthRate >= 0 ? "text-[var(--color-success)]" : "text-red-500"}`}>
+                      {forecast.growthRate >= 0 ? "+" : ""}{forecast.growthRate.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-3 uppercase tracking-wide">
+                  AI Recommendations
+                </p>
+                <div className="space-y-2.5">
+                  {[
+                    {
+                      icon: Flame,
+                      color: "#EF4444",
+                      text: data?.hotLeadsCount > 0
+                        ? `You have ${data.hotLeadsCount} hot lead${data.hotLeadsCount > 1 ? "s" : ""} — follow up today for maximum conversion.`
+                        : "No hot leads right now. Focus on warming up qualified leads.",
+                    },
+                    {
+                      icon: TrendingUp,
+                      color: "#16A34A",
+                      text: forecast.growthRate > 0
+                        ? `Revenue is projected to grow ${forecast.growthRate.toFixed(1)}% — capitalize on this momentum with targeted outreach.`
+                        : forecast.growthRate < 0
+                        ? `Revenue trend is declining ${Math.abs(forecast.growthRate).toFixed(1)}% — review your pipeline and close pending proposals.`
+                        : "Revenue is stable. Push for new leads to drive growth next month.",
+                    },
+                    {
+                      icon: AlertTriangle,
+                      color: "#F59E0B",
+                      text: forecast.pipelineValue > 0
+                        ? `₹${(forecast.pipelineValue / 1000).toFixed(0)}K in pipeline value detected — convert these leads into orders this month.`
+                        : "Pipeline is empty. Generate proposals for qualified leads to build revenue momentum.",
+                    },
+                  ].map(({ icon: Icon, color, text }, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-gold)]/40 transition-all">
+                      <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center" style={{ background: `${color}18` }}>
+                        <Icon size={14} style={{ color }} />
+                      </div>
+                      <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--color-text-muted)] text-center py-8">Unable to load forecast data</p>
+          )}
+        </motion.div>
+
+        {/* Kaviya Chat Stats */}
+        <motion.div {...fadeUp(11)} className="card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-[var(--color-gold)]/15 flex items-center justify-center">
+                <MessageCircle size={18} className="text-[var(--color-gold)]" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-base text-[var(--color-text)]">Kaviya Chat Stats</h3>
+                <p className="text-xs text-[var(--color-text-muted)]">AI chat lead performance</p>
+              </div>
+            </div>
+          </div>
+
+          {chatStats ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-[var(--color-bg-secondary)] text-center">
+                <p className="text-2xl font-bold text-[var(--color-gold)]">{chatStats.chatLeadsThisMonth}</p>
+                <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">Leads this month</p>
+              </div>
+              <div className="p-3 rounded-xl bg-[var(--color-bg-secondary)] text-center">
+                <p className="text-2xl font-bold text-[var(--color-text)]">{chatStats.chatLeadsLast30}</p>
+                <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">Last 30 days</p>
+              </div>
+              <div className="p-3 rounded-xl bg-[var(--color-bg-secondary)] text-center sm:col-span-1 col-span-2">
+                <p className="text-2xl font-bold text-[var(--color-text)]">{chatStats.chatEscalations}</p>
+                <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">Escalations (30d)</p>
+              </div>
+              <div className="col-span-2 sm:col-span-3 p-3 rounded-xl bg-[var(--color-gold)]/5 border border-[var(--color-gold)]/20">
+                <p className="text-xs text-[var(--color-text-secondary)] text-center font-medium">{chatStats.summary}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 size={20} className="animate-spin text-[var(--color-gold)]" />
             </div>
           )}
         </motion.div>

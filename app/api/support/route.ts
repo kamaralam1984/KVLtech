@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
+import { analyzeTicket } from "@/lib/ticket-intelligence";
+import { metrics } from "@/lib/metrics";
 
 function generateTicketNo() {
   return "TKT-" + Date.now().toString(36).toUpperCase().slice(-6);
@@ -45,6 +47,26 @@ export async function POST(req: NextRequest) {
         color: "#7C3AED",
       },
     });
+
+    metrics.ticketsTotal.inc({ priority: ticket.priority || "MEDIUM" })
+
+    // Fire-and-forget: run AI analysis in background, auto-upgrade priority if urgent
+    setTimeout(() => {
+      analyzeTicket(ticket.id)
+        .then(async (analysis) => {
+          if (
+            analysis.suggestedPriority === "URGENT" &&
+            ticket.priority !== "URGENT" &&
+            ticket.priority !== "HIGH"
+          ) {
+            await db.supportTicket.update({
+              where: { id: ticket.id },
+              data: { priority: "URGENT" },
+            }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }, 0);
 
     return NextResponse.json({ success: true, ticket: { id: ticket.id, ticketNo: ticket.ticketNo } });
   } catch (err) {

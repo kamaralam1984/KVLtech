@@ -65,20 +65,41 @@ export async function POST(req: NextRequest) {
 
     const keywordStr = keywords ? `Keywords to include: ${keywords}` : "";
 
-    const prompt = `You are an expert content writer for KVL TECH, a website development company in India.
-Write a blog post in Hinglish (mix of Hindi and English) for Indian small business owners.
-Topic: ${topic}
+    const prompt = `Generate a comprehensive, SEO-optimized blog post for KVL TECH, a software development company in India.
+
+Title/Topic: ${topic}
 Category: ${category || "Business Tips"}
+Target audience: SME business owners looking for software solutions
+Word count: 600-800 words
 ${keywordStr}
 
 Use EXACTLY this format with these delimiters (no extra text before or after):
 
 TITLE: [Write SEO title here, max 70 chars]
-EXCERPT: [Write 2-sentence summary here, max 160 chars]
+EXCERPT: [Write 2-sentence summary hook here, max 160 chars]
 METATITLE: [Write SEO meta title, max 60 chars]
 METADESC: [Write meta description, max 160 chars]
+FOCUSKEYWORD: [Write the single most important SEO keyword]
+SLUG: [Write URL-friendly slug, lowercase, hyphens only, max 60 chars]
 CONTENT:
-[Write full 600-800 word Hinglish article here with ## headings, bullet points, and end with CTA to visit kvlbusinesssolutions.com]
+## [Title]
+[Intro paragraph - 2-3 sentences hook for SME business owners]
+
+## [Section 1 heading]
+[Content - 100-150 words]
+
+## [Section 2 heading]
+[Content - 100-150 words]
+
+## [Section 3 heading]
+[Content - 100-150 words]
+
+## Conclusion
+[Summary paragraph + CTA mentioning KVL TECH — visit kvlbusinesssolutions.com for a free consultation]
+
+**Meta Description:** [150 char description]
+**Focus Keyword:** [main keyword]
+**Tags:** [tag1, tag2, tag3]
 END_CONTENT`;
 
     const raw = await generateWithGroq(prompt);
@@ -97,7 +118,9 @@ END_CONTENT`;
       title: extract("TITLE", "EXCERPT"),
       excerpt: extract("EXCERPT", "METATITLE"),
       metaTitle: extract("METATITLE", "METADESC"),
-      metaDesc: extract("METADESC", "CONTENT"),
+      metaDesc: extract("METADESC", "FOCUSKEYWORD"),
+      focusKeyword: extract("FOCUSKEYWORD", "SLUG"),
+      suggestedSlug: extract("SLUG", "CONTENT"),
       content: extract("CONTENT"),
     };
 
@@ -106,11 +129,21 @@ END_CONTENT`;
     const wordCount = generated.content?.split(" ").length || 800;
     const readMins = Math.ceil(wordCount / 200);
 
-    const slug = generated.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, "")
-      .replace(/\s+/g, "-")
-      .slice(0, 60) + "-" + Date.now();
+    // Prefer AI-suggested slug, fall back to title-derived slug
+    const baseSlug =
+      generated.suggestedSlug && generated.suggestedSlug.length > 3
+        ? generated.suggestedSlug
+            .toLowerCase()
+            .replace(/[^a-z0-9-]/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "")
+            .slice(0, 60)
+        : generated.title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, "")
+            .replace(/\s+/g, "-")
+            .slice(0, 60);
+    const slug = `${baseSlug}-${Date.now()}`;
 
     const post = await db.blogPost.create({
       data: {
@@ -129,7 +162,15 @@ END_CONTENT`;
       },
     });
 
-    return NextResponse.json({ success: true, post });
+    return NextResponse.json({
+      success: true,
+      post,
+      seo: {
+        focusKeyword: generated.focusKeyword,
+        suggestedSlug: slug,
+        metaDescription: generated.metaDesc,
+      },
+    });
   } catch (err) {
     console.error("Blog generate error:", err);
     return NextResponse.json({ error: "Blog generation failed. Check GROQ_API_KEY." }, { status: 500 });

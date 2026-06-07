@@ -3,8 +3,8 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { signToken } from "@/lib/auth";
-import { sendOrderConfirmationEmail } from "@/lib/email";
 import { sendOrderConfirmationSMS } from "@/lib/sms";
+import { enqueueJob } from "@/lib/job-queue";
 
 function verifySignature(orderId: string, paymentId: string, signature: string): boolean {
   const body = `${orderId}|${paymentId}`;
@@ -120,11 +120,24 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 8. Send confirmation email + SMS (fire-and-forget)
-    sendOrderConfirmationEmail({
-      to: client.email, name: client.name, orderNumber: order.orderNumber,
-      productName: product.name, plan, amount,
-    }).catch(err => console.error("Email send failed:", err));
+    // 8. Queue Telegram notification (low priority, non-blocking)
+    enqueueJob(
+      "send_telegram",
+      { message: `<b>New Order</b>\nOrder: ${orderNumber}\nAmount: ₹${(amount / 100).toLocaleString("en-IN")}\nPlan: ${plan}\nClient: ${client.name}` },
+      { priority: "low" }
+    ).catch(() => {});
+
+    // 9. Queue confirmation email (high priority) + SMS (fire-and-forget)
+    enqueueJob(
+      "send_email",
+      {
+        to: client.email,
+        subject: `Order Confirmed — ${orderNumber}`,
+        html: `<p>Hi ${client.name},</p><p>Your order <strong>${orderNumber}</strong> for <strong>${product.name}</strong> (${plan}) has been confirmed.</p><p>Amount paid: ₹${(amount / 100).toLocaleString("en-IN")}</p><p>Our team will be in touch shortly.</p><p>— KVL TECH</p>`,
+        text: `Hi ${client.name}, your order ${orderNumber} for ${product.name} (${plan}) has been confirmed. Amount: ₹${(amount / 100).toLocaleString("en-IN")}. Our team will be in touch shortly.`,
+      },
+      { priority: "high" }
+    ).catch(() => {});
 
     if (client.phone) {
       sendOrderConfirmationSMS(client.phone, client.name, order.orderNumber)

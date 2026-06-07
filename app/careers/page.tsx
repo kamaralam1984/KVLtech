@@ -212,25 +212,60 @@ export default function CareersPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     role: "",
     experience: "",
     portfolio: "",
     why: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          position: formData.role,
+          experience: formData.experience,
+          portfolio: formData.portfolio,
+          coverLetter: formData.why,
+        }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+        setToast({ msg: "Application submitted successfully!", type: "success" });
+      } else {
+        const d = await res.json();
+        setToast({ msg: d.error || "Something went wrong. Please try again.", type: "error" });
+      }
+    } catch {
+      setToast({ msg: "Network error. Please try again.", type: "error" });
+    } finally {
+      setSubmitting(false);
+      setTimeout(() => setToast(null), 5000);
+    }
   }
 
   return (
     <>
       <Navbar />
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[9999] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-semibold transition-all ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
+          {toast.msg}
+        </div>
+      )}
       <main className="pt-[104px]">
 
         {/* ── Hero ── */}
@@ -636,22 +671,15 @@ export default function CareersPage() {
 
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">Role Applying For *</label>
-                    <select
-                      name="role"
-                      required
-                      value={formData.role}
+                    <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-gold)] transition-colors"
-                    >
-                      <option value="">Select a role...</option>
-                      {JOBS.map((j) => (
-                        <option key={j.title} value={j.title}>
-                          {j.title}
-                        </option>
-                      ))}
-                      <option value="Other">Other / General Application</option>
-                    </select>
+                      placeholder="+91 98765 43210"
+                      className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-gold)] transition-colors"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">Years of Experience *</label>
@@ -665,6 +693,25 @@ export default function CareersPage() {
                       className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-gold)] transition-colors"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[var(--color-text)] mb-2">Role Applying For *</label>
+                  <select
+                    name="role"
+                    required
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-gold)] transition-colors"
+                  >
+                    <option value="">Select a role...</option>
+                    {JOBS.map((j) => (
+                      <option key={j.title} value={j.title}>
+                        {j.title}
+                      </option>
+                    ))}
+                    <option value="Other">Other / General Application</option>
+                  </select>
                 </div>
 
                 <div>
@@ -692,8 +739,8 @@ export default function CareersPage() {
                   />
                 </div>
 
-                <button type="submit" className="btn-gold w-full py-4 text-base">
-                  Submit Application <Send className="inline ml-2 w-4 h-4" />
+                <button type="submit" disabled={submitting} className="btn-gold w-full py-4 text-base disabled:opacity-60 disabled:cursor-not-allowed">
+                  {submitting ? "Submitting..." : <>Submit Application <Send className="inline ml-2 w-4 h-4" /></>}
                 </button>
                 <p className="text-xs text-center text-[var(--color-text-secondary)]">
                   We respond to every application within 48 hours. No spam, ever.

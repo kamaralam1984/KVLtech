@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+// ISR: regenerate every hour
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: "Blog — Business Tips, Tech Insights & Digital Growth | KVL TECH",
   description:

@@ -1,5 +1,9 @@
 import { headers } from "next/headers";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { GlobalSearch } from "@/components/admin/GlobalSearch";
+import { AdminLayoutClient } from "./AdminLayoutClient";
+import { AdminShell } from "@/components/admin/AdminShell";
+import { ToastProvider } from "@/components/ui/Toast";
+import { KeyboardShortcuts } from "@/components/admin/KeyboardShortcuts";
 
 export const metadata = { title: "Admin Dashboard — KVL TECH" };
 
@@ -13,9 +17,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--color-bg-secondary)]">
-      <AdminSidebar />
-      <div className="flex-1 overflow-y-auto">{children}</div>
-    </div>
+    <ToastProvider>
+      <AdminShell
+        overlays={
+          <>
+            {/* Global search modal — always mounted, activated by Ctrl+K or custom event */}
+            <GlobalSearch />
+            {/* Keyboard shortcuts system */}
+            <KeyboardShortcuts />
+          </>
+        }
+      >
+        <AdminLayoutClient>{children}</AdminLayoutClient>
+      </AdminShell>
+    </ToastProvider>
   );
 }

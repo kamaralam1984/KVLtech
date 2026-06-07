@@ -47,14 +47,16 @@ const quickStartCards = [
     description:
       "Get your API key and make your very first authenticated call in under five minutes. Follow our step-by-step guide to authenticate, choose an endpoint, and receive your first JSON response. No prior experience required — if you can run a terminal command, you can integrate with KVL TECH.",
     cta: "Start Now",
+    href: "/docs/api",
     color: "var(--color-gold)",
   },
   {
     icon: <Code2 size={28} />,
     title: "API Reference",
     description:
-      "Browse the complete endpoint documentation with full request and response examples, parameter descriptions, error codes, and live try-it-out panels. Every endpoint is documented with real-world use cases so you always know exactly what to expect.",
+      "Browse the complete endpoint documentation with full request and response examples, parameter descriptions, error codes, and rate limit details. Every endpoint is documented with real-world curl examples and JSON response samples.",
     cta: "View Reference",
+    href: "/docs/api",
     color: "#4f9cf9",
   },
   {
@@ -63,6 +65,7 @@ const quickStartCards = [
     description:
       "Subscribe to real-time event notifications delivered directly to your server the instant something happens — a new order, a lead capture, a client registration. Webhooks eliminate polling and let you build truly reactive, event-driven applications.",
     cta: "Setup Webhooks",
+    href: "/admin/webhooks",
     color: "#a78bfa",
   },
   {
@@ -71,6 +74,7 @@ const quickStartCards = [
     description:
       "Skip the raw HTTP layer entirely. Our officially maintained SDKs for JavaScript/Node.js, Python, PHP, and Ruby wrap every endpoint in idiomatic, typed, well-documented functions. All SDKs are MIT licensed and actively maintained on GitHub.",
     cta: "Get SDKs",
+    href: "/docs/api#sdk",
     color: "#34d399",
   },
 ];
@@ -331,7 +335,7 @@ export default function DocsPage() {
                   key={card.title}
                   variants={fadeUp}
                   whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="card p-6 flex flex-col gap-4 cursor-pointer group"
+                  className="card p-6 flex flex-col gap-4 group"
                 >
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -343,14 +347,48 @@ export default function DocsPage() {
                   <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed flex-1">
                     {card.description}
                   </p>
-                  <button
+                  <Link
+                    href={card.href}
                     className="flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all"
                     style={{ color: card.color }}
                   >
                     {card.cta} <ArrowRight size={14} />
-                  </button>
+                  </Link>
                 </motion.div>
               ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── API REFERENCE CARD ───────────────────────────────────── */}
+        <section className="bg-[var(--color-bg)] py-14 px-4">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={fadeUp}
+              className="rounded-2xl border border-[var(--color-gold)]/30 bg-gradient-to-br from-[var(--color-gold)]/5 to-transparent p-8 flex flex-col md:flex-row items-start md:items-center gap-6"
+            >
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: "var(--color-gold)20", color: "var(--color-gold)" }}>
+                <Key size={28} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold text-[var(--color-text)] mb-1">API Reference</h2>
+                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed max-w-xl">
+                  Full endpoint documentation for the KVL TECH REST API — orders, leads, analytics,
+                  and clients. Includes authentication guide, curl examples, JSON response samples,
+                  error codes, and a JavaScript SDK snippet. Get started in minutes.
+                </p>
+              </div>
+              <Link
+                href="/docs/api"
+                className="shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                style={{ backgroundColor: "var(--color-gold)" }}
+              >
+                View API Reference <ArrowRight size={15} />
+              </Link>
             </motion.div>
           </div>
         </section>

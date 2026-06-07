@@ -29,9 +29,13 @@ export async function POST(req: NextRequest) {
 
     const token = signToken({ id: client.id, email: client.email, type: "client" });
 
+    // Determine redirect: new clients (no company set) go to onboarding
+    const redirect = !client.company ? "/onboarding" : "/client-portal";
+
     const res = NextResponse.json({
       success: true,
       token,
+      redirect,
       client: { id: client.id, name: client.name, email: client.email, company: client.company },
     });
 

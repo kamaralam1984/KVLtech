@@ -130,10 +130,11 @@ export function Pricing() {
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95, y: 24 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              whileHover={plan.popular ? { y: -8 } : { y: -4 }}
               viewport={{ once: true }}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
+              transition={{ delay: i * 0.1, duration: 0.5, ease: "easeOut" }}
               className="relative"
             >
               {plan.popular && (

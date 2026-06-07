@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, ArrowRight, Star, SlidersHorizontal, X } from "lucide-react";
+import { GlassCard } from "@/components/ui/GlassCard";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
@@ -47,8 +48,8 @@ export default function ProductsPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="max-w-2xl mx-auto text-center mb-10">
               <div className="flex justify-center mb-6">
-                <img src="/kvl-tech-logo-tight.png" alt="KVL TECH" className="h-[60px] w-auto object-contain dark:hidden" />
-                <img src="/kvl-tech-logo-white.png" alt="KVL TECH" className="h-[60px] w-auto object-contain hidden dark:block" />
+                <Image src="/kvl-tech-logo-tight.png" alt="KVL TECH" width={160} height={60} className="h-[60px] w-auto object-contain dark:hidden" priority />
+                <Image src="/kvl-tech-logo-white.png" alt="KVL TECH" width={160} height={60} className="h-[60px] w-auto object-contain hidden dark:block" priority />
               </div>
               <div className="section-badge mx-auto">Our Products</div>
               <h1 className="font-display font-bold text-4xl sm:text-5xl text-[var(--color-text)] mb-4 leading-tight">
@@ -149,15 +150,22 @@ export default function ProductsPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.06, duration: 0.4 }}
+                      className="h-full"
                     >
-                      <div className="card group overflow-hidden h-full flex flex-col">
+                      <GlassCard
+                        variant="dark"
+                        tilt
+                        lift
+                        glow={product.tag === "Most Popular" || product.tag === "Best Seller"}
+                        className="h-full flex flex-col group"
+                      >
                         {/* Photo */}
-                        <div className="h-48 relative overflow-hidden">
+                        <div className="h-48 relative overflow-hidden rounded-t-2xl">
                           <Image
                             src={product.photo}
                             alt={product.name}
                             fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                            className="object-cover transition-transform duration-500 group-hover:scale-105 animate-float-slow"
                             sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -221,7 +229,7 @@ export default function ProductsPage() {
                             </Link>
                           </div>
                         </div>
-                      </div>
+                      </GlassCard>
                     </motion.div>
                   ))}
                 </motion.div>

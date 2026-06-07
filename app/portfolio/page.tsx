@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -24,6 +24,14 @@ const PROJECTS = [
 export default function PortfolioPage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [selected, setSelected] = useState<typeof PROJECTS[0] | null>(null);
+  const [dbProjects, setDbProjects] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/portfolio")
+      .then(r => r.json())
+      .then(data => { if (data.projects) setDbProjects(data.projects); })
+      .catch(() => {});
+  }, []);
 
   const filtered = activeCategory === "All" ? PROJECTS : PROJECTS.filter(p => p.category === activeCategory);
 
@@ -108,6 +116,47 @@ export default function PortfolioPage() {
                     </div>
                   </motion.div>
                 ))}
+
+                {/* DB Projects */}
+                {dbProjects.map((project, i) => {
+                  let metrics: Record<string, string> = {};
+                  try { if (project.metrics) metrics = JSON.parse(project.metrics); } catch {}
+                  const metricEntries = Object.entries(metrics).slice(0, 2);
+                  return (
+                    <motion.div key={project.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (filtered.length + i) * 0.08 }}
+                      className="card overflow-hidden group">
+                      <Link href={`/portfolio/${project.slug}`} className="block">
+                        <div className="h-52 relative overflow-hidden">
+                          <Image src={project.coverImage} alt={project.title} fill className="object-cover transition-transform duration-500 group-hover:scale-110" sizes="33vw" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <p className="font-display font-bold text-white text-lg">{project.title}</p>
+                            <p className="text-white/70 text-xs">{project.industry} · {project.clientName}</p>
+                          </div>
+                          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="px-3 py-1.5 bg-white text-[var(--color-text)] text-xs font-semibold rounded-full flex items-center gap-1">
+                              View Case <ArrowRight size={11} />
+                            </span>
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-gold)]" />
+                        </div>
+                        <div className="p-4">
+                          <p className="text-xs text-[var(--color-text-secondary)] mb-3 leading-relaxed line-clamp-2">{project.description}</p>
+                          {metricEntries.length > 0 && (
+                            <div className="grid grid-cols-2 gap-2">
+                              {metricEntries.map(([key, value]) => (
+                                <div key={key} className="p-2 rounded-lg bg-[var(--color-bg-secondary)] text-center">
+                                  <p className="font-display font-bold text-sm text-[var(--color-gold)]">{value as string}</p>
+                                  <p className="text-[10px] text-[var(--color-text-muted)]">{key}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
               </motion.div>
             </AnimatePresence>
           </div>

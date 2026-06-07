@@ -41,7 +41,10 @@ function LoginForm() {
       if (!res.ok) {
         setError(data.error || "Invalid email or password.");
       } else {
-        router.push(from);
+        // If API provides a redirect (e.g. /onboarding for new clients), use it.
+        // Otherwise fall back to the `from` search param or /client-portal.
+        const destination = data.redirect || from;
+        router.push(destination);
         router.refresh();
       }
     } catch {
@@ -144,7 +147,12 @@ function LoginForm() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5">Password</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)]">Password</label>
+                    <Link href="/forgot-password" className="text-xs text-[var(--color-gold)] hover:underline">
+                      Forgot password?
+                    </Link>
+                  </div>
                   <div className="relative">
                     <input
                       required type={showPass ? "text" : "password"}

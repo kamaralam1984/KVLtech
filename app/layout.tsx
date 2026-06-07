@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
-import { ExitIntentPopup } from "@/components/ui/ExitIntentPopup";
-import { SocialProofToast } from "@/components/ui/SocialProofToast";
+import { SkipNav } from "@/components/ui/SkipNav";
 import { UrgencyBanner } from "@/components/ui/UrgencyBanner";
+import { UTMTracker } from "@/components/ui/UTMTracker";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { WhiteLabelProvider } from "@/components/ui/WhiteLabelProvider";
+import { ToastProvider } from "@/components/ui/Toast";
+import { SiteLoader } from "@/components/ui/SiteLoader";
+import { LazyLayoutWidgets } from "@/components/ui/LazyLayoutWidgets";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,6 +25,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  manifest: "/manifest.json",
   title: "KVL TECH — Build, Automate & Scale Your Business With Confidence",
   description:
     "KVL TECH provides premium websites, software, SaaS, marketing automation, and AI solutions for modern businesses. Buy, rent, or customize — full branding included.",
@@ -70,12 +76,26 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://wa.me" />
         <link rel="dns-prefetch" href="https://web.whatsapp.com" />
       </head>
-      <body className="min-h-screen flex flex-col antialiased">
+      <body className="min-h-screen flex flex-col antialiased" suppressHydrationWarning>
+        <SiteLoader />
+        <SkipNav />
         <LanguageProvider>
+          <Suspense fallback={null}>
+            <UTMTracker />
+          </Suspense>
           <UrgencyBanner />
-          <SocialProofToast />
-          <ExitIntentPopup />
-          <ThemeProvider>{children}</ThemeProvider>
+          <LazyLayoutWidgets />
+          <ThemeProvider>
+            <WhiteLabelProvider>
+              <ToastProvider>
+                {/* id="main-content" is the skip-nav target for public pages.
+                    Admin pages set their own id on the scrollable content area. */}
+                <div id="main-content" className="flex flex-col flex-1">
+                  {children}
+                </div>
+              </ToastProvider>
+            </WhiteLabelProvider>
+          </ThemeProvider>
         </LanguageProvider>
       </body>
     </html>

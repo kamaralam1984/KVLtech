@@ -11,13 +11,13 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   // Admin
-  const adminPass = await bcrypt.hash("admin@kvl2024", 12);
+  const adminPass = await bcrypt.hash("K12345678", 12);
   await prisma.admin.upsert({
-    where: { email: "admin@kvlbusinesssolutions.com" },
-    update: {},
+    where: { email: "kamaralamjdu@gmail.com" },
+    update: { password: adminPass },
     create: {
-      name: "Rahul Sharma",
-      email: "admin@kvlbusinesssolutions.com",
+      name: "Super Admin",
+      email: "kamaralamjdu@gmail.com",
       password: adminPass,
       role: "SUPER_ADMIN",
     },

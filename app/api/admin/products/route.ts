@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { cacheDel } from "@/lib/cache";
 
 export async function GET(req: NextRequest) {
   if (!requireAdmin(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -79,6 +80,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    await cacheDel("public:products");
     return NextResponse.json({ success: true, product }, { status: 201 });
   } catch (err) {
     console.error(err);
@@ -109,6 +111,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
+    await cacheDel("public:products");
     return NextResponse.json({ success: true, product });
   } catch (err) {
     console.error(err);
@@ -125,6 +128,7 @@ export async function DELETE(req: NextRequest) {
 
     // Soft delete
     await db.product.update({ where: { id }, data: { isActive: false } });
+    await cacheDel("public:products");
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });

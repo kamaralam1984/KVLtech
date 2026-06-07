@@ -6,6 +6,7 @@ import {
   ArrowRight, Target, Eye, Heart, Award, Users, TrendingUp, Zap,
   Shield, Code2, CheckCircle2, Globe, Headphones, Star, MessageCircle
 } from "lucide-react";
+import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
@@ -91,8 +92,8 @@ export default function AboutPage() {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
                 <div className="flex mb-6">
-                  <img src="/kvl-tech-logo-tight.png" alt="KVL BUSINESS SOLUTION" className="h-12 w-auto object-contain dark:hidden" />
-                  <img src="/kvl-tech-logo-white.png" alt="KVL BUSINESS SOLUTION" className="h-12 w-auto object-contain hidden dark:block" />
+                  <Image src="/kvl-tech-logo-tight.png" alt="KVL BUSINESS SOLUTION" width={180} height={48} className="h-12 w-auto object-contain dark:hidden" priority />
+                  <Image src="/kvl-tech-logo-white.png" alt="KVL BUSINESS SOLUTION" width={180} height={48} className="h-12 w-auto object-contain hidden dark:block" priority />
                 </div>
                 <div className="section-badge">About KVL TECH</div>
                 <h1 className="font-display font-bold text-4xl sm:text-5xl lg:text-6xl text-[var(--color-text)] mb-5 leading-tight">
@@ -358,7 +359,7 @@ export default function AboutPage() {
           <div className="absolute top-0 right-1/3 w-80 h-80 rounded-full bg-[var(--color-gold)]/8 blur-[80px] pointer-events-none" />
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <img src="/kvl-tech-logo-white.png" alt="KVL BUSINESS SOLUTION" className="h-10 w-auto object-contain mx-auto mb-6" />
+              <Image src="/kvl-tech-logo-white.png" alt="KVL BUSINESS SOLUTION" width={160} height={40} className="h-10 w-auto object-contain mx-auto mb-6" />
               <h2 className="font-display font-bold text-3xl sm:text-4xl text-white mb-4">
                 Ready to Transform <span style={{ color: "#E8C547" }}>Your Business?</span>
               </h2>

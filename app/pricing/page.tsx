@@ -9,6 +9,10 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { CurrencySelector, useCurrency } from "@/components/ui/CurrencySelector";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { FloatingOrbs } from "@/components/ui/FloatingOrbs";
+import { HolographicBadge } from "@/components/ui/HolographicBadge";
 
 const PLANS = [
   {
@@ -175,8 +179,17 @@ const TRUST = [
   { icon: Award, label: "Full Source Code", sub: "Zero lock-in" },
 ];
 
+// USD to INR paise: 1 USD = ~83 INR = 8300 paise
+function usdToINRPaise(usd: number): number {
+  return Math.round(usd * 83 * 100)
+}
+
 export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const { format: formatPrice, currency } = useCurrency();
+
+  // Format a USD price through currency conversion
+  const fmtUSD = (usd: number) => formatPrice(usdToINRPaise(usd));
 
   return (
     <>
@@ -192,6 +205,9 @@ export default function PricingPage() {
               <div className="flex justify-center mb-6">
                 <Image src="/kvl-tech-logo-tight.png" alt="KVL TECH" width={130} height={44} className="h-11 w-auto object-contain dark:hidden" />
                 <Image src="/kvl-tech-logo-white.png" alt="KVL TECH" width={130} height={44} className="h-11 w-auto object-contain hidden dark:block" />
+              </div>
+              <div className="flex justify-center mb-4">
+                <CurrencySelector />
               </div>
               <div className="section-badge mx-auto mb-4">Transparent Pricing</div>
               <h1 className="font-display font-bold text-4xl sm:text-5xl lg:text-6xl text-[var(--color-text)] mb-4 leading-tight">
@@ -218,8 +234,9 @@ export default function PricingPage() {
         </section>
 
         {/* ── Plans ── */}
-        <section className="py-16 lg:py-24 bg-[var(--color-bg)]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-16 lg:py-24 bg-[var(--color-bg)] mesh-gradient relative overflow-hidden">
+          <FloatingOrbs count={3} />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center mb-12">
               <h2 className="font-display font-bold text-3xl sm:text-4xl text-[var(--color-text)] mb-3">
                 Choose Your <span className="text-gold-gradient">Plan</span>
@@ -229,21 +246,23 @@ export default function PricingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
               {PLANS.map((plan, i) => (
-                <motion.div
+                <GlassCard
                   key={plan.name}
+                  variant={plan.popular ? "gold" : "dark"}
+                  tilt
+                  glow={plan.popular}
+                  className={`${plan.popular ? "md:scale-105" : ""}`}
+                >
+                <motion.div
                   initial={{ opacity: 0, y: 40 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.12, duration: 0.5 }}
-                  className={`relative rounded-2xl overflow-hidden ${
-                    plan.popular
-                      ? "shadow-[0_0_0_2px_#C9A227,0_24px_60px_rgba(201,162,39,0.2)] md:scale-105"
-                      : "shadow-[var(--shadow-card)]"
-                  }`}
+                  className="relative overflow-hidden rounded-2xl"
                 >
                   {plan.popular && (
-                    <div className="py-2 text-center text-sm font-bold text-white"
+                    <div className="py-2 text-center flex items-center justify-center gap-2"
                       style={{ background: "linear-gradient(135deg, #C9A227, #E8C547)" }}>
-                      ⭐ MOST POPULAR
+                      <HolographicBadge label="MOST POPULAR" size="sm" />
                     </div>
                   )}
 
@@ -259,7 +278,7 @@ export default function PricingPage() {
                         <span className="text-lg text-white/60 mb-1">from</span>
                         <span className="text-5xl font-black"
                           style={{ color: plan.popular ? "#E8C547" : "white" }}>
-                          ${plan.oneTimePrice}
+                          {fmtUSD(plan.oneTimePrice)}
                         </span>
                         {plan.name === "Custom" && <span className="text-white/60 text-xl mb-1">+</span>}
                       </div>
@@ -311,6 +330,7 @@ export default function PricingPage() {
                     ))}
                   </div>
                 </motion.div>
+                </GlassCard>
               ))}
             </div>
 
@@ -379,10 +399,10 @@ export default function PricingPage() {
                         </div>
                       </td>
                       <td className="p-5 text-center">
-                        <span className="font-bold text-lg text-[var(--color-text)]">${p.basic}</span>
+                        <span className="font-bold text-lg text-[var(--color-text)]">{fmtUSD(p.basic)}</span>
                       </td>
                       <td className="p-5 text-center">
-                        <span className="font-bold text-lg" style={{ color: "#C9A227" }}>${p.premium}</span>
+                        <span className="font-bold text-lg" style={{ color: "#C9A227" }}>{fmtUSD(p.premium)}</span>
                       </td>
                       <td className="p-5 text-center">
                         <Link href="/contact"
@@ -396,9 +416,9 @@ export default function PricingPage() {
                 <tfoot>
                   <tr style={{ background: "linear-gradient(135deg, #0A1628, #1E293B)" }}>
                     <td className="p-5 text-white font-bold text-sm">Starting price</td>
-                    <td className="p-5 text-center text-white font-bold">$96</td>
-                    <td className="p-5 text-center font-bold text-lg" style={{ color: "#E8C547" }}>$179</td>
-                    <td className="p-5 text-center text-white font-bold">$599+</td>
+                    <td className="p-5 text-center text-white font-bold">{fmtUSD(96)}</td>
+                    <td className="p-5 text-center font-bold text-lg" style={{ color: "#E8C547" }}>{fmtUSD(179)}</td>
+                    <td className="p-5 text-center text-white font-bold">{fmtUSD(599)}+</td>
                   </tr>
                 </tfoot>
               </table>
@@ -453,9 +473,9 @@ export default function PricingPage() {
                 <tfoot>
                   <tr style={{ background: "linear-gradient(135deg, #0A1628, #1E293B)" }}>
                     <td className="p-5 text-white font-bold text-sm">Starting price</td>
-                    <td className="p-5 text-center text-white font-bold">$96</td>
-                    <td className="p-5 text-center font-bold text-xl" style={{ color: "#E8C547" }}>$179</td>
-                    <td className="p-5 text-center text-white font-bold">$599+</td>
+                    <td className="p-5 text-center text-white font-bold">{fmtUSD(96)}</td>
+                    <td className="p-5 text-center font-bold text-xl" style={{ color: "#E8C547" }}>{fmtUSD(179)}</td>
+                    <td className="p-5 text-center text-white font-bold">{fmtUSD(599)}+</td>
                   </tr>
                 </tfoot>
               </table>

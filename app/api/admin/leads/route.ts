@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { scoreLeadFast } from "@/lib/lead-scoring";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   if (!requireAdmin(req))
@@ -65,6 +66,10 @@ export async function PATCH(req: NextRequest) {
         where: { id },
         data: { score: result.score, scoreLabel: result.scoreLabel, scoreNote: result.scoreNote, scoredAt: new Date() },
       });
+    }
+
+    if (status) {
+      logAudit(req, "UPDATE", "leads", id, `Lead status changed to ${status}`)
     }
 
     return NextResponse.json({ success: true, lead });

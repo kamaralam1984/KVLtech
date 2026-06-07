@@ -42,11 +42,13 @@ model Client {
   password     String
   company      String?
   city         String?
-  isActive     Boolean   @default(true)
-  emailVerified Boolean  @default(false)
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  isActive           Boolean   @default(true)
+  emailVerified      Boolean   @default(false)
+  verificationToken  String?
+  verificationExpiry DateTime?
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   orders              Order[]
   brandingSubmissions BrandingSubmission[]
@@ -54,6 +56,9 @@ model Client {
   notifications       Notification[]
   reviews             Review[]
   contactLeads        ContactLead[]
+  subscriptions        Subscription[]
+  referrals            Referral[]
+  passwordResetTokens  PasswordResetToken[]
 
   @@map("clients")
 }
@@ -154,8 +159,11 @@ model Order {
   payment  Payment?
   branding BrandingSubmission?
   review   Review?
-  statusHistory OrderStatusHistory[]
-  tickets  SupportTicket[]
+  statusHistory   OrderStatusHistory[]
+  tickets         SupportTicket[]
+  messages        Message[]
+  projectFiles    ProjectFile[]
+  designApprovals DesignApproval[]
 
   @@map("orders")
 }
@@ -320,10 +328,12 @@ model ContactLead {
   scoreLabel String     @default("cold")
   scoreNote  String?    @db.Text
   scoredAt   DateTime?
+  assignedTo String?
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
-  client Client? @relation(fields: [clientId], references: [id])
+  client     Client?    @relation(fields: [clientId], references: [id])
+  activities Activity[]
 
   @@map("contact_leads")
 }
@@ -445,4 +455,1008 @@ enum CampaignStatus {
   ACTIVE
   COMPLETED
   FAILED
+}
+
+// ─────────────────────────────────────────────
+// JOB APPLICATIONS — careers form submissions
+// ─────────────────────────────────────────────
+model JobApplication {
+  id          String            @id @default(cuid())
+  name        String
+  email       String
+  phone       String
+  position    String
+  experience  String?
+  portfolio   String?
+  coverLetter String?           @db.Text
+  resumeUrl   String?
+  status      ApplicationStatus @default(PENDING)
+  notes       String?           @db.Text
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("job_applications")
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  SHORTLISTED
+  REJECTED
+  HIRED
+}
+
+// ─────────────────────────────────────────────
+// SUBSCRIPTIONS — recurring billing
+// ─────────────────────────────────────────────
+model Subscription {
+  id              String             @id @default(cuid())
+  clientId        String
+  planName        String
+  amount          Int
+  currency        String             @default("INR")
+  billingCycle    String             @default("monthly")
+  status          SubscriptionStatus @default(ACTIVE)
+  startDate       DateTime           @default(now())
+  nextBillingAt   DateTime?
+  cancelledAt     DateTime?
+  razorpaySubId   String?
+  couponId        String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  client  Client  @relation(fields: [clientId], references: [id])
+  coupon  Coupon? @relation(fields: [couponId], references: [id])
+
+  @@map("subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+// ─────────────────────────────────────────────
+// COUPONS — discount codes
+// ─────────────────────────────────────────────
+model Coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  description   String?
+  discountType  String   @default("percent")
+  discountValue Int
+  maxUses       Int?
+  usedCount     Int      @default(0)
+  minOrderValue Int?
+  expiresAt     DateTime?
+  isActive      Boolean  @default(true)
+  referrerId    String?
+  createdAt     DateTime @default(now())
+
+  subscriptions Subscription[]
+
+  @@map("coupons")
+}
+
+// ─────────────────────────────────────────────
+// REFERRALS — affiliate / referral program
+// ─────────────────────────────────────────────
+model Referral {
+  id               String         @id @default(cuid())
+  referrerId       String
+  refereeEmail     String
+  refereeId        String?
+  commission       Int            @default(0)
+  commissionRate   Float          @default(20)
+  level            Int            @default(1)
+  parentReferralId String?
+  couponId         String?
+  couponCode       String?
+  orderAmount      Int            @default(0)
+  status           ReferralStatus @default(PENDING)
+  paidAt           DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  referrer  Client    @relation(fields: [referrerId], references: [id])
+  children  Referral[] @relation("ReferralChain")
+  parent    Referral?  @relation("ReferralChain", fields: [parentReferralId], references: [id])
+
+  @@map("referrals")
+}
+
+enum ReferralStatus {
+  PENDING
+  CONVERTED
+  PAID
+  REJECTED
+}
+
+// ─────────────────────────────────────────────
+// ACTIVITIES — CRM activity timeline
+// ─────────────────────────────────────────────
+model Activity {
+  id          String       @id @default(cuid())
+  leadId      String
+  type        ActivityType
+  title       String
+  description String?      @db.Text
+  scheduledAt DateTime?
+  completedAt DateTime?
+  adminId     String?
+  adminName   String?
+  outcome     String?
+  createdAt   DateTime     @default(now())
+
+  lead ContactLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  WHATSAPP
+  MEETING
+  NOTE
+  TASK
+}
+
+// ─────────────────────────────────────────────
+// MESSAGES — client ↔ admin portal chat
+// ─────────────────────────────────────────────
+model Message {
+  id          String   @id @default(cuid())
+  orderId     String
+  senderId    String
+  senderType  String   @default("client")
+  senderName  String
+  text        String   @db.Text
+  fileUrl     String?
+  fileName    String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// ─────────────────────────────────────────────
+// PROJECT FILES — file sharing per order
+// ─────────────────────────────────────────────
+model ProjectFile {
+  id           String   @id @default(cuid())
+  orderId      String
+  uploadedBy   String
+  uploaderType String   @default("admin")
+  uploaderName String
+  name         String
+  url          String
+  size         Int?
+  mimeType     String?
+  category     String   @default("general")
+  createdAt    DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("project_files")
+}
+
+// ─────────────────────────────────────────────
+// DESIGN APPROVALS — client approval workflow
+// ─────────────────────────────────────────────
+model DesignApproval {
+  id          String         @id @default(cuid())
+  orderId     String
+  title       String
+  description String?        @db.Text
+  fileUrl     String?
+  previewUrl  String?
+  status      ApprovalStatus @default(PENDING)
+  clientNote  String?        @db.Text
+  respondedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("design_approvals")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REVISION_REQUESTED
+}
+
+// ─────────────────────────────────────────────
+// AUDIT LOGS — admin action tracking
+// ─────────────────────────────────────────────
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  adminName  String?
+  action     String
+  resource   String
+  resourceId String?
+  details    String?  @db.Text
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────
+// AUTOMATION RULES — trigger-based marketing
+// ─────────────────────────────────────────────
+model AutomationRule {
+  id           String   @id @default(cuid())
+  name         String
+  trigger      String
+  triggerValue String?
+  action       String
+  channel      String   @default("email")
+  template     String?  @db.Text
+  delayHours   Int      @default(0)
+  isActive     Boolean  @default(true)
+  runCount     Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("automation_rules")
+}
+
+// ─────────────────────────────────────────────
+// PASSWORD RESET TOKENS
+// ─────────────────────────────────────────────
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  clientId  String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+// ═══════════════════════════════════════════════════
+// ENTERPRISE UPGRADE — Phase 1-5
+// ═══════════════════════════════════════════════════
+
+// ─────────────────────────────────────────────
+// RBAC — Custom Roles & Permissions
+// ─────────────────────────────────────────────
+model CustomRole {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  description  String?
+  color        String   @default("#6366F1")
+  isSystem     Boolean  @default(false)
+  department   String?
+  parentRoleId String?
+  createdAt    DateTime @default(now())
+
+  permissions RolePermission[]
+  admins      AdminRoleAssignment[]
+  children    CustomRole[]  @relation("RoleHierarchy")
+  parent      CustomRole?   @relation("RoleHierarchy", fields: [parentRoleId], references: [id])
+
+  @@map("custom_roles")
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  module      String
+  action      PermissionAction
+  description String?
+
+  roles RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+
+  role       CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AdminRoleAssignment {
+  id        String   @id @default(cuid())
+  adminId   String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  role CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([adminId, roleId])
+  @@map("admin_role_assignments")
+}
+
+enum PermissionAction {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  EXPORT
+  MANAGE
+}
+
+// ─────────────────────────────────────────────
+// API KEYS — Developer Platform
+// ─────────────────────────────────────────────
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique
+  prefix      String
+  adminId     String
+  scopes      String[]
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  requestCount Int      @default(0)
+  createdAt   DateTime  @default(now())
+
+  logs ApiKeyLog[]
+
+  @@map("api_keys")
+}
+
+model ApiKeyLog {
+  id        String   @id @default(cuid())
+  apiKeyId  String
+  endpoint  String
+  method    String
+  status    Int
+  ip        String?
+  createdAt DateTime @default(now())
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+
+  @@map("api_key_logs")
+}
+
+// ─────────────────────────────────────────────
+// WEBHOOKS — Outgoing Custom Webhooks
+// ─────────────────────────────────────────────
+model WebhookEndpoint {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  secret      String?
+  events      String[]
+  isActive    Boolean  @default(true)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deliveries WebhookDelivery[]
+
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id             String          @id @default(cuid())
+  endpointId     String
+  event          String
+  payload        String          @db.Text
+  responseStatus Int?
+  responseBody   String?         @db.Text
+  status         WebhookStatus   @default(PENDING)
+  attempts       Int             @default(0)
+  nextRetryAt    DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime        @default(now())
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@map("webhook_deliveries")
+}
+
+enum WebhookStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  RETRYING
+}
+
+// ─────────────────────────────────────────────
+// KNOWLEDGE BASE
+// ─────────────────────────────────────────────
+model KBCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  articles KBArticle[]
+
+  @@map("kb_categories")
+}
+
+model KBArticle {
+  id           String    @id @default(cuid())
+  categoryId   String?
+  title        String
+  slug         String    @unique
+  content      String    @db.Text
+  excerpt      String?
+  isPublic     Boolean   @default(true)
+  isPublished  Boolean   @default(false)
+  viewCount    Int       @default(0)
+  helpfulCount Int       @default(0)
+  tags         String[]
+  authorName   String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  category KBCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@map("kb_articles")
+}
+
+// ─────────────────────────────────────────────
+// SLA POLICIES
+// ─────────────────────────────────────────────
+model SLAPolicy {
+  id                    String   @id @default(cuid())
+  name                  String
+  priority              String
+  firstResponseMinutes  Int
+  resolutionMinutes     Int
+  escalationMinutes     Int?
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+
+  @@map("sla_policies")
+}
+
+model TicketSLALog {
+  id                    String    @id @default(cuid())
+  ticketId              String    @unique
+  slaId                 String?
+  firstResponseAt       DateTime?
+  resolvedAt            DateTime?
+  firstResponseBreached Boolean   @default(false)
+  resolutionBreached    Boolean   @default(false)
+  escalatedAt           DateTime?
+  createdAt             DateTime  @default(now())
+
+  @@map("ticket_sla_logs")
+}
+
+// ─────────────────────────────────────────────
+// MEETING SCHEDULER — Calendly-style
+// ─────────────────────────────────────────────
+model MeetingAvailability {
+  id          String  @id @default(cuid())
+  adminId     String
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  isActive    Boolean @default(true)
+  timezone    String  @default("Asia/Kolkata")
+
+  @@unique([adminId, dayOfWeek, startTime])
+  @@map("meeting_availability")
+}
+
+model MeetingBooking {
+  id           String        @id @default(cuid())
+  adminId      String
+  clientName   String
+  clientEmail  String
+  clientPhone  String?
+  date         DateTime
+  duration     Int           @default(30)
+  title        String        @default("Consultation Call")
+  notes        String?
+  meetingLink  String?
+  status       BookingStatus @default(PENDING)
+  reminderSent Boolean       @default(false)
+  cancelReason String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("meeting_bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+// ─────────────────────────────────────────────
+// E-SIGNATURE
+// ─────────────────────────────────────────────
+model SignatureRequest {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  documentUrl String?
+  content     String?         @db.Text
+  status      SignatureStatus @default(PENDING)
+  createdBy   String
+  expiresAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  signatories Signatory[]
+
+  @@map("signature_requests")
+}
+
+model Signatory {
+  id          String    @id @default(cuid())
+  requestId   String
+  name        String
+  email       String
+  role        String    @default("signer")
+  signatureData String? @db.Text
+  signedAt    DateTime?
+  ipAddress   String?
+  token       String    @unique @default(cuid())
+  status      SignatureStatus @default(PENDING)
+
+  request SignatureRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("signatories")
+}
+
+enum SignatureStatus {
+  PENDING
+  SIGNED
+  DECLINED
+  EXPIRED
+}
+
+// ─────────────────────────────────────────────
+// WHITE LABEL CONFIG
+// ─────────────────────────────────────────────
+model WhiteLabelConfig {
+  id             String   @id @default(cuid())
+  agencyId       String?  @unique
+  companyName    String   @default("KVL TECH")
+  logo           String?
+  favicon        String?
+  primaryColor   String   @default("#C9A227")
+  secondaryColor String   @default("#0B1437")
+  customDomain   String?
+  emailFromName  String?
+  emailFromAddr  String?
+  footerText     String?
+  supportEmail   String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("white_label_configs")
+}
+
+// ─────────────────────────────────────────────
+// AGENCY / RESELLER SYSTEM
+// ─────────────────────────────────────────────
+model Agency {
+  id              String       @id @default(cuid())
+  name            String
+  email           String       @unique
+  phone           String?
+  website         String?
+  password        String?
+  commissionRate  Float        @default(20)
+  status          AgencyStatus @default(PENDING)
+  totalRevenue    Int          @default(0)
+  totalClients    Int          @default(0)
+  referralCode    String       @unique
+  adminId         String?
+  logoUrl         String?
+  description     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  clients AgencyClient[]
+
+  @@map("agencies")
+}
+
+model AgencyClient {
+  id        String   @id @default(cuid())
+  agencyId  String
+  clientId  String
+  addedAt   DateTime @default(now())
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([agencyId, clientId])
+  @@map("agency_clients")
+}
+
+enum AgencyStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+// ─────────────────────────────────────────────
+// COMPANY-WIDE ACTIVITY FEED
+// ─────────────────────────────────────────────
+model ActivityFeedEvent {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  description String?
+  actorName   String?
+  actorType   String   @default("admin")
+  resourceType String?
+  resourceId  String?
+  metadata    String?  @db.Text
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@map("activity_feed_events")
+}
+
+// ─────────────────────────────────────────────
+// TEAM COLLABORATION — Internal Chat
+// ─────────────────────────────────────────────
+model TeamChannel {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isPrivate   Boolean  @default(false)
+  createdBy   String
+  members     String[]
+  createdAt   DateTime @default(now())
+
+  messages TeamMessage[]
+
+  @@map("team_channels")
+}
+
+model TeamMessage {
+  id          String   @id @default(cuid())
+  channelId   String
+  senderId    String
+  senderName  String
+  senderAvatar String?
+  text        String   @db.Text
+  fileUrl     String?
+  mentions    String[]
+  reactions   String?  @db.Text
+  replyToId   String?
+  isEdited    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  channel TeamChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@map("team_messages")
+}
+
+// ─────────────────────────────────────────────
+// CUSTOMER HEALTH SCORES
+// ─────────────────────────────────────────────
+model ClientHealthScore {
+  id               String   @id @default(cuid())
+  clientId         String   @unique
+  overallScore     Int      @default(50)
+  engagementScore  Int      @default(50)
+  paymentScore     Int      @default(50)
+  supportScore     Int      @default(50)
+  activityScore    Int      @default(50)
+  riskLevel        String   @default("medium")
+  churnProbability Float    @default(0.3)
+  renewalProbability Float  @default(0.7)
+  notes            String?
+  calculatedAt     DateTime @default(now())
+
+  @@map("client_health_scores")
+}
+
+// ─────────────────────────────────────────────
+// WORKFLOW BUILDER — Visual Automation
+// ─────────────────────────────────────────────
+model WorkflowTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  trigger     String
+  nodes       String   @db.Text
+  edges       String   @db.Text
+  isActive    Boolean  @default(false)
+  runCount    Int      @default(0)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("workflow_templates")
+}
+
+// ─────────────────────────────────────────────
+// PORTFOLIO CASE STUDIES
+// ─────────────────────────────────────────────
+model PortfolioProject {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  clientName   String
+  industry     String
+  description  String   @db.Text
+  challenge    String?  @db.Text
+  solution     String?  @db.Text
+  results      String?  @db.Text
+  techStack    String[]
+  coverImage   String
+  gallery      String[]
+  liveUrl      String?
+  duration     String?
+  teamSize     String?
+  testimonial  String?
+  authorName   String?
+  metrics      String?  @db.Text
+  tags         String[]
+  isFeatured   Boolean  @default(false)
+  isPublished  Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("portfolio_projects")
+}
+
+// ─────────────────────────────────────────────
+// TEAM TASKS — assignment & tracking
+// ─────────────────────────────────────────────
+model TeamTask {
+  id          String     @id @default(cuid())
+  title       String
+  description String?    @db.Text
+  assignedTo  String?
+  assignedBy  String
+  channelId   String?
+  dueDate     DateTime?
+  priority    String     @default("MEDIUM")
+  status      TaskStatus @default(TODO)
+  tags        String[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("team_tasks")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+  CANCELLED
+}
+
+// ─────────────────────────────────────────────
+// TEAM NOTES — shared notes
+// ─────────────────────────────────────────────
+model TeamNote {
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @db.Text
+  createdBy   String
+  creatorName String
+  channelId   String?
+  isPinned    Boolean  @default(false)
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("team_notes")
+}
+
+// ─────────────────────────────────────────────
+// SHARED CALENDAR — team events
+// ─────────────────────────────────────────────
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  endDate     DateTime?
+  allDay      Boolean  @default(false)
+  color       String   @default("#C9A227")
+  attendees   String[]
+  location    String?
+  meetingLink String?
+  createdBy   String
+  creatorName String
+  isRecurring Boolean  @default(false)
+  recurRule   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("calendar_events")
+}
+
+// ─────────────────────────────────────────────
+// KB ARTICLE VERSION HISTORY
+// ─────────────────────────────────────────────
+model KBArticleVersion {
+  id          String   @id @default(cuid())
+  articleId   String
+  version     Int
+  title       String
+  content     String   @db.Text
+  changedBy   String
+  changeNote  String?
+  createdAt   DateTime @default(now())
+
+  @@map("kb_article_versions")
+}
+
+// ─────────────────────────────────────────────
+// AI ALERTS — intelligent business alerts
+// ─────────────────────────────────────────────
+model AIAlert {
+  id           String      @id @default(cuid())
+  type         String
+  title        String
+  description  String      @db.Text
+  severity     AlertSeverity @default(MEDIUM)
+  resourceType String?
+  resourceId   String?
+  actionUrl    String?
+  actionLabel  String?
+  isRead       Boolean     @default(false)
+  isDismissed  Boolean     @default(false)
+  generatedAt  DateTime    @default(now())
+
+  @@map("ai_alerts")
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ─────────────────────────────────────────────
+// PERMISSION CHANGE AUDIT
+// ─────────────────────────────────────────────
+model PermissionAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  adminName  String
+  roleId     String
+  roleName   String
+  action     String
+  changes    String   @db.Text
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@map("permission_audit_logs")
+}
+
+// ─────────────────────────────────────────────
+// SLA ESCALATION RULES
+// ─────────────────────────────────────────────
+model SLAEscalationRule {
+  id              String   @id @default(cuid())
+  slaId           String
+  escalateAfterMinutes Int
+  notifyAdminIds  String[]
+  notifyEmail     String?
+  message         String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@map("sla_escalation_rules")
+}
+
+// ─────────────────────────────────────────────
+// MARKETING ASSETS LIBRARY
+// ─────────────────────────────────────────────
+model MarketingAsset {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  fileType     AssetType   @default(IMAGE)
+  url          String
+  thumbnail    String?
+  category     String      @default("general")
+  fileSize     String?
+  downloads    Int         @default(0)
+  isPublic     Boolean     @default(true)
+  tags         String[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("marketing_assets")
+}
+
+enum AssetType {
+  IMAGE
+  PDF
+  VIDEO
+  TEMPLATE
+  BANNER
+  LOGO
+}
+
+// ─────────────────────────────────────────────
+// STRIPE — billing integration
+// ─────────────────────────────────────────────
+model StripeCustomer {
+  id               String   @id @default(cuid())
+  clientId         String   @unique
+  stripeCustomerId String   @unique
+  createdAt        DateTime @default(now())
+
+  @@map("stripe_customers")
+}
+
+model StripePlan {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  stripePriceId String   @unique
+  amount        Int
+  currency      String   @default("INR")
+  interval      String   @default("month")
+  features      String[]
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  @@map("stripe_plans")
+}
+
+model StripeSubscription {
+  id                   String   @id @default(cuid())
+  clientId             String
+  stripeSubId          String   @unique
+  stripePlanId         String
+  stripeCustomerId     String
+  status               String   @default("active")
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  trialEnd             DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("stripe_subscriptions")
+}
+
+// ─────────────────────────────────────────────
+// COOKIE CONSENT LOGS
+// ─────────────────────────────────────────────
+model CookieConsent {
+  id          String   @id @default(cuid())
+  ip          String?
+  analytics   Boolean  @default(false)
+  marketing   Boolean  @default(false)
+  necessary   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("cookie_consents")
 }

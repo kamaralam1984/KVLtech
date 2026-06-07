@@ -9,18 +9,19 @@ import {
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
+import { FloatingOrbs } from "@/components/ui/FloatingOrbs";
+import { AnimatedGradientBorder } from "@/components/ui/AnimatedGradientBorder";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const DEMO_VIDEO_ID = "UL76TS335Vs";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  show: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, delay: i * 0.1, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
-  }),
-};
+function fadeUp(i: number, mounted: boolean) {
+  return {
+    opacity: mounted ? 1 : 0,
+    y: mounted ? 0 : 20,
+    transition: { duration: 0.55, delay: mounted ? i * 0.08 : 0, ease: [0.25, 0.1, 0.25, 1] as const },
+  };
+}
 
 const PRODUCT_SLIDES = [
   {
@@ -139,9 +140,12 @@ const PRODUCT_SLIDES = [
 
 export function Hero() {
   const { t } = useLanguage();
+  const [mounted, setMounted] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [sliderHovered, setSliderHovered] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setVideoOpen(false); };
@@ -170,13 +174,16 @@ export function Hero() {
   const highlights = [t.hero_h1, t.hero_h2, t.hero_h3];
 
   return (
-    <section className="relative min-h-screen flex flex-col justify-start lg:justify-center overflow-hidden pt-[104px]">
+    <section className="relative min-h-screen flex flex-col justify-start lg:justify-center overflow-hidden pt-[104px] grid-bg">
+      {/* Floating orbs background */}
+      <FloatingOrbs count={5} />
+
       {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[280px] sm:w-[600px] h-[280px] sm:h-[600px] rounded-full bg-[var(--color-gold)]/5 blur-[80px] sm:blur-[120px]" />
         <div className="absolute bottom-0 left-0 w-[200px] sm:w-[400px] h-[200px] sm:h-[400px] rounded-full bg-[var(--color-navy)]/5 blur-[60px] sm:blur-[100px]" />
         <div
-          className="absolute inset-0 opacity-[0.025]"
+          className="absolute inset-0 opacity-[0.015]"
           style={{ backgroundImage: `radial-gradient(circle, var(--color-text) 1px, transparent 1px)`, backgroundSize: "32px 32px" }}
         />
       </div>
@@ -186,28 +193,28 @@ export function Hero() {
 
           {/* LEFT — Content */}
           <div className="min-w-0">
-            <motion.div custom={0} variants={fadeUp} initial="hidden" animate="show" className="section-badge w-fit">
+            <motion.div animate={fadeUp(0, mounted)} className="section-badge w-fit">
               <Zap size={12} />
               {t.hero_badge}
             </motion.div>
 
             <motion.h1
-              custom={1} variants={fadeUp} initial="hidden" animate="show"
-              className="font-display font-bold text-[2rem] sm:text-4xl lg:text-[3.4rem] xl:text-[3.8rem] leading-[1.1] tracking-tight text-[var(--color-text)] mb-4"
+              animate={fadeUp(1, mounted)}
+              className="font-display font-bold text-[2rem] sm:text-4xl lg:text-[3.4rem] xl:text-[3.8rem] leading-[1.1] tracking-tight text-[var(--color-text)] mb-4 text-glow-gold"
             >
               {t.hero_headline}{" "}
               <span className="text-gold-gradient">{t.hero_headline_gold}</span>
             </motion.h1>
 
             <motion.p
-              custom={2} variants={fadeUp} initial="hidden" animate="show"
+              animate={fadeUp(2, mounted)}
               className="text-[var(--color-text-secondary)] text-base sm:text-lg leading-relaxed mb-8 max-w-lg"
             >
               {t.hero_subtitle}
             </motion.p>
 
             <motion.ul
-              custom={3} variants={fadeUp} initial="hidden" animate="show"
+              animate={fadeUp(3, mounted)}
               className="flex flex-wrap gap-x-6 gap-y-2 mb-8"
             >
               {highlights.map((h) => (
@@ -219,16 +226,24 @@ export function Hero() {
             </motion.ul>
 
             <motion.div
-              custom={4} variants={fadeUp} initial="hidden" animate="show"
+              animate={fadeUp(4, mounted)}
               className="flex flex-col sm:flex-row flex-wrap gap-3 mb-10"
             >
-              <Link href="/products" className="btn-primary justify-center sm:justify-start">
-                {t.hero_explore} <ArrowRight size={16} />
-              </Link>
-              <Link href="/contact" className="btn-gold text-center sm:text-left">
-                {t.hero_consult}
-              </Link>
-              <button
+              <motion.div whileHover={{ scale: 1.03 }} transition={{ duration: 0.18 }}>
+                <Link href="/products" className="btn-primary justify-center sm:justify-start">
+                  {t.hero_explore} <ArrowRight size={16} />
+                </Link>
+              </motion.div>
+              <AnimatedGradientBorder borderWidth={2}>
+                <motion.div whileHover={{ scale: 1.03 }} transition={{ duration: 0.18 }}>
+                  <Link href="/contact" className="btn-gold text-center sm:text-left glow-gold-hover">
+                    {t.hero_consult}
+                  </Link>
+                </motion.div>
+              </AnimatedGradientBorder>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                transition={{ duration: 0.18 }}
                 onClick={() => setVideoOpen(true)}
                 className="btn-outline flex items-center justify-center gap-2"
               >
@@ -236,11 +251,11 @@ export function Hero() {
                   <Play size={12} className="text-white ml-0.5" fill="white" />
                 </span>
                 {t.hero_watch_demo}
-              </button>
+              </motion.button>
             </motion.div>
 
             <motion.div
-              custom={5} variants={fadeUp} initial="hidden" animate="show"
+              animate={fadeUp(5, mounted)}
               className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-8 border-t border-[var(--color-border)]"
             >
               {stats.map(({ icon: Icon, value, suffix, label }) => (
@@ -258,7 +273,7 @@ export function Hero() {
 
             {/* Mobile — slider */}
             <motion.div
-              custom={6} variants={fadeUp} initial="hidden" animate="show"
+              animate={fadeUp(6, mounted)}
               className="lg:hidden mt-8"
             >
               <div className="relative rounded-2xl overflow-hidden border shadow-[var(--shadow-card)]"
@@ -598,7 +613,7 @@ export function Hero() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.4, duration: 0.5 }}
-              className="absolute top-8 -left-6 glass-card px-3 py-2.5 shadow-[var(--shadow-card)] flex items-center gap-2 z-20"
+              className="absolute top-8 -left-6 glass-panel rounded-2xl px-3 py-2.5 flex items-center gap-2 z-20 animate-float"
             >
               <div className="live-dot shrink-0" />
               <div>
@@ -612,7 +627,7 @@ export function Hero() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.6, duration: 0.5 }}
-              className="absolute bottom-28 -right-4 glass-card px-3 py-2.5 shadow-[var(--shadow-card)] text-center z-20"
+              className="absolute bottom-28 -right-4 glass-panel rounded-2xl px-3 py-2.5 text-center z-20 animate-float-delayed glow-gold"
             >
               <div className="flex gap-0.5 justify-center mb-0.5">
                 {[1,2,3,4,5].map(i => <Star key={i} size={11} fill="#C9A227" className="text-[var(--color-gold)]" />)}
@@ -626,7 +641,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.8, duration: 0.5 }}
-              className="absolute top-1/2 -right-8 glass-card px-3 py-2.5 shadow-[var(--shadow-card)] z-20"
+              className="absolute top-1/2 -right-8 glass-panel rounded-2xl px-3 py-2.5 z-20 animate-float-slow"
             >
               <p className="text-[10px] font-bold text-[var(--color-text)]">⚡ Fast Delivery</p>
               <p className="text-[9px] text-[var(--color-text-muted)]">1–5 business days</p>

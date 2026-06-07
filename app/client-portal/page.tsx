@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -8,14 +8,20 @@ import {
   ArrowRight, Shield, Eye, EyeOff, Zap, MessageCircle, Bell,
   Download, ExternalLink, AlertCircle, Star, X, FileText,
   ChevronDown, ChevronUp, Phone, Mail, MapPin, Send, LayoutDashboard,
-  TrendingUp, Calendar, RefreshCw, Loader2,
+  TrendingUp, Calendar, RefreshCw, Loader2, MessageSquare, Folder,
+  CheckCircle, CreditCard, File, Image, FileCode, Music, Video,
+  Paperclip, Users, Gift, Check, Sparkles, Mic,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
+import { useWhiteLabel } from "@/components/ui/WhiteLabelProvider";
+import { Confetti } from "@/components/ui/Confetti";
+import { Skeleton, AvatarSkeleton, CardSkeleton } from "@/components/ui/Skeleton";
+import { NoOrdersEmpty, NoDataEmpty } from "@/components/ui/EmptyState";
 
-type Tab = "overview" | "branding" | "orders" | "support";
+type Tab = "overview" | "branding" | "orders" | "support" | "messages" | "files" | "approvals" | "billing";
 
 interface ClientUser {
   id: string;
@@ -51,6 +57,78 @@ interface Notification {
   createdAt: string;
 }
 
+interface ChatMessage {
+  id: string;
+  orderId: string;
+  senderId: string;
+  senderType: string;
+  senderName: string;
+  text: string;
+  fileUrl?: string;
+  fileName?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+interface ProjectFile {
+  id: string;
+  orderId: string;
+  uploadedBy: string;
+  uploaderType: string;
+  uploaderName: string;
+  name: string;
+  url: string;
+  size?: number;
+  mimeType?: string;
+  createdAt: string;
+}
+
+interface DesignApproval {
+  id: string;
+  orderId: string;
+  title: string;
+  description?: string;
+  fileUrl?: string;
+  previewUrl?: string;
+  status: "PENDING" | "APPROVED" | "REVISION_REQUESTED";
+  clientNote?: string;
+  respondedAt?: string;
+  createdAt: string;
+}
+
+interface Subscription {
+  id: string;
+  planName: string;
+  amount: number;
+  billingCycle: string;
+  status: string;
+  nextBillingAt?: string;
+  createdAt: string;
+}
+
+interface StripePlan {
+  id: string;
+  name: string;
+  description?: string;
+  stripePriceId: string;
+  amount: number;
+  currency: string;
+  interval: string;
+  features: string[];
+  isActive: boolean;
+  sortOrder: number;
+}
+
+interface StripeSubscription {
+  id: string;
+  stripeSubId: string;
+  stripePlanId: string;
+  status: string;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd: boolean;
+  trialEnd?: string;
+}
+
 const STATUS_LABEL: Record<string, string> = {
   PAYMENT_PENDING: "Payment Pending",
   PAYMENT_CONFIRMED: "Payment Confirmed",
@@ -83,7 +161,26 @@ const FAQS = [
 const INPUT = "w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-tertiary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] focus:ring-2 focus:ring-[var(--color-gold)]/10 transition-all placeholder:text-[var(--color-text-muted)]";
 const LABEL = "block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5";
 
+function formatFileSize(bytes?: number): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(mimeType?: string, name?: string) {
+  const m = mimeType || "";
+  if (m.startsWith("image/")) return Image;
+  if (m.startsWith("video/")) return Video;
+  if (m.startsWith("audio/")) return Music;
+  if (m.includes("pdf") || (name || "").endsWith(".pdf")) return FileText;
+  if (m.includes("zip") || m.includes("rar")) return Folder;
+  if (m.includes("javascript") || m.includes("html") || m.includes("css") || m.includes("json")) return FileCode;
+  return File;
+}
+
 export default function ClientPortalPage() {
+  const wl = useWhiteLabel();
   const [checking, setChecking] = useState(true);
   const [user, setUser] = useState<ClientUser | null>(null);
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
@@ -98,7 +195,6 @@ export default function ClientPortalPage() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
 
-  // Branding
   const [branding, setBranding] = useState({
     orderId: "", companyName: "", tagline: "", primaryColor: "#C9A227",
     secondaryColor: "#0F172A", fontPreference: "", phone: "", email: "",
@@ -108,29 +204,74 @@ export default function ClientPortalPage() {
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingError, setBrandingError] = useState("");
 
-  // Support
   const [ticket, setTicket] = useState({ subject: "", orderId: "", priority: "Medium", message: "" });
   const [ticketSent, setTicketSent] = useState(false);
   const [ticketNo, setTicketNo] = useState("");
   const [ticketLoading, setTicketLoading] = useState(false);
   const [ticketError, setTicketError] = useState("");
 
-  // Rating
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // ── check session on mount ──
+  const [chatOrderId, setChatOrderId] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatText, setChatText] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [filesOrderId, setFilesOrderId] = useState("");
+  const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [fileUploading, setFileUploading] = useState(false);
+  const [fileDrag, setFileDrag] = useState(false);
+
+  // Meeting recording state
+  const [recordingFile, setRecordingFile] = useState<File | null>(null);
+  const [recordingUploading, setRecordingUploading] = useState(false);
+  const [recordingProgress, setRecordingProgress] = useState(0);
+  const [recordingTranscript, setRecordingTranscript] = useState("");
+  const [recordingError, setRecordingError] = useState("");
+  const recordingInputRef = useRef<HTMLInputElement>(null);
+
+  const [approvalsOrderId, setApprovalsOrderId] = useState("");
+  const [approvals, setApprovals] = useState<DesignApproval[]>([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
+  const [approvalNotes, setApprovalNotes] = useState<Record<string, string>>({});
+  const [approvalSubmitting, setApprovalSubmitting] = useState<string | null>(null);
+
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [subsLoading, setSubsLoading] = useState(false);
+  const [subAction, setSubAction] = useState<{ id: string; action: "pause" | "cancel" | "resume" } | null>(null);
+  const [subActing, setSubActing] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState<string | null>(null);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [referralStats, setReferralStats] = useState<{
+    totalEarned: number; pendingEarnings: number; level1Count: number; level2Count: number; totalReferrals: number;
+  }>({ totalEarned: 0, pendingEarnings: 0, level1Count: 0, level2Count: 0, totalReferrals: 0 });
+  const [referralLink, setReferralLink] = useState("");
+  const [referralEmail, setReferralEmail] = useState("");
+  const [referralSending, setReferralSending] = useState(false);
+  const [referralMsg, setReferralMsg] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  // Stripe
+  const [stripePlans, setStripePlans] = useState<StripePlan[]>([]);
+  const [stripePlansLoading, setStripePlansLoading] = useState(false);
+  const [stripeNotConfigured, setStripeNotConfigured] = useState(false);
+  const [stripeCheckoutLoading, setStripeCheckoutLoading] = useState<string | null>(null);
+  const [stripeSubscriptions, setStripeSubscriptions] = useState<StripeSubscription[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState<string | null>(null); // stripeSubId
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" })
       .then(r => r.json())
-      .then(data => {
-        if (data.user) setUser(data.user);
-      })
+      .then(data => { if (data.user) setUser(data.user); })
       .catch(() => {})
       .finally(() => setChecking(false));
   }, []);
 
-  // ── fetch orders ──
   const fetchOrders = useCallback(async () => {
     setOrdersLoading(true);
     try {
@@ -141,7 +282,6 @@ export default function ClientPortalPage() {
     setOrdersLoading(false);
   }, []);
 
-  // ── fetch notifications ──
   const fetchNotifications = useCallback(async () => {
     setNotifLoading(true);
     try {
@@ -152,7 +292,6 @@ export default function ClientPortalPage() {
     setNotifLoading(false);
   }, []);
 
-  // ── load data when logged in ──
   useEffect(() => {
     if (user) {
       fetchOrders();
@@ -160,19 +299,296 @@ export default function ClientPortalPage() {
     }
   }, [user, fetchOrders, fetchNotifications]);
 
-  // ── pre-fill branding orderId with first active order ──
   useEffect(() => {
     const active = orders.find(o => o.status !== "DELIVERED" && o.status !== "CANCELLED");
-    if (active && !branding.orderId) {
-      setBranding(b => ({ ...b, orderId: active.id }));
-    }
-    // pre-fill ratings from existing reviews
+    if (active && !branding.orderId) setBranding(b => ({ ...b, orderId: active.id }));
     const rv: Record<string, number> = {};
     orders.forEach(o => { if (o.review?.rating) rv[o.id] = o.review.rating; });
     setRatings(rv);
+    if (orders.length > 0) {
+      if (!chatOrderId) setChatOrderId(orders[0].id);
+      if (!filesOrderId) setFilesOrderId(orders[0].id);
+      if (!approvalsOrderId) setApprovalsOrderId(orders[0].id);
+    }
   }, [orders]);
 
-  // ── login ──
+  const fetchChatMessages = useCallback(async (orderId: string) => {
+    if (!orderId) return;
+    try {
+      const r = await fetch(`/api/messages?orderId=${orderId}`, { credentials: "include" });
+      const data = await r.json();
+      if (data.messages) setChatMessages(data.messages);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "messages" && chatOrderId) {
+      fetchChatMessages(chatOrderId);
+      chatPollRef.current = setInterval(() => fetchChatMessages(chatOrderId), 5000);
+    }
+    return () => { if (chatPollRef.current) clearInterval(chatPollRef.current); };
+  }, [activeTab, chatOrderId, fetchChatMessages]);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const sendChatMessage = async () => {
+    if (!chatText.trim() || !chatOrderId || chatSending) return;
+    setChatSending(true);
+    try {
+      const r = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ orderId: chatOrderId, text: chatText.trim() }),
+      });
+      if (r.ok) {
+        setChatText("");
+        fetchChatMessages(chatOrderId);
+      }
+    } catch {}
+    setChatSending(false);
+  };
+
+  const fetchProjectFiles = useCallback(async (orderId: string) => {
+    if (!orderId) return;
+    setFilesLoading(true);
+    try {
+      const r = await fetch(`/api/project-files?orderId=${orderId}`, { credentials: "include" });
+      const data = await r.json();
+      if (data.files) setProjectFiles(data.files);
+    } catch {}
+    setFilesLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "files" && filesOrderId) fetchProjectFiles(filesOrderId);
+  }, [activeTab, filesOrderId, fetchProjectFiles]);
+
+  const uploadFile = async (file: File) => {
+    if (!filesOrderId || fileUploading) return;
+    setFileUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("orderId", filesOrderId);
+      const r = await fetch("/api/project-files", { method: "POST", credentials: "include", body: fd });
+      if (r.ok) fetchProjectFiles(filesOrderId);
+    } catch {}
+    setFileUploading(false);
+  };
+
+  async function uploadMeetingRecording(file: File) {
+    if (!file) return;
+    const MAX = 25 * 1024 * 1024;
+    if (file.size > MAX) {
+      setRecordingError("File too large. Maximum size is 25MB.");
+      return;
+    }
+    setRecordingUploading(true);
+    setRecordingError("");
+    setRecordingTranscript("");
+    setRecordingProgress(10);
+
+    const progressTimer = setInterval(() => {
+      setRecordingProgress(prev => prev < 85 ? prev + 10 : prev);
+    }, 1500);
+
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("callType", "meeting");
+
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+
+      clearInterval(progressTimer);
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setRecordingError(err.error || "Transcription failed. Please try again.");
+        setRecordingUploading(false);
+        setRecordingProgress(0);
+        return;
+      }
+
+      const data = await res.json();
+      setRecordingTranscript(data.transcript || "");
+      setRecordingProgress(100);
+      setRecordingFile(file);
+    } catch {
+      clearInterval(progressTimer);
+      setRecordingError("Network error. Please try again.");
+    } finally {
+      setRecordingUploading(false);
+    }
+  }
+
+  function downloadTranscript() {
+    if (!recordingTranscript) return;
+    const blob = new Blob([recordingTranscript], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `meeting-transcript-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const fetchApprovals = useCallback(async (orderId: string) => {
+    if (!orderId) return;
+    setApprovalsLoading(true);
+    try {
+      const r = await fetch(`/api/design-approvals?orderId=${orderId}`, { credentials: "include" });
+      const data = await r.json();
+      if (data.approvals) setApprovals(data.approvals);
+    } catch {}
+    setApprovalsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "approvals" && approvalsOrderId) fetchApprovals(approvalsOrderId);
+  }, [activeTab, approvalsOrderId, fetchApprovals]);
+
+  const respondToApproval = async (id: string, status: "APPROVED" | "REVISION_REQUESTED") => {
+    setApprovalSubmitting(id);
+    try {
+      const r = await fetch(`/api/design-approvals?id=${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status, clientNote: approvalNotes[id] || "" }),
+      });
+      if (r.ok) fetchApprovals(approvalsOrderId);
+    } catch {}
+    setApprovalSubmitting(null);
+  };
+
+  const fetchBillingData = useCallback(async () => {
+    setSubsLoading(true);
+    try {
+      const [subsRes, refRes] = await Promise.all([
+        fetch("/api/subscriptions", { credentials: "include" }),
+        fetch("/api/referrals", { credentials: "include" }),
+      ]);
+      const subsData = await subsRes.json();
+      const refData = await refRes.json();
+      if (Array.isArray(subsData)) setSubscriptions(subsData);
+      if (refData.referrals) setReferrals(refData.referrals);
+      if (refData.stats) setReferralStats(refData.stats);
+      if (refData.referralLink) setReferralLink(refData.referralLink);
+    } catch {}
+    setSubsLoading(false);
+  }, []);
+
+  const fetchStripePlans = useCallback(async () => {
+    setStripePlansLoading(true);
+    setStripeNotConfigured(false);
+    try {
+      const r = await fetch("/api/admin/stripe-plans", { credentials: "include" });
+      const data = await r.json();
+      if (data.plans) {
+        setStripePlans(data.plans.filter((p: StripePlan) => p.isActive));
+      }
+    } catch {
+      setStripeNotConfigured(true);
+    }
+    setStripePlansLoading(false);
+  }, []);
+
+  const fetchStripeSubscriptions = useCallback(async () => {
+    try {
+      const r = await fetch("/api/client/stripe-subscriptions", { credentials: "include" });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.subscriptions) setStripeSubscriptions(data.subscriptions);
+      }
+    } catch {}
+  }, []);
+
+  const handleStripeCheckout = async (planId: string) => {
+    setStripeCheckoutLoading(planId);
+    try {
+      const r = await fetch("/api/payment/stripe-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ planId }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        alert(data.error || "Failed to start checkout");
+        return;
+      }
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    }
+    setStripeCheckoutLoading(null);
+  };
+
+  const handleStripeUpgrade = async (stripeSubId: string, newPriceId: string) => {
+    setUpgradeLoading(true);
+    try {
+      const r = await fetch("/api/subscriptions/upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ stripeSubId, newPriceId }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        alert(data.error || "Upgrade failed");
+      } else {
+        setShowUpgradeModal(null);
+        fetchStripeSubscriptions();
+        alert("Plan changed successfully!");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    }
+    setUpgradeLoading(false);
+  };
+
+  useEffect(() => {
+    if (activeTab === "billing") {
+      fetchBillingData();
+      fetchStripePlans();
+      fetchStripeSubscriptions();
+    }
+  }, [activeTab, fetchBillingData, fetchStripePlans, fetchStripeSubscriptions]);
+
+  const sendReferral = async () => {
+    if (!referralEmail.trim() || referralSending) return;
+    setReferralSending(true);
+    setReferralMsg("");
+    try {
+      const r = await fetch("/api/referrals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ refereeEmail: referralEmail.trim() }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        setReferralMsg("Referral sent successfully!");
+        setReferralEmail("");
+        fetchBillingData();
+      } else {
+        setReferralMsg(data.error || "Failed to send referral.");
+      }
+    } catch {
+      setReferralMsg("Network error.");
+    }
+    setReferralSending(false);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
@@ -185,18 +601,14 @@ export default function ClientPortalPage() {
         body: JSON.stringify({ email: loginForm.email, password: loginForm.password }),
       });
       const data = await r.json();
-      if (!r.ok) {
-        setLoginError(data.error || "Login failed. Please try again.");
-      } else {
-        setUser(data.client);
-      }
+      if (!r.ok) setLoginError(data.error || "Login failed. Please try again.");
+      else setUser(data.client);
     } catch {
       setLoginError("Network error. Please try again.");
     }
     setLoginLoading(false);
   };
 
-  // ── logout ──
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     setUser(null);
@@ -204,7 +616,6 @@ export default function ClientPortalPage() {
     setNotifications([]);
   };
 
-  // ── mark all notifications read ──
   const markAllRead = async () => {
     await fetch("/api/notifications", {
       method: "PATCH",
@@ -215,7 +626,6 @@ export default function ClientPortalPage() {
     setNotifications(n => n.map(x => ({ ...x, isRead: true })));
   };
 
-  // ── branding submit ──
   const handleBrandingSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setBrandingError("");
@@ -228,19 +638,14 @@ export default function ClientPortalPage() {
         body: JSON.stringify(branding),
       });
       const data = await r.json();
-      if (!r.ok) {
-        setBrandingError(data.error || "Submit failed.");
-      } else {
-        setBrandingSaved(true);
-        fetchNotifications();
-      }
+      if (!r.ok) setBrandingError(data.error || "Submit failed.");
+      else { setBrandingSaved(true); fetchNotifications(); }
     } catch {
       setBrandingError("Network error. Please try again.");
     }
     setBrandingLoading(false);
   };
 
-  // ── support ticket submit ──
   const handleTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     setTicketError("");
@@ -253,20 +658,14 @@ export default function ClientPortalPage() {
         body: JSON.stringify(ticket),
       });
       const data = await r.json();
-      if (!r.ok) {
-        setTicketError(data.error || "Submit failed.");
-      } else {
-        setTicketSent(true);
-        setTicketNo(data.ticket.ticketNo);
-        fetchNotifications();
-      }
+      if (!r.ok) setTicketError(data.error || "Submit failed.");
+      else { setTicketSent(true); setTicketNo(data.ticket.ticketNo); fetchNotifications(); }
     } catch {
       setTicketError("Network error. Please try again.");
     }
     setTicketLoading(false);
   };
 
-  // ── star rating submit ──
   const handleRating = async (orderId: string, rating: number) => {
     setRatings(r => ({ ...r, [orderId]: rating }));
     await fetch("/api/reviews", {
@@ -277,31 +676,105 @@ export default function ClientPortalPage() {
     });
   };
 
+  const handleSubAction = async (id: string, action: "pause" | "cancel" | "resume") => {
+    setSubActing(true);
+    try {
+      const r = await fetch("/api/subscriptions/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action, subscriptionId: id }),
+      });
+      const data = await r.json();
+      if (r.ok && data.subscription) {
+        setSubscriptions(prev => prev.map(s => s.id === id ? { ...s, status: data.subscription.status } : s));
+      }
+    } catch {}
+    setSubActing(false);
+    setShowCancelConfirm(null);
+    setSubAction(null);
+  };
+
   const unread = notifications.filter(n => !n.isRead).length;
   const activeOrders = orders.filter(o => o.status !== "DELIVERED" && o.status !== "CANCELLED");
   const deliveredOrders = orders.filter(o => o.status === "DELIVERED");
+
+  // Confetti: fire once per session when user has a delivered order
+  const [showConfetti, setShowConfetti] = useState(false);
+  useEffect(() => {
+    if (deliveredOrders.length > 0 && user) {
+      const key = `confetti_shown_${user.id}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3200);
+      }
+    }
+  }, [deliveredOrders.length, user]);
 
   const TABS: { id: Tab; label: string; icon: typeof User }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "branding", label: "Branding", icon: Palette },
     { id: "orders", label: "My Orders", icon: Package },
     { id: "support", label: "Support", icon: MessageCircle },
+    { id: "messages", label: "Messages", icon: MessageSquare },
+    { id: "files", label: "Files", icon: Folder },
+    { id: "approvals", label: "Approvals", icon: CheckCircle },
+    { id: "billing", label: "Billing", icon: CreditCard },
   ];
 
-  /* ─── INITIAL CHECK ─── */
   if (checking) {
     return (
       <>
         <Navbar />
-        <main className="pt-16 min-h-[90vh] flex items-center justify-center bg-[var(--color-bg-secondary)]">
-          <Loader2 size={32} className="text-[var(--color-gold)] animate-spin" />
+        <main className="pt-16 min-h-[90vh] bg-[var(--color-bg-secondary)]">
+          {/* Portal skeleton: header bar + tab bar + content */}
+          <div className="bg-[var(--color-navy)] border-b border-white/5">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-7 w-20 rounded-md" />
+                <AvatarSkeleton size="md" />
+                <div className="flex flex-col gap-1.5">
+                  <Skeleton className="h-3.5 w-28 rounded" />
+                  <Skeleton className="h-2.5 w-20 rounded" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 rounded-xl" />
+                <Skeleton className="h-8 w-16 rounded-lg" />
+              </div>
+            </div>
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7">
+            {/* Tab bar skeleton */}
+            <div className="flex gap-1.5 flex-wrap mb-7 bg-[var(--color-bg)] rounded-2xl p-1.5 border border-[var(--color-border)] w-fit">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className={`h-9 rounded-xl ${i === 0 ? "w-24" : "w-20"}`} />
+              ))}
+            </div>
+            {/* Content area skeleton */}
+            <div className="space-y-5">
+              <div className="grid sm:grid-cols-3 gap-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="card p-5 flex items-center gap-4">
+                    <Skeleton className="h-12 w-12 rounded-2xl shrink-0" />
+                    <div className="flex flex-col gap-2 flex-1">
+                      <Skeleton className="h-7 w-16" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <CardSkeleton lines={5} />
+              <CardSkeleton lines={3} />
+            </div>
+          </div>
         </main>
         <Footer />
       </>
     );
   }
 
-  /* ─── LOGIN ─── */
   if (!user) {
     return (
       <>
@@ -312,16 +785,7 @@ export default function ClientPortalPage() {
               <div className="card p-8">
                 <div className="text-center mb-8">
                   <div className="flex justify-center mb-4">
-                    <img
-                      src="/kvl-tech-logo-tight.png"
-                      alt="KVL TECH"
-                      className="h-10 w-auto object-contain dark:hidden"
-                    />
-                    <img
-                      src="/kvl-tech-logo-white.png"
-                      alt="KVL TECH"
-                      className="h-10 w-auto object-contain hidden dark:block"
-                    />
+                    <img src={wl.logo} alt={wl.companyName} className="h-10 w-auto object-contain" />
                   </div>
                   <div className="w-16 h-16 rounded-2xl bg-[var(--color-gold)]/10 flex items-center justify-center mx-auto mb-4 shadow-[0_0_0_8px_rgba(201,162,39,0.06)]">
                     <Shield size={30} className="text-[var(--color-gold)]" />
@@ -389,20 +853,15 @@ export default function ClientPortalPage() {
     );
   }
 
-  /* ─── DASHBOARD ─── */
   return (
     <>
-      <main className="min-h-screen bg-[var(--color-bg-secondary)]" style={{ paddingTop: '40px' }}>
+      <Confetti trigger={showConfetti} />
+      <main className="min-h-screen bg-[var(--color-bg-secondary)]" style={{ paddingTop: "40px" }}>
 
-        {/* Top bar */}
         <div className="bg-[var(--color-navy)] border-b border-white/5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img
-                src="/kvl-tech-logo-white.png"
-                alt="KVL TECH"
-                className="h-7 w-auto object-contain mr-1"
-              />
+              <img src={wl.logo} alt={wl.companyName} className="h-7 w-auto object-contain mr-1" />
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--color-gold)] to-[var(--color-gold-dark)] flex items-center justify-center font-bold text-sm text-white shadow-[var(--shadow-gold)]">
                 {user.name[0].toUpperCase()}
               </div>
@@ -416,7 +875,6 @@ export default function ClientPortalPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Notifications */}
               <div className="relative">
                 <button onClick={() => setNotifOpen(v => !v)}
                   className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/20 transition-all">
@@ -447,7 +905,6 @@ export default function ClientPortalPage() {
                             </button>
                           </div>
                         </div>
-
                         <div className="max-h-72 overflow-y-auto">
                           {notifLoading ? (
                             <div className="p-6 flex justify-center"><Loader2 size={20} className="animate-spin text-[var(--color-gold)]" /></div>
@@ -479,13 +936,20 @@ export default function ClientPortalPage() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 pb-8 sm:pb-7">
 
-          {/* Tab nav */}
-          <div className="flex gap-1.5 flex-wrap mb-7 bg-[var(--color-bg)] rounded-2xl p-1.5 border border-[var(--color-border)] w-fit">
+          {/* Tab bar — horizontally scrollable on mobile */}
+          <div
+            className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap mb-7 sm:bg-[var(--color-bg)] sm:rounded-2xl sm:p-1.5 sm:border sm:border-[var(--color-border)] sm:w-fit"
+            role="tablist"
+            aria-label="Portal sections"
+          >
             {TABS.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === id
+                role="tab"
+                aria-selected={activeTab === id}
+                aria-controls={`tabpanel-${id}`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap shrink-0 ${activeTab === id
                   ? "bg-[var(--color-navy)] text-white shadow-[var(--shadow-card)]"
                   : "text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)]"}`}>
                 <Icon size={15} /> {label}
@@ -495,7 +959,6 @@ export default function ClientPortalPage() {
 
           <AnimatePresence mode="wait">
 
-            {/* ══ OVERVIEW ══ */}
             {activeTab === "overview" && (
               <motion.div key="overview" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
 
@@ -518,9 +981,8 @@ export default function ClientPortalPage() {
                   ))}
                 </div>
 
-                {/* Active order */}
                 {ordersLoading ? (
-                  <div className="card p-10 flex justify-center"><Loader2 size={24} className="animate-spin text-[var(--color-gold)]" /></div>
+                  <CardSkeleton lines={5} />
                 ) : activeOrders.length > 0 ? (
                   <div className="card p-6">
                     <div className="flex items-center justify-between mb-5">
@@ -551,7 +1013,6 @@ export default function ClientPortalPage() {
                       </div>
                     </div>
 
-                    {/* Steps */}
                     {(() => {
                       const currentStep = STATUS_STEP[activeOrders[0].status] ?? 0;
                       return (
@@ -580,14 +1041,11 @@ export default function ClientPortalPage() {
                     })()}
                   </div>
                 ) : (
-                  <div className="card p-10 text-center text-[var(--color-text-muted)]">
-                    <Package size={32} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">No active orders</p>
-                    <Link href="/products" className="btn-gold inline-flex items-center gap-2 mt-4 text-sm">Browse Products <ArrowRight size={14} /></Link>
+                  <div className="card overflow-hidden">
+                    <NoOrdersEmpty />
                   </div>
                 )}
 
-                {/* Quick actions */}
                 <div className="card p-6">
                   <h2 className="font-display font-bold text-lg text-[var(--color-text)] mb-4">Quick Actions</h2>
                   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -596,7 +1054,7 @@ export default function ClientPortalPage() {
                       { label: "Track Orders", desc: "Status & progress", icon: Package, color: "#0891B2", bg: "#0891B215", action: () => setActiveTab("orders") },
                       { label: "WhatsApp Support", desc: "Instant response", icon: MessageCircle, color: "#25D366", bg: "#25D36615", href: "https://wa.me/919942000413" },
                       { label: "Raise Ticket", desc: "Email support", icon: FileText, color: "#7C3AED", bg: "#7C3AED15", action: () => setActiveTab("support") },
-                    ].map(({ label, desc, icon: Icon, color, bg, action, href }) => (
+                    ].map(({ label, desc, icon: Icon, color, bg, action, href }: any) => (
                       href
                         ? <a key={label} href={href} target="_blank" rel="noopener noreferrer"
                           className="flex items-center gap-3 p-4 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-gold)]/40 hover:shadow-[var(--shadow-card)] transition-all group">
@@ -616,7 +1074,6 @@ export default function ClientPortalPage() {
                   </div>
                 </div>
 
-                {/* Recent activity from status history */}
                 {orders.length > 0 && (
                   <div className="card p-6">
                     <h2 className="font-display font-bold text-lg text-[var(--color-text)] mb-4">Recent Activity</h2>
@@ -644,7 +1101,6 @@ export default function ClientPortalPage() {
               </motion.div>
             )}
 
-            {/* ══ BRANDING ══ */}
             {activeTab === "branding" && (
               <motion.div key="branding" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
                 <div className="max-w-2xl">
@@ -677,7 +1133,6 @@ export default function ClientPortalPage() {
                       </motion.div>
                     ) : (
                       <form onSubmit={handleBrandingSave} className="space-y-5">
-                        {/* Order selection */}
                         {orders.length > 0 && (
                           <div>
                             <label className={LABEL}>Related Order</label>
@@ -777,11 +1232,9 @@ export default function ClientPortalPage() {
                           <textarea rows={3} value={branding.logoNote} onChange={e => setBranding(b => ({ ...b, logoNote: e.target.value }))}
                             placeholder="Any specific requirements? Reference websites, style preferences..." className={INPUT + " resize-none"} />
                         </div>
-
                         {brandingError && (
                           <p className="text-sm text-red-500 flex items-center gap-2"><AlertCircle size={14} /> {brandingError}</p>
                         )}
-
                         <button type="submit" disabled={brandingLoading}
                           className="btn-gold w-full py-4 flex items-center justify-center gap-2 disabled:opacity-60">
                           {brandingLoading ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
@@ -794,7 +1247,6 @@ export default function ClientPortalPage() {
               </motion.div>
             )}
 
-            {/* ══ ORDERS ══ */}
             {activeTab === "orders" && (
               <motion.div key="orders" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
                 <div className="flex items-center justify-between">
@@ -805,12 +1257,13 @@ export default function ClientPortalPage() {
                 </div>
 
                 {ordersLoading ? (
-                  <div className="card p-10 flex justify-center"><Loader2 size={24} className="animate-spin text-[var(--color-gold)]" /></div>
+                  <div className="space-y-4">
+                    <CardSkeleton lines={5} />
+                    <CardSkeleton lines={5} />
+                  </div>
                 ) : orders.length === 0 ? (
-                  <div className="card p-10 text-center text-[var(--color-text-muted)]">
-                    <Package size={32} className="mx-auto mb-3 opacity-30" />
-                    <p className="text-sm mb-4">No orders found</p>
-                    <Link href="/products" className="btn-gold inline-flex items-center gap-2 text-sm">Browse Products <ArrowRight size={14} /></Link>
+                  <div className="card overflow-hidden">
+                    <NoOrdersEmpty />
                   </div>
                 ) : orders.map(order => {
                   const currentStep = STATUS_STEP[order.status] ?? 0;
@@ -838,7 +1291,6 @@ export default function ClientPortalPage() {
                         </span>
                       </div>
 
-                      {/* Progress bar */}
                       {order.progress > 0 && (
                         <div>
                           <div className="flex justify-between text-xs mb-2">
@@ -852,7 +1304,6 @@ export default function ClientPortalPage() {
                         </div>
                       )}
 
-                      {/* Steps */}
                       <div className="relative flex items-start justify-between">
                         <div className="absolute top-3.5 left-[10%] right-[10%] h-px bg-[var(--color-border)]" />
                         <div className="absolute top-3.5 left-[10%] h-px bg-[var(--color-gold)] transition-all duration-700"
@@ -923,7 +1374,6 @@ export default function ClientPortalPage() {
               </motion.div>
             )}
 
-            {/* ══ SUPPORT ══ */}
             {activeTab === "support" && (
               <motion.div key="support" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
                 <div className="grid lg:grid-cols-5 gap-6">
@@ -934,7 +1384,7 @@ export default function ClientPortalPage() {
                         {[
                           { icon: MessageCircle, label: "WhatsApp", sub: "+91 9942000413", time: "Reply in 5 min", color: "#25D366", href: "https://wa.me/919942000413?text=Hi! I need support." },
                           { icon: Phone, label: "Call Us", sub: "+91 9942000413", time: "Mon–Sat 9AM–7PM", color: "#0891B2", href: "tel:+919942000413" },
-                          { icon: Mail, label: "Email", sub: "support@kvl...", time: "Reply in 24 hrs", color: "#C9A227", href: "mailto:support@kvlbusinesssolutions.com" },
+                          { icon: Mail, label: "Email", sub: wl.supportEmail.length > 18 ? wl.supportEmail.slice(0, 15) + "..." : wl.supportEmail, time: "Reply in 24 hrs", color: "#C9A227", href: `mailto:${wl.supportEmail}` },
                           { icon: MapPin, label: "Office Visit", sub: "Sector 62, Noida", time: "Mon–Sat 10AM–6PM", color: "#7C3AED", href: "#" },
                         ].map(({ icon: Icon, label, sub, time, color, href }) => (
                           <a key={label} href={href} target={href.startsWith("http") ? "_blank" : undefined}
@@ -1022,7 +1472,6 @@ export default function ClientPortalPage() {
                     </div>
                   </div>
 
-                  {/* FAQ */}
                   <div className="lg:col-span-2">
                     <div className="card p-6">
                       <h2 className="font-display font-bold text-lg text-[var(--color-text)] mb-4">Common Questions</h2>
@@ -1053,6 +1502,855 @@ export default function ClientPortalPage() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "messages" && (
+              <motion.div key="messages" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+                <div className="max-w-3xl space-y-4">
+                  {orders.length > 1 && (
+                    <div className="card p-4">
+                      <label className={LABEL}>Select Order</label>
+                      <select value={chatOrderId} onChange={e => { setChatOrderId(e.target.value); setChatMessages([]); }} className={INPUT}>
+                        {orders.map(o => (
+                          <option key={o.id} value={o.id}>#{o.orderNumber} — {o.product.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {orders.length === 0 ? (
+                    <div className="card p-10 text-center text-[var(--color-text-muted)]">
+                      <MessageSquare size={32} className="mx-auto mb-3 opacity-30" />
+                      <p className="text-sm">No orders to chat about yet.</p>
+                    </div>
+                  ) : (
+                    <div className="card overflow-hidden flex flex-col" style={{ height: "clamp(380px, 60vh, 560px)" }}>
+                      <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+                        <div className="w-8 h-8 rounded-full bg-[var(--color-gold)]/10 flex items-center justify-center">
+                          <MessageSquare size={16} className="text-[var(--color-gold)]" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-[var(--color-text)]">{wl.companyName} Team</p>
+                          <p className="text-[11px] text-[var(--color-text-muted)]">Messages auto-refresh every 5 seconds</p>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                        {chatMessages.length === 0 && (
+                          <div className="flex flex-col items-center justify-center h-full text-center text-[var(--color-text-muted)]">
+                            <MessageSquare size={28} className="mb-2 opacity-20" />
+                            <p className="text-sm">No messages yet. Start the conversation!</p>
+                          </div>
+                        )}
+                        {chatMessages.map(msg => {
+                          const isClient = msg.senderType === "client";
+                          return (
+                            <div key={msg.id} className={`flex ${isClient ? "justify-end" : "justify-start"}`}>
+                              <div className={`max-w-[75%] ${isClient ? "items-end" : "items-start"} flex flex-col gap-1`}>
+                                <p className="text-[10px] text-[var(--color-text-muted)] px-1">{msg.senderName}</p>
+                                <div className={`px-4 py-2.5 rounded-2xl text-sm ${isClient
+                                  ? "bg-[var(--color-gold)] text-white rounded-tr-sm"
+                                  : "bg-[var(--color-bg-secondary)] text-[var(--color-text)] border border-[var(--color-border)] rounded-tl-sm"}`}>
+                                  {msg.text}
+                                  {msg.fileUrl && (
+                                    <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer"
+                                      className={`flex items-center gap-1.5 mt-2 text-xs underline ${isClient ? "text-white/80" : "text-[var(--color-gold)]"}`}>
+                                      <Paperclip size={11} /> {msg.fileName || "Attachment"}
+                                    </a>
+                                  )}
+                                </div>
+                                <p className="text-[9px] text-[var(--color-text-muted)] px-1">
+                                  {new Date(msg.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div ref={chatBottomRef} />
+                      </div>
+
+                      <div className="px-4 py-3 border-t border-[var(--color-border)] flex items-center gap-3">
+                        <input
+                          value={chatText}
+                          onChange={e => setChatText(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+                          placeholder="Type a message..."
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all placeholder:text-[var(--color-text-muted)]"
+                        />
+                        <button onClick={sendChatMessage} disabled={chatSending || !chatText.trim()}
+                          className="w-10 h-10 rounded-xl bg-[var(--color-gold)] text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0">
+                          {chatSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "files" && (
+              <motion.div key="files" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+                <div className="max-w-3xl space-y-5">
+                  {orders.length > 1 && (
+                    <div className="card p-4">
+                      <label className={LABEL}>Select Order</label>
+                      <select value={filesOrderId} onChange={e => { setFilesOrderId(e.target.value); setProjectFiles([]); }} className={INPUT}>
+                        {orders.map(o => (
+                          <option key={o.id} value={o.id}>#{o.orderNumber} — {o.product.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="card p-5">
+                    <h3 className="font-display font-semibold text-[var(--color-text)] mb-1">Upload a file for your project</h3>
+                    <p className="text-xs text-[var(--color-text-muted)] mb-4">Share documents, images, or any reference files with the team.</p>
+                    <div
+                      onDragOver={e => { e.preventDefault(); setFileDrag(true); }}
+                      onDragLeave={() => setFileDrag(false)}
+                      onDrop={e => { e.preventDefault(); setFileDrag(false); const f = e.dataTransfer.files[0]; if (f) uploadFile(f); }}
+                      className={`border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${fileDrag ? "border-[var(--color-gold)] bg-[var(--color-gold)]/5" : "border-[var(--color-border)] hover:border-[var(--color-gold)]/50"}`}
+                      onClick={() => document.getElementById("file-upload-input")?.click()}>
+                      <input id="file-upload-input" type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadFile(f); }} />
+                      {fileUploading ? (
+                        <Loader2 size={28} className="mx-auto mb-2 text-[var(--color-gold)] animate-spin" />
+                      ) : (
+                        <Upload size={28} className="mx-auto mb-2 text-[var(--color-text-muted)]" />
+                      )}
+                      <p className="text-sm font-semibold text-[var(--color-text)]">{fileUploading ? "Uploading..." : "Drop file here or click to browse"}</p>
+                      <p className="text-xs text-[var(--color-text-muted)] mt-1">Max 50MB · Any file type</p>
+                    </div>
+                  </div>
+
+                  {/* Meeting Recording Upload */}
+                  <div className="card p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--color-gold)]/10 flex items-center justify-center shrink-0">
+                        <Mic size={18} className="text-[var(--color-gold)]" />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-semibold text-[var(--color-text)]">Upload Meeting Recording</h3>
+                        <p className="text-xs text-[var(--color-text-muted)]">Get an AI-generated transcript of your meeting</p>
+                      </div>
+                    </div>
+
+                    <input
+                      ref={recordingInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="audio/webm,audio/mp4,audio/wav,audio/m4a,audio/mpeg,video/mp4"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadMeetingRecording(f); }}
+                    />
+
+                    {recordingUploading ? (
+                      <div className="space-y-3 p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                        <div className="flex items-center gap-3">
+                          <Loader2 size={18} className="animate-spin text-[var(--color-gold)] shrink-0" />
+                          <p className="text-sm font-semibold text-[var(--color-text)]">Transcribing your recording...</p>
+                        </div>
+                        <div className="h-2 bg-[var(--color-bg)] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-[var(--color-gold)]/70 to-[var(--color-gold)] rounded-full transition-all duration-500"
+                            style={{ width: `${recordingProgress}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-[var(--color-text-muted)]">{recordingProgress}% — This may take a minute for longer recordings.</p>
+                      </div>
+                    ) : !recordingTranscript ? (
+                      <button
+                        onClick={() => recordingInputRef.current?.click()}
+                        className="w-full border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-gold)]/60 rounded-xl p-6 text-center transition-all group"
+                      >
+                        <Upload size={24} className="mx-auto mb-2 text-[var(--color-text-muted)] group-hover:text-[var(--color-gold)] transition-colors" />
+                        <p className="text-sm font-semibold text-[var(--color-text)]">Click to upload recording</p>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">audio / video · max 25MB</p>
+                      </button>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide flex items-center gap-1.5">
+                            <FileText size={12} /> Transcript
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={downloadTranscript}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-gold)]/10 text-[var(--color-gold)] hover:bg-[var(--color-gold)]/20 transition-all"
+                            >
+                              <Download size={12} /> Download Transcript
+                            </button>
+                            <button
+                              onClick={() => { setRecordingTranscript(""); setRecordingFile(null); setRecordingProgress(0); }}
+                              className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors px-2"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
+                        <textarea
+                          readOnly
+                          value={recordingTranscript}
+                          rows={8}
+                          className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-xs text-[var(--color-text)] resize-none font-mono focus:outline-none"
+                        />
+                        <button
+                          onClick={() => { setRecordingTranscript(""); setRecordingFile(null); setRecordingProgress(0); recordingInputRef.current?.click(); }}
+                          className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+                        >
+                          <RefreshCw size={12} /> Upload another recording
+                        </button>
+                      </div>
+                    )}
+
+                    {recordingError && (
+                      <p className="mt-3 text-xs text-red-500 flex items-center gap-2">
+                        <AlertCircle size={13} /> {recordingError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="card overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+                      <h3 className="font-display font-semibold text-[var(--color-text)]">Project Files</h3>
+                      <button onClick={() => fetchProjectFiles(filesOrderId)} className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] flex items-center gap-1">
+                        <RefreshCw size={12} className={filesLoading ? "animate-spin" : ""} /> Refresh
+                      </button>
+                    </div>
+                    {filesLoading ? (
+                      <div className="p-5 flex flex-col gap-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <div key={i} className="flex items-center gap-4 py-1">
+                            <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
+                            <div className="flex-1 flex flex-col gap-1.5">
+                              <Skeleton className="h-3.5 w-40" />
+                              <Skeleton className="h-2.5 w-28" />
+                            </div>
+                            <Skeleton className="h-8 w-20 rounded-lg shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : projectFiles.length === 0 ? (
+                      <NoDataEmpty message="No files yet" />
+                    ) : (
+                      <div className="divide-y divide-[var(--color-border)]">
+                        {projectFiles.map(f => {
+                          const FileIcon = getFileIcon(f.mimeType, f.name);
+                          return (
+                            <div key={f.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--color-bg-secondary)] transition-colors">
+                              <div className="w-9 h-9 rounded-xl bg-[var(--color-gold)]/10 flex items-center justify-center shrink-0">
+                                <FileIcon size={18} className="text-[var(--color-gold)]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-[var(--color-text)] truncate">{f.name}</p>
+                                <p className="text-[11px] text-[var(--color-text-muted)]">
+                                  {f.uploaderName} · {formatFileSize(f.size)} · {new Date(f.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                </p>
+                              </div>
+                              <a href={f.url} target="_blank" rel="noopener noreferrer" download={f.name}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:border-[var(--color-gold)]/40 transition-all shrink-0">
+                                <Download size={12} /> Download
+                              </a>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "approvals" && (
+              <motion.div key="approvals" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+                <div className="max-w-3xl space-y-5">
+                  {orders.length > 1 && (
+                    <div className="card p-4">
+                      <label className={LABEL}>Select Order</label>
+                      <select value={approvalsOrderId} onChange={e => { setApprovalsOrderId(e.target.value); setApprovals([]); }} className={INPUT}>
+                        {orders.map(o => (
+                          <option key={o.id} value={o.id}>#{o.orderNumber} — {o.product.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="font-display font-bold text-xl text-[var(--color-text)]">Design Approvals</h2>
+                      <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Review and approve design submissions from the team</p>
+                    </div>
+                    <button onClick={() => fetchApprovals(approvalsOrderId)} className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] flex items-center gap-1">
+                      <RefreshCw size={12} className={approvalsLoading ? "animate-spin" : ""} /> Refresh
+                    </button>
+                  </div>
+
+                  {approvalsLoading ? (
+                    <CardSkeleton lines={4} />
+                  ) : approvals.length === 0 ? (
+                    <div className="card overflow-hidden">
+                      <NoDataEmpty message="No design approval requests yet" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {approvals.map(approval => (
+                        <div key={approval.id} className="card p-5 space-y-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="font-display font-semibold text-[var(--color-text)]">{approval.title}</h3>
+                              {approval.description && (
+                                <p className="text-xs text-[var(--color-text-secondary)] mt-1 leading-relaxed">{approval.description}</p>
+                              )}
+                            </div>
+                            <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold ${
+                              approval.status === "APPROVED" ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                                : approval.status === "REVISION_REQUESTED" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                                  : "bg-blue-500/10 text-blue-400 border border-blue-500/20"}`}>
+                              {approval.status === "APPROVED" ? "Approved"
+                                : approval.status === "REVISION_REQUESTED" ? "Revision Requested"
+                                  : "Pending Review"}
+                            </span>
+                          </div>
+
+                          {approval.previewUrl && (
+                            <div className="rounded-xl overflow-hidden border border-[var(--color-border)] max-h-64">
+                              <img src={approval.previewUrl} alt={approval.title} className="w-full object-cover" />
+                            </div>
+                          )}
+
+                          {approval.fileUrl && (
+                            <a href={approval.fileUrl} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-xs text-[var(--color-gold)] hover:underline">
+                              <Download size={12} /> Download design file
+                            </a>
+                          )}
+
+                          {approval.status === "APPROVED" && approval.respondedAt && (
+                            <div className="flex items-center gap-2 p-3 rounded-xl bg-green-500/5 border border-green-500/20 text-xs text-green-600 dark:text-green-400">
+                              <CheckCircle size={14} />
+                              Approved on {new Date(approval.respondedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                            </div>
+                          )}
+
+                          {approval.status === "REVISION_REQUESTED" && (
+                            <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                              <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">Your revision note:</p>
+                              <p className="text-xs text-[var(--color-text-secondary)]">{approval.clientNote || "—"}</p>
+                            </div>
+                          )}
+
+                          {approval.status === "PENDING" && (
+                            <div className="space-y-3 pt-2 border-t border-[var(--color-border)]">
+                              <div>
+                                <label className={LABEL}>Add a note (optional)</label>
+                                <textarea rows={2} value={approvalNotes[approval.id] || ""}
+                                  onChange={e => setApprovalNotes(n => ({ ...n, [approval.id]: e.target.value }))}
+                                  placeholder="Leave feedback or revision instructions..."
+                                  className={INPUT + " resize-none"} />
+                              </div>
+                              <div className="flex gap-3">
+                                <button
+                                  onClick={() => respondToApproval(approval.id, "APPROVED")}
+                                  disabled={approvalSubmitting === approval.id}
+                                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/30 hover:bg-green-500/20 transition-all disabled:opacity-60">
+                                  {approvalSubmitting === approval.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => respondToApproval(approval.id, "REVISION_REQUESTED")}
+                                  disabled={approvalSubmitting === approval.id}
+                                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all disabled:opacity-60">
+                                  {approvalSubmitting === approval.id ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                                  Request Revision
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          <p className="text-[10px] text-[var(--color-text-muted)]">
+                            Sent {new Date(approval.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "billing" && (
+              <motion.div key="billing" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-6">
+
+                {/* ── Stripe Plans ── */}
+                <div className="card p-6">
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-xl bg-[var(--color-gold)]/10 flex items-center justify-center shrink-0">
+                      <Sparkles size={18} className="text-[var(--color-gold)]" />
+                    </div>
+                    <div>
+                      <h2 className="font-display font-bold text-lg text-[var(--color-text)]">Available Plans</h2>
+                      <p className="text-xs text-[var(--color-text-secondary)]">Subscribe or upgrade your Stripe billing plan</p>
+                    </div>
+                    {stripePlansLoading && <Loader2 size={16} className="animate-spin text-[var(--color-gold)] ml-auto" />}
+                  </div>
+
+                  {stripeNotConfigured ? (
+                    <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                      <AlertCircle size={18} className="text-[var(--color-text-muted)] shrink-0" />
+                      <p className="text-sm text-[var(--color-text-muted)]">Configure Stripe to enable subscriptions</p>
+                    </div>
+                  ) : !stripePlansLoading && stripePlans.length === 0 ? (
+                    <div className="text-center py-8 text-[var(--color-text-muted)]">
+                      <CreditCard size={28} className="mx-auto mb-2 opacity-20" />
+                      <p className="text-sm">No plans available yet</p>
+                    </div>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {stripePlans.map(plan => {
+                        const currencySymbol = plan.currency === "inr" ? "₹" : "$";
+                        const amountDisplay = (plan.amount / 100).toLocaleString("en-IN");
+                        return (
+                          <div key={plan.id} className="flex flex-col p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-gold)]/40 hover:shadow-[var(--shadow-card)] transition-all">
+                            <div className="mb-3">
+                              <h3 className="font-display font-bold text-[var(--color-text)] text-base">{plan.name}</h3>
+                              {plan.description && (
+                                <p className="text-xs text-[var(--color-text-muted)] mt-0.5 leading-relaxed">{plan.description}</p>
+                              )}
+                            </div>
+                            <div className="mb-4">
+                              <span className="font-display font-bold text-2xl text-[var(--color-gold)]">{currencySymbol}{amountDisplay}</span>
+                              <span className="text-xs text-[var(--color-text-muted)] ml-1">/{plan.interval}</span>
+                            </div>
+                            {plan.features.length > 0 && (
+                              <ul className="space-y-1.5 mb-4 flex-1">
+                                {plan.features.map((f, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)]">
+                                    <Check size={13} className="text-[var(--color-gold)] mt-0.5 shrink-0" />
+                                    {f}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            <button
+                              onClick={() => handleStripeCheckout(plan.id)}
+                              disabled={stripeCheckoutLoading === plan.id}
+                              className="btn-gold w-full py-2.5 flex items-center justify-center gap-2 text-sm mt-auto disabled:opacity-60"
+                            >
+                              {stripeCheckoutLoading === plan.id
+                                ? <><Loader2 size={14} className="animate-spin" /> Processing...</>
+                                : <><CreditCard size={14} /> Subscribe with Stripe</>}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Stripe Subscription Status ── */}
+                {stripeSubscriptions.length > 0 && (
+                  <div className="card p-6">
+                    <h2 className="font-display font-bold text-lg text-[var(--color-text)] mb-4">Stripe Subscriptions</h2>
+                    <div className="space-y-3">
+                      {stripeSubscriptions.map(sub => {
+                        const matchedPlan = stripePlans.find(p => p.id === sub.stripePlanId);
+                        const statusColors: Record<string, string> = {
+                          active: "bg-green-500/10 text-green-500 border border-green-500/20",
+                          trialing: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+                          past_due: "bg-orange-500/10 text-orange-500 border border-orange-500/20",
+                          cancelled: "bg-red-500/10 text-red-500 border border-red-500/20",
+                          canceled: "bg-red-500/10 text-red-500 border border-red-500/20",
+                        };
+                        return (
+                          <div key={sub.id} className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+                            <div className="flex items-center justify-between gap-4 flex-wrap">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-[var(--color-gold)]/10 flex items-center justify-center shrink-0">
+                                  <CreditCard size={18} className="text-[var(--color-gold)]" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-[var(--color-text)]">
+                                    {matchedPlan ? matchedPlan.name : "Stripe Plan"}
+                                  </p>
+                                  {sub.currentPeriodEnd && (
+                                    <p className="text-xs text-[var(--color-text-muted)]">
+                                      Next billing: {new Date(sub.currentPeriodEnd).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                      {sub.cancelAtPeriodEnd && " · Cancels at period end"}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColors[sub.status] || "bg-gray-500/10 text-gray-400 border border-gray-500/20"}`}>
+                                {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+                              </span>
+                            </div>
+                            {sub.status === "active" && stripePlans.length > 1 && (
+                              <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+                                <button
+                                  onClick={() => setShowUpgradeModal(sub.stripeSubId)}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-gold)]/10 text-[var(--color-gold)] border border-[var(--color-gold)]/30 hover:bg-[var(--color-gold)]/20 transition-all"
+                                >
+                                  <ArrowRight size={12} /> Upgrade / Downgrade
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upgrade Modal */}
+                <AnimatePresence>
+                  {showUpgradeModal && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                      onClick={() => setShowUpgradeModal(null)}>
+                      <motion.div initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+                        className="bg-[var(--color-bg)] rounded-2xl p-6 max-w-lg w-full shadow-2xl"
+                        onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-display font-bold text-lg text-[var(--color-text)]">Change Plan</h3>
+                          <button onClick={() => setShowUpgradeModal(null)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)]">
+                            <X size={18} />
+                          </button>
+                        </div>
+                        <p className="text-sm text-[var(--color-text-secondary)] mb-4">Select a new plan. Prorations will be applied automatically.</p>
+                        <div className="space-y-2">
+                          {stripePlans.map(plan => {
+                            const currencySymbol = plan.currency === "inr" ? "₹" : "$";
+                            const amountDisplay = (plan.amount / 100).toLocaleString("en-IN");
+                            return (
+                              <button key={plan.id} disabled={upgradeLoading}
+                                onClick={() => handleStripeUpgrade(showUpgradeModal, plan.stripePriceId)}
+                                className="w-full flex items-center justify-between gap-3 p-4 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-gold)]/50 hover:bg-[var(--color-bg-secondary)] transition-all text-left disabled:opacity-60">
+                                <div>
+                                  <p className="text-sm font-semibold text-[var(--color-text)]">{plan.name}</p>
+                                  {plan.description && <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{plan.description}</p>}
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-sm font-bold text-[var(--color-gold)]">{currencySymbol}{amountDisplay}</p>
+                                  <p className="text-[10px] text-[var(--color-text-muted)]">/{plan.interval}</p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {upgradeLoading && (
+                          <div className="flex justify-center mt-4">
+                            <Loader2 size={20} className="animate-spin text-[var(--color-gold)]" />
+                          </div>
+                        )}
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="card p-6">
+                  <div className="flex items-center justify-between mb-5">
+                    <h2 className="font-display font-bold text-lg text-[var(--color-text)]">Active Subscriptions</h2>
+                    {subsLoading && <Loader2 size={16} className="animate-spin text-[var(--color-gold)]" />}
+                  </div>
+                  {subscriptions.length === 0 ? (
+                    <div className="text-center py-8 text-[var(--color-text-muted)]">
+                      <CreditCard size={28} className="mx-auto mb-2 opacity-20" />
+                      <p className="text-sm">No active subscriptions</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {subscriptions.map(sub => (
+                        <div key={sub.id} className="p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-[var(--color-gold)]/10 flex items-center justify-center shrink-0">
+                                <CreditCard size={18} className="text-[var(--color-gold)]" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-[var(--color-text)]">{sub.planName}</p>
+                                <p className="text-xs text-[var(--color-text-muted)]">
+                                  ₹{sub.amount.toLocaleString("en-IN")} / {sub.billingCycle}
+                                  {sub.nextBillingAt && ` · Next: ${new Date(sub.nextBillingAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
+                                </p>
+                              </div>
+                            </div>
+                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${sub.status === "ACTIVE" ? "bg-green-500/10 text-green-500 border border-green-500/20" : sub.status === "PAUSED" ? "bg-amber-500/10 text-amber-500 border border-amber-500/20" : "bg-red-500/10 text-red-500 border border-red-500/20"}`}>
+                              {sub.status}
+                            </span>
+                          </div>
+                          {sub.status !== "CANCELLED" && (
+                            <div className="flex gap-2 mt-3 pt-3 border-t border-[var(--color-border)]">
+                              {sub.status === "ACTIVE" && (
+                                <button
+                                  onClick={() => handleSubAction(sub.id, "pause")}
+                                  disabled={subActing}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-all disabled:opacity-60"
+                                >
+                                  {subActing ? <Loader2 size={12} className="animate-spin" /> : null}
+                                  Pause
+                                </button>
+                              )}
+                              {sub.status === "PAUSED" && (
+                                <button
+                                  onClick={() => handleSubAction(sub.id, "resume")}
+                                  disabled={subActing}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/30 hover:bg-green-500/20 transition-all disabled:opacity-60"
+                                >
+                                  {subActing ? <Loader2 size={12} className="animate-spin" /> : null}
+                                  Resume
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setShowCancelConfirm(sub.id)}
+                                disabled={subActing}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 transition-all disabled:opacity-60"
+                              >
+                                Cancel Subscription
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Cancel confirmation modal */}
+                <AnimatePresence>
+                  {showCancelConfirm && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                      onClick={() => setShowCancelConfirm(null)}>
+                      <motion.div initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+                        className="bg-[var(--color-bg)] rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+                        onClick={e => e.stopPropagation()}>
+                        <AlertCircle size={28} className="text-red-500 mb-3" />
+                        <h3 className="font-display font-bold text-lg text-[var(--color-text)] mb-2">Cancel Subscription?</h3>
+                        <p className="text-sm text-[var(--color-text-secondary)] mb-5">
+                          Are you sure? Your subscription will end immediately and you will lose access to all features.
+                        </p>
+                        <div className="flex gap-3">
+                          <button onClick={() => setShowCancelConfirm(null)} className="btn-outline flex-1">Keep It</button>
+                          <button
+                            onClick={() => handleSubAction(showCancelConfirm, "cancel")}
+                            disabled={subActing}
+                            className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                            {subActing ? <Loader2 size={14} className="animate-spin" /> : null}
+                            Yes, Cancel
+                          </button>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="card p-6">
+                  <h2 className="font-display font-bold text-lg text-[var(--color-text)] mb-5">Order History</h2>
+                  {ordersLoading ? (
+                    <div className="flex justify-center py-8"><Loader2 size={22} className="animate-spin text-[var(--color-gold)]" /></div>
+                  ) : orders.length === 0 ? (
+                    <div className="text-center py-8 text-[var(--color-text-muted)]">
+                      <Package size={28} className="mx-auto mb-2 opacity-20" />
+                      <p className="text-sm">No orders yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {orders.map(order => (
+                        <div key={order.id} className="flex items-center justify-between gap-4 p-4 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-[var(--color-gold)]/10 flex items-center justify-center shrink-0">
+                              <Package size={16} className="text-[var(--color-gold)]" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-[var(--color-text)]">{order.product.name}</p>
+                              <p className="text-xs text-[var(--color-text-muted)]">#{order.orderNumber} · {new Date(order.statusHistory[0]?.changedAt || Date.now()).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 ml-auto">
+                            <span className="text-sm font-bold text-[var(--color-text)]">₹{order.amount.toLocaleString("en-IN")}</span>
+                            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                              order.status === "DELIVERED" ? "bg-green-500/10 text-green-500 border border-green-500/20"
+                                : order.status === "CANCELLED" ? "bg-red-500/10 text-red-500"
+                                  : "bg-blue-500/10 text-blue-400"}`}>
+                              {STATUS_LABEL[order.status] || order.status}
+                            </span>
+                            {order.status === "DELIVERED" && (
+                              <a href={`/api/invoice?orderId=${order.id}`} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:border-[var(--color-gold)]/40 transition-all shrink-0">
+                                <Download size={11} /> Invoice
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Affiliate Dashboard */}
+                <div className="card p-6 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--color-gold)]/10 flex items-center justify-center">
+                        <Gift size={18} className="text-[var(--color-gold)]" />
+                      </div>
+                      <div>
+                        <h2 className="font-display font-bold text-lg text-[var(--color-text)]">Affiliate Program</h2>
+                        <p className="text-xs text-[var(--color-text-secondary)]">Earn commissions by referring clients to KVL TECH</p>
+                      </div>
+                    </div>
+                    <a href="/marketing-assets" target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-text-secondary)] hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all shrink-0">
+                      <Download size={13} /> Marketing Kit
+                    </a>
+                  </div>
+
+                  {/* Affiliate Stats */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { label: "Total Earnings", value: `₹${referralStats.totalEarned.toLocaleString("en-IN")}`, color: "#16A34A", sub: "PAID commissions" },
+                      { label: "Pending Earnings", value: `₹${referralStats.pendingEarnings.toLocaleString("en-IN")}`, color: "#0891B2", sub: "Awaiting payment" },
+                      { label: "Direct Referrals", value: String(referralStats.level1Count), color: "#C9A227", sub: "Level 1 (20%)" },
+                      { label: "Indirect Referrals", value: String(referralStats.level2Count), color: "#7C3AED", sub: "Level 2 (10%)" },
+                    ].map(({ label, value, color, sub }) => (
+                      <div key={label} className="p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
+                        <p className="font-display font-bold text-xl" style={{ color }}>{value}</p>
+                        <p className="text-xs font-semibold text-[var(--color-text)] mt-1">{label}</p>
+                        <p className="text-[10px] text-[var(--color-text-muted)] mt-0.5">{sub}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Referral Link */}
+                  <div className="p-4 rounded-xl border border-[var(--color-gold)]/20 bg-[var(--color-gold)]/5">
+                    <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2">Your Referral Link</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="flex-1 text-xs font-mono text-[var(--color-gold)] break-all min-w-0">
+                        {referralLink || `https://kvlbusinesssolutions.com?ref=${user.id.slice(-8)}`}
+                      </p>
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(referralLink || `https://kvlbusinesssolutions.com?ref=${user.id.slice(-8)}`);
+                            setLinkCopied(true);
+                            setTimeout(() => setLinkCopied(false), 2000);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--color-gold)]/30 text-[var(--color-gold)] hover:bg-[var(--color-gold)]/10 transition-all">
+                          {linkCopied ? <Check size={13} /> : <ExternalLink size={13} />}
+                          {linkCopied ? "Copied!" : "Copy Link"}
+                        </button>
+                        <a
+                          href={`https://wa.me/?text=${encodeURIComponent(`I recommend KVL TECH for professional websites! Get yours at ${referralLink || `https://kvlbusinesssolutions.com?ref=${user.id.slice(-8)}`}`)}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20 hover:bg-[#25D366]/20 transition-all">
+                          <MessageCircle size={13} /> WhatsApp
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Commission Structure */}
+                  <div className="p-4 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)]">
+                    <p className="text-xs font-semibold text-[var(--color-text)] mb-3">Commission Structure</p>
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <div className="flex items-center gap-2 p-2.5 rounded-lg border border-[var(--color-gold)]/20 bg-[var(--color-gold)]/5">
+                        <div className="w-7 h-7 rounded-full bg-[var(--color-gold)] flex items-center justify-center text-white text-[10px] font-bold shrink-0">L1</div>
+                        <div>
+                          <p className="text-xs font-bold text-[var(--color-text)]">20% Commission</p>
+                          <p className="text-[10px] text-[var(--color-text-muted)]">Direct referrals</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 p-2.5 rounded-lg border border-slate-500/20 bg-slate-500/5">
+                        <div className="w-7 h-7 rounded-full bg-slate-400 flex items-center justify-center text-white text-[10px] font-bold shrink-0">L2</div>
+                        <div>
+                          <p className="text-xs font-bold text-[var(--color-text)]">10% Commission</p>
+                          <p className="text-[10px] text-[var(--color-text-muted)]">Indirect referrals</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 p-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)]">
+                        <div className="w-7 h-7 rounded-xl bg-[var(--color-bg-secondary)] flex items-center justify-center shrink-0">
+                          <TrendingUp size={14} className="text-[var(--color-text-muted)]" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-[var(--color-text)]">Min ₹500</p>
+                          <p className="text-[10px] text-[var(--color-text-muted)]">Minimum payout</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Invite by email */}
+                  <div>
+                    <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2">Invite by Email</p>
+                    <div className="flex gap-3">
+                      <input
+                        type="email"
+                        value={referralEmail}
+                        onChange={e => setReferralEmail(e.target.value)}
+                        placeholder="Enter friend's email to invite"
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all placeholder:text-[var(--color-text-muted)]"
+                      />
+                      <button onClick={sendReferral} disabled={referralSending || !referralEmail.trim()}
+                        className="btn-gold px-5 flex items-center gap-2 disabled:opacity-60 shrink-0">
+                        {referralSending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                        Invite
+                      </button>
+                    </div>
+                    {referralMsg && (
+                      <p className={`text-xs mt-2 ${referralMsg.includes("success") ? "text-green-500" : "text-red-500"}`}>{referralMsg}</p>
+                    )}
+                  </div>
+
+                  {/* Referrals table */}
+                  {referrals.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-3">Referral History</p>
+                      <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
+                        <table className="w-full text-xs">
+                          <thead className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)]">
+                            <tr>
+                              {["Referee", "Order Amount", "Level", "Commission", "Status", "Date"].map(h => (
+                                <th key={h} className="text-left py-2.5 px-3 font-semibold text-[var(--color-text-muted)] uppercase tracking-wider whitespace-nowrap text-[10px]">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {referrals.map(r => {
+                              const isL1 = (r.level ?? 1) === 1;
+                              return (
+                                <tr key={r.id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-bg-secondary)] transition-colors">
+                                  <td className="py-2.5 px-3 text-[var(--color-text-secondary)] truncate max-w-[140px]">{r.refereeEmail}</td>
+                                  <td className="py-2.5 px-3 text-[var(--color-text)]">
+                                    {r.orderAmount ? `₹${r.orderAmount.toLocaleString("en-IN")}` : "—"}
+                                  </td>
+                                  <td className="py-2.5 px-3">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isL1 ? "bg-[var(--color-gold)]/15 text-[var(--color-gold)]" : "bg-slate-500/15 text-slate-400"}`}>
+                                      {isL1 ? "L1 · 20%" : "L2 · 10%"}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3 font-semibold text-green-500">
+                                    {r.commission > 0 ? `+₹${r.commission.toLocaleString("en-IN")}` : "—"}
+                                  </td>
+                                  <td className="py-2.5 px-3">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                      r.status === "PAID" ? "bg-green-500/10 text-green-500"
+                                        : r.status === "CONVERTED" ? "bg-blue-500/10 text-blue-500"
+                                          : r.status === "REJECTED" ? "bg-red-500/10 text-red-500"
+                                            : "bg-[var(--color-border)] text-[var(--color-text-muted)]"}`}>
+                                      {r.status}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3 text-[var(--color-text-muted)] whitespace-nowrap">
+                                    {new Date(r.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}

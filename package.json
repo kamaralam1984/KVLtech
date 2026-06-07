@@ -3,15 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "next build",
-    "start": "next start",
+    "analyze": "ANALYZE=true next build",
+    "start": "node server.js",
+    "start:next": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "seed": "ts-node scripts/seed-admin.ts",
+    "migrate": "prisma migrate deploy && prisma generate",
+    "health": "curl -f http://localhost:3000/api/health"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -44,14 +49,17 @@
     "react-dom": "19.2.4",
     "resend": "^6.12.4",
     "sharp": "^0.34.5",
+    "stripe": "^22.2.0",
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.7",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/nodemailer": "^8.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "critters": "^0.0.23",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",

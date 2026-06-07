@@ -2,8 +2,170 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Phone, MessageCircle, Mail, UserPlus, TrendingUp, Loader2, RefreshCw, ChevronDown, Sparkles, Zap, Info } from "lucide-react";
+import { Search, Phone, MessageCircle, Mail, UserPlus, TrendingUp, Loader2, RefreshCw, ChevronDown, Sparkles, Zap, Info, Download, X, Activity } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/AdminSidebar";
+import { FilterPanel } from "@/components/admin/FilterPanel";
+
+type HealthScore = {
+  clientId: string
+  score: number
+  label: string
+  factors: string[]
+}
+
+function healthColor(score: number) {
+  if (score >= 75) return "#16A34A"
+  if (score >= 50) return "#F59E0B"
+  if (score >= 25) return "#F97316"
+  return "#EF4444"
+}
+
+function CircularProgress({ score }: { score: number }) {
+  const r = 36
+  const circ = 2 * Math.PI * r
+  const offset = circ - (score / 100) * circ
+  const color = healthColor(score)
+  return (
+    <svg width="90" height="90" viewBox="0 0 90 90" className="shrink-0">
+      <circle cx="45" cy="45" r={r} fill="none" stroke="var(--color-bg-secondary)" strokeWidth="8" />
+      <circle
+        cx="45" cy="45" r={r} fill="none"
+        stroke={color} strokeWidth="8"
+        strokeDasharray={circ}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform="rotate(-90 45 45)"
+        style={{ transition: "stroke-dashoffset 0.8s ease" }}
+      />
+      <text x="45" y="49" textAnchor="middle" fontSize="16" fontWeight="bold" fill={color}>{score}</text>
+    </svg>
+  )
+}
+
+function HealthDrawer({ lead, onClose }: { lead: any; onClose: () => void }) {
+  const [health, setHealth] = useState<HealthScore | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!lead?.clientId) return
+    setLoading(true)
+    fetch(`/api/admin/clients/${lead.clientId}/health`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => setHealth(d))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [lead?.clientId])
+
+  const color = health ? healthColor(health.score) : "#9CA3AF"
+  const labelBg = health ? `${color}18` : "transparent"
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.aside
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 260 }}
+        className="fixed right-0 top-0 h-full w-full max-w-sm z-50 flex flex-col shadow-2xl"
+        style={{ background: "var(--color-bg)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+          <div className="flex items-center gap-2">
+            <Activity size={16} className="text-[var(--color-gold)]" />
+            <span className="font-display font-bold text-sm text-[var(--color-text)]">Client Health Score</span>
+          </div>
+          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Lead info */}
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-[var(--color-navy)] flex items-center justify-center text-white font-bold shrink-0">
+              {lead.name?.[0] || "?"}
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-text)]">{lead.name}</p>
+              <p className="text-xs text-[var(--color-text-muted)]">{lead.email}</p>
+              {lead.service && <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{lead.service}</p>}
+            </div>
+          </div>
+
+          {/* Health score display */}
+          {!lead.clientId ? (
+            <div className="card p-5 text-center">
+              <p className="text-sm text-[var(--color-text-muted)]">Health score is only available for converted clients.</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-1">Mark this lead as <strong>WON</strong> to enable health tracking.</p>
+            </div>
+          ) : loading ? (
+            <div className="card p-8 flex items-center justify-center">
+              <Loader2 size={24} className="animate-spin text-[var(--color-gold)]" />
+            </div>
+          ) : health ? (
+            <div className="card p-5 space-y-4">
+              <div className="flex items-center gap-4">
+                <CircularProgress score={health.score} />
+                <div>
+                  <p className="text-xs text-[var(--color-text-muted)] mb-1">Health Score</p>
+                  <span className="text-sm font-bold px-3 py-1 rounded-full"
+                    style={{ color, background: labelBg }}>
+                    {health.label}
+                  </span>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-2">Score: {health.score} / 100</p>
+                </div>
+              </div>
+
+              {health.factors.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2">Score Factors</p>
+                  <ul className="space-y-1.5">
+                    {health.factors.map((f, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-[var(--color-text-secondary)]">
+                        <span className="mt-0.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="card p-5 text-center">
+              <p className="text-sm text-[var(--color-text-muted)]">Could not load health data.</p>
+            </div>
+          )}
+
+          {/* Lead contact actions */}
+          <div className="flex gap-2">
+            <a href={`tel:${lead.phone}`}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-green-500 hover:text-green-600 transition-all">
+              <Phone size={12} /> Call
+            </a>
+            <a href={`https://wa.me/${(lead.phone || "").replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[#25D366] hover:text-[#25D366] transition-all">
+              <MessageCircle size={12} /> WhatsApp
+            </a>
+            {lead.email && (
+              <a href={`mailto:${lead.email}`}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all">
+                <Mail size={12} /> Email
+              </a>
+            )}
+          </div>
+        </div>
+      </motion.aside>
+    </AnimatePresence>
+  )
+}
 
 const SCORE_CONFIG: Record<string, { emoji: string; label: string; color: string; bg: string; ring: string }> = {
   hot:  { emoji: "🔥", label: "Hot",  color: "#EF4444", bg: "#EF444415", ring: "ring-red-400/40" },
@@ -34,6 +196,9 @@ export default function ClientsPage() {
   const [scoringId, setScoringId] = useState<string | null>(null);
   const [rescoring, setRescoring] = useState(false);
   const [scoreTooltip, setScoreTooltip] = useState<string | null>(null);
+  const [selectedLead, setSelectedLead] = useState<any | null>(null);
+  const [filterValues, setFilterValues] = useState<Record<string, any>>({});
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -58,9 +223,31 @@ export default function ClientsPage() {
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
+  const handleLeadsExport = async () => {
+    const res = await fetch("/api/admin/export?type=leads&format=csv");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "leads.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Sort + filter leads
   const filteredLeads = leads
-    .filter(l => scoreFilter === "all" || l.scoreLabel === scoreFilter)
+    .filter(l => {
+      if (scoreFilter !== "all" && l.scoreLabel !== scoreFilter) return false;
+      const fStatus = filterValues.status;
+      const fSource = filterValues.source;
+      const fScore = filterValues.score;
+      const fDate = filterValues.date;
+      if (fStatus && Array.isArray(fStatus) && fStatus.length > 0 && !fStatus.includes(l.status)) return false;
+      if (fSource && Array.isArray(fSource) && fSource.length > 0 && !fSource.includes(l.source)) return false;
+      if (fScore?.min !== "" && fScore?.min !== undefined && (l.score ?? 0) < Number(fScore.min)) return false;
+      if (fScore?.max !== "" && fScore?.max !== undefined && (l.score ?? 0) > Number(fScore.max)) return false;
+      if (fDate?.from && new Date(l.createdAt) < new Date(fDate.from)) return false;
+      if (fDate?.to && new Date(l.createdAt) > new Date(fDate.to + "T23:59:59")) return false;
+      return true;
+    })
     .sort((a, b) => sortBy === "score" ? (b.score || 0) - (a.score || 0) : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const hotCount  = leads.filter(l => l.scoreLabel === "hot").length;
@@ -210,6 +397,44 @@ export default function ClientsPage() {
             </button>
           </div>
         </div>
+        <FilterPanel
+          filters={[
+            {
+              key: "status",
+              label: "Status",
+              type: "multiselect",
+              options: [
+                { value: "NEW", label: "New" },
+                { value: "CONTACTED", label: "Contacted" },
+                { value: "QUALIFIED", label: "Qualified" },
+                { value: "PROPOSAL_SENT", label: "Proposal Sent" },
+                { value: "WON", label: "Won" },
+                { value: "LOST", label: "Lost" },
+              ],
+            },
+            {
+              key: "source",
+              label: "Source",
+              type: "multiselect",
+              options: [
+                { value: "ORGANIC", label: "Organic" },
+                { value: "REFERRAL", label: "Referral" },
+                { value: "SOCIAL", label: "Social" },
+                { value: "ADS", label: "Ads" },
+                { value: "WALK_IN", label: "Walk In" },
+                { value: "OTHER", label: "Other" },
+              ],
+            },
+            { key: "score", label: "Score Range", type: "numberrange", placeholder: "0-100" },
+            { key: "date", label: "Date Range", type: "daterange" },
+          ]}
+          values={filterValues}
+          onChange={(key, value) => setFilterValues(prev => ({ ...prev, [key]: value }))}
+          onReset={() => setFilterValues({})}
+          onExport={handleLeadsExport}
+          isOpen={filterOpen}
+          onToggle={() => setFilterOpen(o => !o)}
+        />
 
         {/* Leads grid */}
         {loading ? (
@@ -323,6 +548,11 @@ export default function ClientsPage() {
                       className="flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-purple-400 hover:text-purple-500 transition-all disabled:opacity-50">
                       {scoringId === lead.id ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                     </button>
+                    <button onClick={() => setSelectedLead(lead)}
+                      title="View health score"
+                      className="flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl text-xs font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-green-400 hover:text-green-500 transition-all">
+                      <Activity size={11} />
+                    </button>
                   </div>
                 </motion.div>
               );
@@ -330,6 +560,11 @@ export default function ClientsPage() {
           </div>
         )}
       </div>
+
+      {/* Health Score Drawer */}
+      {selectedLead && (
+        <HealthDrawer lead={selectedLead} onClose={() => setSelectedLead(null)} />
+      )}
     </>
   );
 }

@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Filter, Download, Eye, CheckCircle2, Clock,
   XCircle, Loader2, RefreshCw, X, ChevronDown, Save,
+  MessageSquare, Send, Paperclip,
 } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/AdminSidebar";
+import { TableSkeleton } from "@/components/ui/Skeleton";
+import { NoDataEmpty, SearchEmptyState } from "@/components/ui/EmptyState";
+import { FilterPanel } from "@/components/admin/FilterPanel";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   PAYMENT_PENDING:   { label: "Payment Pending",  color: "#9CA3AF", bg: "#9CA3AF15" },
@@ -18,7 +22,17 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   CANCELLED:         { label: "Cancelled",         color: "#EF4444", bg: "#EF444415" },
 };
 
-
+interface ChatMessage {
+  id: string;
+  orderId: string;
+  senderType: string;
+  senderName: string;
+  text: string;
+  fileUrl?: string;
+  fileName?: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -30,16 +44,25 @@ export default function OrdersPage() {
   const [newStatus, setNewStatus] = useState("");
   const [newProgress, setNewProgress] = useState(0);
 
+  const [filterValues, setFilterValues] = useState<Record<string, any>>({});
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const [chatOrder, setChatOrder] = useState<any>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatText, setChatText] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const chatPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
       if (statusFilter !== "all") params.set("status", statusFilter);
-      const res = await fetch(`/api/admin/orders?${params}`, {
-        credentials: "include",
-        
-      });
+      const res = await fetch(`/api/admin/orders?${params}`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setOrders(data.orders || []);
@@ -50,40 +73,115 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  const fetchUnreadCounts = useCallback(async (orderList: any[]) => {
+    const counts: Record<string, number> = {};
+    await Promise.allSettled(
+      orderList.map(async (o) => {
+        try {
+          const res = await fetch(`/api/admin/messages?orderId=${o.id}`, { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            counts[o.id] = data.unread || 0;
+          }
+        } catch {}
+      })
+    );
+    setUnreadCounts(counts);
+  }, []);
+
+  useEffect(() => {
+    if (orders.length > 0) fetchUnreadCounts(orders);
+  }, [orders, fetchUnreadCounts]);
+
+  const fetchChatMessages = useCallback(async (orderId: string) => {
+    try {
+      const res = await fetch(`/api/admin/messages?orderId=${orderId}`, { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(data.messages || []);
+        setUnreadCounts(prev => ({ ...prev, [orderId]: 0 }));
+      }
+    } catch {}
+  }, []);
+
+  const openChat = async (order: any) => {
+    setChatOrder(order);
+    setChatMessages([]);
+    setChatLoading(true);
+    await fetch(`/api/admin/messages?orderId=${order.id}`, { method: "PATCH", credentials: "include" });
+    await fetchChatMessages(order.id);
+    setChatLoading(false);
+  };
+
+  useEffect(() => {
+    if (chatOrder) {
+      chatPollRef.current = setInterval(() => fetchChatMessages(chatOrder.id), 5000);
+    }
+    return () => { if (chatPollRef.current) clearInterval(chatPollRef.current); };
+  }, [chatOrder, fetchChatMessages]);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
+  const sendChatMessage = async () => {
+    if (!chatText.trim() || !chatOrder || chatSending) return;
+    setChatSending(true);
+    try {
+      const res = await fetch("/api/admin/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ orderId: chatOrder.id, text: chatText.trim() }),
+      });
+      if (res.ok) {
+        setChatText("");
+        fetchChatMessages(chatOrder.id);
+      }
+    } catch {}
+    setChatSending(false);
+  };
+
   const handleUpdateOrder = async () => {
     if (!selected) return;
     setUpdating(true);
     try {
       const res = await fetch("/api/admin/orders", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ id: selected.id, status: newStatus, progress: newProgress }),
       });
-      if (res.ok) {
-        await fetchOrders();
-        setSelected(null);
-      }
+      if (res.ok) { await fetchOrders(); setSelected(null); }
     } catch (e) { console.error(e); }
     setUpdating(false);
   };
 
-  const totalRevenue = orders.reduce((s, o) => s + o.amount, 0);
+  const handleExport = async () => {
+    const res = await fetch("/api/admin/export?type=orders&format=csv");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "orders.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
 
-  const FILTERS = [
-    { label: "All", value: "all" },
-    ...Object.entries(STATUS_CONFIG).map(([v, { label }]) => ({ label, value: v })),
-  ];
+  const filteredOrders = orders.filter(o => {
+    const fStatus = filterValues.status;
+    const fDate = filterValues.date;
+    if (fStatus && fStatus !== "" && o.status !== fStatus) return false;
+    if (fDate?.from && new Date(o.createdAt) < new Date(fDate.from)) return false;
+    if (fDate?.to && new Date(o.createdAt) > new Date(fDate.to + "T23:59:59")) return false;
+    return true;
+  });
+
+  const totalRevenue = filteredOrders.reduce((s, o) => s + o.amount, 0);
 
   return (
     <>
       <AdminTopbar title="Orders" />
       <div className="p-6 space-y-5 max-w-[1400px]">
 
-        {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {Object.entries(STATUS_CONFIG).map(([status, { label, color, bg }]) => {
             const count = orders.filter(o => o.status === status).length;
@@ -98,52 +196,68 @@ export default function OrdersPage() {
           })}
         </div>
 
-        {/* Filters */}
-        <div className="card p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
-          <div className="relative flex-1 min-w-48">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Order ID, client, product..." onKeyDown={e => e.key === "Enter" && fetchOrders()}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter size={15} className="text-[var(--color-text-muted)]" />
-            {["all", "PAYMENT_PENDING", "DEVELOPMENT", "DELIVERED", "CANCELLED"].map(f => (
-              <button key={f} onClick={() => setStatusFilter(f)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${statusFilter === f ? "bg-[var(--color-navy)] text-white" : "border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-gold)]"}`}>
-                {f === "all" ? "All" : STATUS_CONFIG[f]?.label || f}
+        <div className="card p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
+            <div className="relative flex-1 min-w-48">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Order ID, client, product..." onKeyDown={e => e.key === "Enter" && fetchOrders()}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
+            </div>
+            <div className="flex items-center gap-3 ml-auto">
+              <span className="text-sm text-[var(--color-text-muted)]">
+                <span className="font-semibold text-[var(--color-text)]">{filteredOrders.length}</span> orders ·{" "}
+                <span className="font-semibold text-[var(--color-gold)]">₹{totalRevenue.toLocaleString("en-IN")}</span>
+              </span>
+              <button onClick={fetchOrders} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-gold)] transition-all">
+                <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
               </button>
-            ))}
+            </div>
           </div>
-          <div className="flex items-center gap-3 ml-auto">
-            <span className="text-sm text-[var(--color-text-muted)]">
-              <span className="font-semibold text-[var(--color-text)]">{orders.length}</span> orders ·{" "}
-              <span className="font-semibold text-[var(--color-gold)]">₹{totalRevenue.toLocaleString("en-IN")}</span>
-            </span>
-            <button onClick={fetchOrders} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:border-[var(--color-gold)] transition-all">
-              <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
-            </button>
-          </div>
+          <FilterPanel
+            filters={[
+              {
+                key: "status",
+                label: "Status",
+                type: "select",
+                options: Object.entries(STATUS_CONFIG).map(([v, { label }]) => ({ value: v, label })),
+              },
+              { key: "date", label: "Date Range", type: "daterange" },
+            ]}
+            values={filterValues}
+            onChange={(key, value) => setFilterValues(prev => ({ ...prev, [key]: value }))}
+            onReset={() => setFilterValues({})}
+            onExport={handleExport}
+            isOpen={filterOpen}
+            onToggle={() => setFilterOpen(o => !o)}
+          />
         </div>
 
-        {/* Table */}
+        {loading ? (
+          <TableSkeleton rows={8} cols={9} />
+        ) : filteredOrders.length === 0 ? (
+          <div className="card overflow-hidden">
+            {search ? (
+              <SearchEmptyState query={search} />
+            ) : (
+              <NoDataEmpty message="No orders found" />
+            )}
+          </div>
+        ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)]">
                 <tr>
-                  {["Order ID", "Client", "Product", "Plan", "Amount", "Status", "Date", "Action"].map(h => (
+                  {["Order ID", "Client", "Product", "Plan", "Amount", "Status", "Date", "Chat", "Action"].map(h => (
                     <th key={h} className="text-left py-3 px-4 text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  <tr><td colSpan={8} className="py-16 text-center"><Loader2 size={24} className="animate-spin text-[var(--color-gold)] mx-auto" /></td></tr>
-                ) : orders.length === 0 ? (
-                  <tr><td colSpan={8} className="py-16 text-center text-sm text-[var(--color-text-muted)]">No orders found</td></tr>
-                ) : orders.map((order, i) => {
+                {filteredOrders.map((order, i) => {
                   const cfg = STATUS_CONFIG[order.status] || { color: "#9CA3AF", bg: "#9CA3AF15", label: order.status };
+                  const unread = unreadCounts[order.id] || 0;
                   return (
                     <motion.tr key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                       className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-bg-secondary)] transition-colors">
@@ -174,6 +288,18 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
+                        <button onClick={() => openChat(order)}
+                          className="relative flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] transition-colors">
+                          <MessageSquare size={14} />
+                          Chat
+                          {unread > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold px-0.5">
+                              {unread}
+                            </span>
+                          )}
+                        </button>
+                      </td>
+                      <td className="py-3.5 px-4">
                         <button onClick={() => { setSelected(order); setNewStatus(order.status); setNewProgress(order.progress); }}
                           className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-gold)] transition-colors">
                           <Eye size={14} /> Update
@@ -186,9 +312,9 @@ export default function OrdersPage() {
             </table>
           </div>
         </div>
+        )}
       </div>
 
-      {/* Update modal */}
       <AnimatePresence>
         {selected && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -241,6 +367,83 @@ export default function OrdersPage() {
                   className="btn-gold flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
                   {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   {updating ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {chatOrder && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => { setChatOrder(null); if (chatPollRef.current) clearInterval(chatPollRef.current); }}>
+            <motion.div initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+              className="bg-[var(--color-bg)] rounded-2xl w-full max-w-lg shadow-[var(--shadow-luxury)] overflow-hidden flex flex-col"
+              style={{ height: "560px" }}
+              onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+                <div>
+                  <h3 className="font-display font-bold text-base text-[var(--color-text)]">Chat</h3>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    #{chatOrder.orderNumber} · {chatOrder.client?.name}
+                  </p>
+                </div>
+                <button onClick={() => { setChatOrder(null); if (chatPollRef.current) clearInterval(chatPollRef.current); }}
+                  className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                {chatLoading ? (
+                  <div className="flex justify-center items-center h-full">
+                    <Loader2 size={22} className="animate-spin text-[var(--color-gold)]" />
+                  </div>
+                ) : chatMessages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center text-[var(--color-text-muted)]">
+                    <MessageSquare size={28} className="mb-2 opacity-20" />
+                    <p className="text-sm">No messages yet.</p>
+                  </div>
+                ) : chatMessages.map(msg => {
+                  const isAdmin = msg.senderType === "admin";
+                  return (
+                    <div key={msg.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[75%] flex flex-col gap-1 ${isAdmin ? "items-end" : "items-start"}`}>
+                        <p className="text-[10px] text-[var(--color-text-muted)] px-1">{msg.senderName}</p>
+                        <div className={`px-4 py-2.5 rounded-2xl text-sm ${isAdmin
+                          ? "bg-[var(--color-navy)] text-white rounded-tr-sm"
+                          : "bg-[var(--color-bg-secondary)] text-[var(--color-text)] border border-[var(--color-border)] rounded-tl-sm"}`}>
+                          {msg.text}
+                          {msg.fileUrl && (
+                            <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer"
+                              className={`flex items-center gap-1.5 mt-2 text-xs underline ${isAdmin ? "text-white/70" : "text-[var(--color-gold)]"}`}>
+                              <Paperclip size={11} /> {msg.fileName || "Attachment"}
+                            </a>
+                          )}
+                        </div>
+                        <p className="text-[9px] text-[var(--color-text-muted)] px-1">
+                          {new Date(msg.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={chatBottomRef} />
+              </div>
+
+              <div className="px-4 py-3 border-t border-[var(--color-border)] flex items-center gap-3">
+                <input
+                  value={chatText}
+                  onChange={e => setChatText(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }}
+                  placeholder="Type a reply..."
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all placeholder:text-[var(--color-text-muted)]"
+                />
+                <button onClick={sendChatMessage} disabled={chatSending || !chatText.trim()}
+                  className="w-10 h-10 rounded-xl bg-[var(--color-navy)] text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0">
+                  {chatSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 </button>
               </div>
             </motion.div>

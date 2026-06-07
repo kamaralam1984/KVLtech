@@ -99,11 +99,7 @@ export function Navbar() {
   return (
     <>
     <div className="fixed left-0 right-0 z-50" style={{ top: 'var(--banner-h, 40px)', transition: 'top 0.35s ease' }}>
-    <motion.header
-      initial={{ y: -40, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`transition-all duration-300 ${
+    <header className={`transition-all duration-300 ${
         scrolled
           ? "bg-[var(--color-bg)]/90 backdrop-blur-xl shadow-[0_2px_20px_rgba(0,0,0,0.08)] border-b border-[var(--color-border)]"
           : "bg-transparent"
@@ -239,7 +235,7 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.header>
+    </header>
     </div>
 
     {/* ── Search Modal ── */}

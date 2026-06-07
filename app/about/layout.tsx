@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+// ISR: regenerate every 24 hours (relatively static content)
+export const revalidate = 86400
+
 export const metadata: Metadata = {
   title: "About KVL TECH — Our Story, Mission & Team | kvlbusinesssolutions.com",
   description:

@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kvltech-pdb
+  namespace: kvltech-prod
+  labels:
+    app: kvltech
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: kvltech

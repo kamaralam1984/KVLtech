@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 import {
   User, Lock, Bell, Globe, Palette, Shield,
   Save, Eye, EyeOff, CheckCircle2, AlertCircle,
-  Phone, Mail, MapPin, MessageCircle,
+  Phone, Mail, MapPin, MessageCircle, Webhook, Copy, ExternalLink,
 } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/AdminSidebar";
 
-type Section = "profile" | "security" | "notifications" | "business" | "appearance";
+type Section = "profile" | "security" | "notifications" | "business" | "appearance" | "payment";
 
 const INPUT = "w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] focus:ring-2 focus:ring-[var(--color-gold)]/10 transition-all";
 const LABEL = "block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5";
@@ -18,6 +18,16 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>("profile");
   const [saved, setSaved] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [webhookCopied, setWebhookCopied] = useState(false);
+
+  const webhookUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://kvlbusinesssolutions.com"}/api/payment/webhook`;
+
+  const copyWebhookUrl = () => {
+    navigator.clipboard.writeText(webhookUrl).then(() => {
+      setWebhookCopied(true);
+      setTimeout(() => setWebhookCopied(false), 2000);
+    });
+  };
 
   const [profile, setProfile] = useState({
     name: "Rahul Sharma", email: "admin@kvlbusinesssolutions.com",
@@ -46,6 +56,7 @@ export default function SettingsPage() {
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "security", label: "Security", icon: Lock },
     { id: "appearance", label: "Appearance", icon: Palette },
+    { id: "payment", label: "Payment", icon: Webhook },
   ];
 
   return (
@@ -270,6 +281,122 @@ export default function SettingsPage() {
                         <input type="color" defaultValue="#C9A227"
                           className="w-12 h-10 rounded-lg border border-[var(--color-border)] cursor-pointer p-0.5" />
                         <span className="text-sm font-mono text-[var(--color-text-secondary)]">#C9A227 — KVL Gold</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── PAYMENT ── */}
+              {activeSection === "payment" && (
+                <>
+                  <div>
+                    <h2 className="font-display font-bold text-lg text-[var(--color-text)]">Payment Settings</h2>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">Razorpay integration aur webhook configuration</p>
+                  </div>
+
+                  {/* Webhook Setup Card */}
+                  <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
+                    <div className="flex items-center gap-3 px-5 py-4 bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)]">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--color-navy)] flex items-center justify-center shrink-0">
+                        <Webhook size={15} className="text-[var(--color-gold)]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--color-text)]">Razorpay Webhook Setup</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">Real-time payment events receive karein</p>
+                      </div>
+                    </div>
+
+                    <div className="p-5 space-y-5">
+                      {/* Webhook URL */}
+                      <div>
+                        <label className={LABEL}>Webhook URL</label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] font-mono text-xs text-[var(--color-text)] truncate">
+                            {webhookUrl}
+                          </div>
+                          <button
+                            onClick={copyWebhookUrl}
+                            title="Copy URL"
+                            className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-xs font-medium text-[var(--color-text-secondary)] hover:border-[var(--color-gold)]/50 hover:text-[var(--color-text)] transition-all"
+                          >
+                            {webhookCopied ? (
+                              <><CheckCircle2 size={14} className="text-green-500" /> Copied</>
+                            ) : (
+                              <><Copy size={14} /> Copy</>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Webhook Secret Status */}
+                      <div className="flex items-start gap-3 p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+                        <Shield size={16} className="text-[var(--color-gold)] mt-0.5 shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-[var(--color-text)] mb-0.5">
+                            RAZORPAY_WEBHOOK_SECRET
+                          </p>
+                          <p className="text-xs text-[var(--color-text-muted)]">
+                            Apne <code className="font-mono bg-black/10 px-1 rounded">.env</code> file mein{" "}
+                            <code className="font-mono bg-black/10 px-1 rounded">RAZORPAY_WEBHOOK_SECRET</code> set karein.
+                            Razorpay Dashboard → Settings → Webhooks → Secret par jo value mile, wahi yahan use karein.
+                            Secret set na hone par webhook signature verify nahi hoga — production mein zaroori hai.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Setup Steps */}
+                      <div>
+                        <label className={LABEL}>Setup Instructions</label>
+                        <ol className="space-y-3">
+                          {[
+                            {
+                              step: "1",
+                              title: "Razorpay Dashboard → Settings → Webhooks",
+                              desc: 'dashboard.razorpay.com par login karein, phir Settings → Webhooks → "Add New Webhook" click karein.',
+                              link: "https://dashboard.razorpay.com/app/webhooks",
+                            },
+                            {
+                              step: "2",
+                              title: "Webhook URL add karein",
+                              desc: "Upar diya hua URL copy karke Razorpay ke \"Webhook URL\" field mein paste karein.",
+                            },
+                            {
+                              step: "3",
+                              title: "Events select karein",
+                              desc: "In teen events ko enable karein:",
+                              events: ["payment.captured", "payment.failed", "refund.created"],
+                            },
+                          ].map(({ step, title, desc, link, events }) => (
+                            <li key={step} className="flex gap-3 p-4 rounded-xl border border-[var(--color-border)]">
+                              <span className="shrink-0 w-6 h-6 rounded-full bg-[var(--color-navy)] text-white text-xs font-bold flex items-center justify-center">
+                                {step}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-[var(--color-text)] mb-0.5 flex items-center gap-2">
+                                  {title}
+                                  {link && (
+                                    <a href={link} target="_blank" rel="noopener noreferrer"
+                                      className="text-[var(--color-gold)] hover:underline inline-flex items-center gap-0.5">
+                                      <ExternalLink size={12} />
+                                    </a>
+                                  )}
+                                </p>
+                                <p className="text-xs text-[var(--color-text-muted)]">{desc}</p>
+                                {events && (
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {events.map(ev => (
+                                      <span key={ev}
+                                        className="font-mono text-[10px] px-2 py-1 rounded-lg bg-[var(--color-navy)]/10 text-[var(--color-navy)] border border-[var(--color-navy)]/20 font-semibold">
+                                        {ev}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
                       </div>
                     </div>
                   </div>

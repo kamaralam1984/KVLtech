@@ -3,6 +3,9 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { sendOrderStatusSMS } from "@/lib/sms";
+import { logAudit } from "@/lib/audit";
+import { wsEvents } from "@/lib/ws-broadcast";
+import { metrics } from "@/lib/metrics";
 
 export async function GET(req: NextRequest) {
   if (!requireAdmin(req))
@@ -92,6 +95,12 @@ export async function PATCH(req: NextRequest) {
           }
         }
       }
+    }
+
+    if (status) {
+      logAudit(req, "UPDATE", "orders", id, `Status changed to ${status}`)
+      wsEvents.orderStatusChanged(order.id, status, order.clientId)
+      metrics.ordersTotal.inc({ status })
     }
 
     return NextResponse.json({ success: true, order });

@@ -47,6 +47,10 @@ export default function SupportPage() {
     priority: "",
     description: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [ticketNo, setTicketNo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const stats = [
     { icon: <Star size={22} />, value: "4.9★", label: "Support Rating" },
@@ -401,8 +405,69 @@ export default function SupportPage() {
               variants={fadeUp}
               className="card p-8"
             >
+              {submitted && ticketNo && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="mb-6 p-6 rounded-xl border flex flex-col items-center text-center gap-3"
+                  style={{ background: "var(--color-bg-secondary)", borderColor: "var(--color-gold)" }}
+                >
+                  <CheckCircle size={36} style={{ color: "#16A34A" }} />
+                  <h3 className="text-lg font-bold" style={{ color: "var(--color-text)" }}>Ticket Submitted!</h3>
+                  <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                    Your support ticket has been created. You will receive a reply within the SLA window.
+                  </p>
+                  <div className="px-6 py-3 rounded-xl font-mono font-bold text-lg" style={{ background: "var(--color-bg)", color: "var(--color-gold)" }}>
+                    {ticketNo}
+                  </div>
+                  <button
+                    onClick={() => { setSubmitted(false); setTicketNo(null); setFormData({ name: "", email: "", orderId: "", issueType: "", priority: "", description: "" }); }}
+                    className="text-sm font-semibold underline"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    Submit another ticket
+                  </button>
+                </motion.div>
+              )}
+              {error && (
+                <div className="mb-4 px-4 py-3 rounded-lg text-sm font-medium bg-red-500/10 text-red-500 border border-red-500/20">
+                  {error}
+                </div>
+              )}
               <form
-                onSubmit={(e) => e.preventDefault()}
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setSubmitting(true);
+                  setError(null);
+                  try {
+                    const res = await fetch("/api/support", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      credentials: "include",
+                      body: JSON.stringify({
+                        subject: formData.issueType
+                          ? `${formData.issueType.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}: ${formData.description.slice(0, 60)}`
+                          : formData.description.slice(0, 80),
+                        orderId: formData.orderId || undefined,
+                        priority: formData.priority || "MEDIUM",
+                        message: `Name: ${formData.name}\nEmail: ${formData.email}\nIssue Type: ${formData.issueType}\n\n${formData.description}`,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.ticket?.ticketNo) {
+                      setTicketNo(data.ticket.ticketNo);
+                      setSubmitted(true);
+                    } else if (res.status === 401) {
+                      setError("Please log in to your client account to submit a support ticket. Or reach us via WhatsApp for immediate help.");
+                    } else {
+                      setError(data.error || "Failed to submit ticket. Please try again.");
+                    }
+                  } catch {
+                    setError("Network error. Please try again or contact us via WhatsApp.");
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
                 className="flex flex-col gap-5"
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -581,9 +646,8 @@ export default function SupportPage() {
                   </span>
                 </div>
 
-                <button type="submit" className="btn-gold w-full py-4 text-base">
-                  Submit Support Ticket
-                  <ArrowRight size={18} className="inline ml-2" />
+                <button type="submit" disabled={submitting} className="btn-gold w-full py-4 text-base disabled:opacity-60 disabled:cursor-not-allowed">
+                  {submitting ? "Submitting..." : <>Submit Support Ticket <ArrowRight size={18} className="inline ml-2" /></>}
                 </button>
               </form>
             </motion.div>

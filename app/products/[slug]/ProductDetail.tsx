@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight, Check, ChevronDown, Star,
-  Phone, MessageCircle, Zap, Shield, Clock, ArrowLeft, Loader2, CreditCard, ExternalLink
+  Phone, MessageCircle, Zap, Shield, Clock, ArrowLeft, Loader2, CreditCard, ExternalLink, Tag, X
 } from "lucide-react";
 import type { Product } from "@/lib/products";
 import { ADDONS } from "@/lib/products";
@@ -92,6 +92,9 @@ export function ProductDetail({ product, related }: { product: Product; related:
   const [payError, setPayError] = useState("");
   const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplying, setCouponApplying] = useState(false);
+  const [couponResult, setCouponResult] = useState<{ valid: boolean; discount: number; discountType: string; finalAmount: number; couponId?: string; reason?: string } | null>(null);
 
   const toggleAddon = (id: string) =>
     setSelectedAddons(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
@@ -110,6 +113,28 @@ export function ProductDetail({ product, related }: { product: Product; related:
     Premium: product.premiumPrice,
   };
 
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponApplying(true);
+    setCouponResult(null);
+    const baseAmount = planPriceMap[product.plans[activePlan].name] || product.premiumPrice;
+    const totalBeforeCoupon = baseAmount + addonTotal;
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode.trim(), orderAmount: totalBeforeCoupon }),
+      });
+      const data = await res.json();
+      setCouponResult(data);
+    } catch {
+      setCouponResult({ valid: false, discount: 0, discountType: "", finalAmount: totalBeforeCoupon, reason: "Failed to validate coupon" });
+    }
+    setCouponApplying(false);
+  };
+
+  const removeCoupon = () => { setCouponCode(""); setCouponResult(null); };
+
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
     setPayError("");
@@ -124,7 +149,8 @@ export function ProductDetail({ product, related }: { product: Product; related:
 
     setPaying(true);
     const baseAmount = planPriceMap[currentPlan.name] || product.premiumPrice;
-    const amount = baseAmount + addonTotal;
+    const rawAmount = baseAmount + addonTotal;
+    const amount = couponResult?.valid ? couponResult.finalAmount : rawAmount;
     const addonsSelected = ADDONS.filter(a => selectedAddons.has(a.id)).map(a => a.name);
 
     try {
@@ -539,7 +565,14 @@ export function ProductDetail({ product, related }: { product: Product; related:
                       ? "Our team will provide you a custom quote"
                       : <>
                           Plan: <strong className="text-[var(--color-gold)]">{product.plans[activePlan].price}</strong>
-                          {addonTotal > 0 && <> + Add-ons: <strong className="text-[var(--color-gold)]">${addonTotal}</strong> = <strong className="text-[var(--color-gold)]">${(planPriceMap[product.plans[activePlan].name] || 0) + addonTotal} total</strong></>}
+                          {addonTotal > 0 && <> + Add-ons: <strong className="text-[var(--color-gold)]">₹{addonTotal}</strong></>}
+                          {couponResult?.valid && (
+                            <>
+                              {" "}&mdash;{" "}
+                              <span className="line-through text-[var(--color-text-muted)]">₹{((planPriceMap[product.plans[activePlan].name] || 0) + addonTotal).toLocaleString("en-IN")}</span>
+                              {" "}<strong className="text-green-600">₹{couponResult.finalAmount.toLocaleString("en-IN")}</strong>
+                            </>
+                          )}
                           {" · "}{product.plans[activePlan].delivery} delivery
                         </>
                     }
@@ -584,6 +617,46 @@ export function ProductDetail({ product, related }: { product: Product; related:
                       className="w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
                   </div>
 
+                  {product.plans[activePlan].price !== "Quote" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1.5 flex items-center gap-1.5">
+                        <Tag size={12} className="text-[var(--color-gold)]" /> Coupon Code
+                      </label>
+                      {couponResult?.valid ? (
+                        <div className="flex items-center justify-between p-3 rounded-xl border border-green-500/30 bg-green-500/5">
+                          <div>
+                            <p className="text-sm font-semibold text-green-600 flex items-center gap-1.5">
+                              <Check size={14} /> Coupon applied: {couponCode.toUpperCase()}
+                            </p>
+                            <p className="text-xs text-green-600/80 mt-0.5">
+                              Saving ₹{couponResult.discount.toLocaleString("en-IN")} · Final: ₹{couponResult.finalAmount.toLocaleString("en-IN")}
+                            </p>
+                          </div>
+                          <button type="button" onClick={removeCoupon} className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={couponCode}
+                            onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponResult(null); }}
+                            placeholder="Enter coupon code"
+                            className="flex-1 px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all font-mono"
+                          />
+                          <button type="button" onClick={applyCoupon} disabled={couponApplying || !couponCode.trim()}
+                            className="px-4 py-2 rounded-xl border border-[var(--color-gold)] text-sm font-semibold text-[var(--color-gold)] hover:bg-[var(--color-gold)]/10 transition-all disabled:opacity-50 whitespace-nowrap">
+                            {couponApplying ? <Loader2 size={15} className="animate-spin" /> : "Apply"}
+                          </button>
+                        </div>
+                      )}
+                      {couponResult && !couponResult.valid && (
+                        <p className="text-xs text-red-500 mt-1.5">{couponResult.reason || "Invalid coupon"}</p>
+                      )}
+                    </div>
+                  )}
+
                   {payError && (
                     <p className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">{payError}</p>
                   )}
@@ -594,7 +667,9 @@ export function ProductDetail({ product, related }: { product: Product; related:
                       ? <><Loader2 size={18} className="animate-spin" /> Processing...</>
                       : product.plans[activePlan].price === "Quote"
                         ? <><MessageCircle size={18} /> Request Quote on WhatsApp</>
-                        : <><CreditCard size={18} /> Pay {product.plans[activePlan].price} Securely</>
+                        : couponResult?.valid
+                          ? <><CreditCard size={18} /> Pay ₹{couponResult.finalAmount.toLocaleString("en-IN")} Securely</>
+                          : <><CreditCard size={18} /> Pay {product.plans[activePlan].price} Securely</>
                     }
                   </button>
                   <p className="text-center text-xs text-[var(--color-text-muted)]">

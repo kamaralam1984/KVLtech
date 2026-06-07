@@ -573,7 +573,7 @@ function LeadFinderTab() {
 }
 
 export default function MarketingPage() {
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'leads'>('campaigns');
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'leads' | 'ai-campaign'>('campaigns');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -593,6 +593,23 @@ export default function MarketingPage() {
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [preview, setPreview] = useState<any>(null);
+
+  // AI Campaign Generator
+  const [aiCampaignForm, setAiCampaignForm] = useState({
+    targetAudience: "New Leads",
+    campaignGoal: "",
+    tone: "professional" as "professional" | "friendly" | "urgent",
+  });
+  const [aiCampaignLoading, setAiCampaignLoading] = useState(false);
+  const [aiCampaignResult, setAiCampaignResult] = useState<{
+    subjects: string[];
+    preview: string;
+    body: string;
+    cta: string;
+    ps: string;
+  } | null>(null);
+  const [aiCampaignError, setAiCampaignError] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -691,6 +708,47 @@ export default function MarketingPage() {
   const campaigns = data?.campaigns || [];
   const totalSent = (stats.emailSent || 0) + (stats.waSent || 0) + (stats.smsSent || 0);
 
+  const handleGenerateAICampaign = async () => {
+    if (!aiCampaignForm.campaignGoal.trim()) return;
+    setAiCampaignLoading(true);
+    setAiCampaignError("");
+    setAiCampaignResult(null);
+    setSelectedSubject("");
+    try {
+      const res = await fetch("/api/admin/marketing/ai-campaign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(aiCampaignForm),
+      });
+      const data = await res.json();
+      if (res.ok && data.campaign) {
+        setAiCampaignResult(data.campaign);
+        if (data.campaign.subjects?.[0]) setSelectedSubject(data.campaign.subjects[0]);
+      } else {
+        setAiCampaignError(data.error || "Generation failed");
+      }
+    } catch {
+      setAiCampaignError("Network error — please retry");
+    }
+    setAiCampaignLoading(false);
+  };
+
+  const useAICampaign = () => {
+    if (!aiCampaignResult) return;
+    setComposeType("EMAIL");
+    setComposeForm({
+      name: `AI Campaign — ${aiCampaignForm.campaignGoal.slice(0, 40)}`,
+      subject: selectedSubject || aiCampaignResult.subjects[0] || "",
+      message: `${aiCampaignResult.body}\n\n${aiCampaignResult.cta}\n\nP.S. ${aiCampaignResult.ps}`,
+      recipients: aiCampaignForm.targetAudience === "New Leads" ? "NEW_LEADS"
+        : aiCampaignForm.targetAudience === "Inactive Clients" ? "ALL_CLIENTS"
+        : aiCampaignForm.targetAudience === "Premium Clients" ? "QUALIFIED"
+        : "ALL_LEADS",
+    });
+    setActiveTab("campaigns");
+  };
+
   return (
     <>
       <AdminTopbar title="Marketing" />
@@ -700,6 +758,7 @@ export default function MarketingPage() {
         <div className="flex gap-1 p-1 rounded-xl bg-[var(--color-bg-secondary)] w-fit">
           {([
             { key: 'campaigns', label: 'Campaigns', icon: BarChart2 },
+            { key: 'ai-campaign', label: 'AI Campaign', icon: Sparkles },
             { key: 'leads', label: 'Lead Finder', icon: Search },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
@@ -718,6 +777,136 @@ export default function MarketingPage() {
         </div>
 
         {activeTab === 'leads' && <LeadFinderTab />}
+
+        {/* ── AI Campaign Generator Tab ── */}
+        {activeTab === 'ai-campaign' && (
+          <div className="space-y-5">
+            <div className="card p-5">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-[var(--color-gold)]/15 flex items-center justify-center">
+                  <Sparkles size={20} className="text-[var(--color-gold)]" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-base text-[var(--color-text)]">AI Campaign Generator</h3>
+                  <p className="text-xs text-[var(--color-text-muted)]">Generate a complete email campaign with subject lines, body, CTA and P.S. line</p>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className={LABEL}>Target Audience</label>
+                  <select
+                    value={aiCampaignForm.targetAudience}
+                    onChange={e => setAiCampaignForm(f => ({ ...f, targetAudience: e.target.value }))}
+                    className={INPUT}
+                  >
+                    {["New Leads", "Inactive Clients", "All Clients", "Premium Clients"].map(a => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={LABEL}>Campaign Goal *</label>
+                  <input
+                    value={aiCampaignForm.campaignGoal}
+                    onChange={e => setAiCampaignForm(f => ({ ...f, campaignGoal: e.target.value }))}
+                    placeholder="e.g. Re-engage inactive clients with a discount"
+                    className={INPUT}
+                  />
+                </div>
+                <div>
+                  <label className={LABEL}>Tone</label>
+                  <select
+                    value={aiCampaignForm.tone}
+                    onChange={e => setAiCampaignForm(f => ({ ...f, tone: e.target.value as any }))}
+                    className={INPUT}
+                  >
+                    <option value="professional">Professional</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+              {aiCampaignError && (
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 text-sm mb-4">
+                  <AlertCircle size={14} /> {aiCampaignError}
+                </div>
+              )}
+              <button
+                onClick={handleGenerateAICampaign}
+                disabled={aiCampaignLoading || !aiCampaignForm.campaignGoal.trim()}
+                className="btn-gold flex items-center gap-2 text-sm disabled:opacity-60"
+              >
+                {aiCampaignLoading ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                {aiCampaignLoading ? "Generating..." : "Generate Campaign"}
+              </button>
+            </div>
+
+            {aiCampaignResult && (
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                {/* Subject lines */}
+                <div className="card p-5">
+                  <h4 className="font-display font-semibold text-sm text-[var(--color-text)] mb-3">Subject Line Options — click to select</h4>
+                  <div className="space-y-2">
+                    {aiCampaignResult.subjects.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedSubject(s)}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl border text-sm transition-all ${
+                          selectedSubject === s
+                            ? "border-[var(--color-gold)] bg-[var(--color-gold)]/5 text-[var(--color-gold)] font-semibold"
+                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-gold)]/40"
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview text */}
+                <div className="card p-5">
+                  <h4 className="font-display font-semibold text-sm text-[var(--color-text)] mb-2">Preview Text</h4>
+                  <p className="text-xs text-[var(--color-text-secondary)] italic">{aiCampaignResult.preview}</p>
+                </div>
+
+                {/* Email body */}
+                <div className="card p-5">
+                  <h4 className="font-display font-semibold text-sm text-[var(--color-text)] mb-3">Email Body</h4>
+                  <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4">
+                    <p className="text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap leading-relaxed">{aiCampaignResult.body}</p>
+                    <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+                      <button className="px-4 py-2 rounded-xl bg-[var(--color-gold)] text-white text-sm font-semibold pointer-events-none">
+                        {aiCampaignResult.cta}
+                      </button>
+                    </div>
+                    {aiCampaignResult.ps && (
+                      <p className="mt-3 text-xs text-[var(--color-text-muted)] italic">P.S. {aiCampaignResult.ps}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Use campaign button */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={useAICampaign}
+                    className="btn-gold flex items-center gap-2 text-sm"
+                  >
+                    <Send size={14} /> Use This Campaign
+                  </button>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(
+                      `Subject: ${selectedSubject}\n\nPreview: ${aiCampaignResult.preview}\n\n${aiCampaignResult.body}\n\n${aiCampaignResult.cta}\n\nP.S. ${aiCampaignResult.ps}`
+                    )}
+                    className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all"
+                  >
+                    <Copy size={14} /> Copy All
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'campaigns' && <>
 
         {/* Stats */}

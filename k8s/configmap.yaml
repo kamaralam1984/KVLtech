@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kvltech-config
+  namespace: kvltech-prod
+  labels:
+    app: kvltech
+data:
+  NODE_ENV: "production"
+  NEXT_PUBLIC_APP_URL: "https://kvlbusinesssolutions.com"
+  PORT: "3001"

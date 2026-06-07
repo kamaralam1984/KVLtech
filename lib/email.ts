@@ -1,8 +1,73 @@
 import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "KVL TECH <onboarding@resend.dev>"; // change to verified domain in prod
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://kvlbusinesssolutions.com";
+
+export async function sendEmailWithFallback(
+  to: string,
+  subject: string,
+  html: string,
+  opts?: { fromName?: string; fromAddr?: string }
+) {
+  const fromName = opts?.fromName || "KVL TECH";
+  const fromAddr = opts?.fromAddr;
+  const fromField = fromAddr
+    ? `${fromName} <${fromAddr}>`
+    : FROM;
+
+  // 1. Try Resend
+  if (process.env.RESEND_API_KEY) {
+    const { data, error } = await resend.emails.send({ from: fromField, to, subject, html });
+    if (data?.id) {
+      console.log("[RESEND] Sent:", data.id, "→", to);
+      return;
+    }
+    console.error("[RESEND] Failed:", error);
+  }
+
+  // 2. Fallback: Gmail SMTP (checks both SMTP_* and EMAIL_* env vars)
+  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+  if (smtpUser && smtpPass && !smtpPass.includes("xxxx") && !smtpPass.includes("placeholder")) {
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+    await transport.sendMail({
+      from: `"${fromName}" <${smtpUser}>`,
+      to, subject, html,
+    });
+    console.log("[GMAIL SMTP] Sent →", to);
+    return;
+  }
+
+  // Dev: print reset URL so it can be tested manually
+  console.warn("[EMAIL] No working email provider. Logging for dev:");
+  console.log("[EMAIL] TO:", to, "| SUBJECT:", subject);
+  const match = html.match(/href="(https?:\/\/[^"]+reset-password[^"]+)"/);
+  if (match) console.log("[EMAIL] RESET LINK:", match[1]);
+}
+
+/**
+ * Returns the white-label email config from DB, falling back to defaults.
+ * Use this to get dynamic fromName/fromAddr for outbound emails.
+ */
+export async function getEmailConfig(): Promise<{ fromName: string; fromAddr: string }> {
+  try {
+    const { db } = await import("@/lib/db");
+    const config = await db.whiteLabelConfig.findFirst({ where: { agencyId: null, isActive: true } });
+    return {
+      fromName: config?.emailFromName || "KVL TECH",
+      fromAddr: config?.emailFromAddr || "noreply@kvlbusinesssolutions.com",
+    };
+  } catch {
+    return { fromName: "KVL TECH", fromAddr: "noreply@kvlbusinesssolutions.com" };
+  }
+}
 
 // ─── Shared HTML helpers ────────────────────────────────────────────────────
 const emailHeader = `
@@ -220,6 +285,30 @@ export async function sendDemoReminderEmail(lead: {
 /**
  * 5. Branding reminder — agar 3 din baad bhi branding form submit nahi kiya
  */
+export async function sendPasswordResetEmail({
+  to, name, resetUrl,
+}: {
+  to: string; name: string; resetUrl: string;
+}) {
+  const html = wrap(`
+    <div style="padding:32px;">
+      <h2 style="color:#0B1437;margin:0 0 6px;">Password Reset Request &#x1F512;</h2>
+      <p style="color:#6B7280;margin:0 0 20px;font-size:14px;">You requested a password reset for your KVL TECH account.</p>
+      <p style="color:#374151;line-height:1.7;">Hi <strong>${name}</strong>,</p>
+      <p style="color:#374151;line-height:1.7;">We received a request to reset the password for your account. Click the button below to set a new password.</p>
+      <div style="background:#FFF8E7;border-left:4px solid #C9A227;border-radius:0 8px 8px 0;padding:16px 20px;margin:20px 0;">
+        <p style="margin:0;color:#92700A;font-size:13px;font-weight:600;">&#x26A0; This link expires in 1 hour</p>
+        <p style="margin:4px 0 0;color:#374151;font-size:13px;">If you did not request this, please ignore this email — your account is safe.</p>
+      </div>
+      ${ctaButton(resetUrl, "Reset Password", "#0B1437")}
+      <p style="color:#9CA3AF;font-size:12px;margin-top:24px;">Button not working? Copy and paste this link in your browser:<br/><span style="color:#C9A227;word-break:break-all;">${resetUrl}</span></p>
+      <p style="color:#9CA3AF;font-size:12px;margin-top:16px;">Need help? WhatsApp: <strong>+91 9942000413</strong></p>
+    </div>
+  `);
+
+  await sendEmailWithFallback(to, `Reset your KVL TECH password`, html);
+}
+
 export async function sendBrandingReminderEmail(client: {
   name: string;
   email: string;

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kvltech-prod
+  labels:
+    app: kvltech
+    environment: production
