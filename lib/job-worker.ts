@@ -21,7 +21,7 @@ export async function processJob(job: Job): Promise<void> {
         html?: string
         text?: string
       }
-      await sendEmailWithFallback({ to, subject, html: html ?? text ?? "", text })
+      await sendEmailWithFallback(to, subject, html ?? text ?? "")
       break
     }
 

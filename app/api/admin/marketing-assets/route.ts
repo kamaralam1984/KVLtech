@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         category: category || null,
         tags: Array.isArray(tags) ? tags : (tags ? String(tags).split(",").map((t: string) => t.trim()).filter(Boolean) : []),
         isPublic: isPublic ?? true,
-        fileSize: fileSize ? parseInt(fileSize) : null,
+        fileSize: fileSize ? String(fileSize) : null,
         downloads: 0,
       },
     })

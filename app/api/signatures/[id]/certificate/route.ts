@@ -30,7 +30,7 @@ export async function GET(
   try {
     const pdf = await generateSignatureCertificate(id)
 
-    return new NextResponse(pdf, {
+    return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="signature-certificate-${id}.pdf"`,

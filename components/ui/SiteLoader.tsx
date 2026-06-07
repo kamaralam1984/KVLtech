@@ -20,7 +20,7 @@ function useRouteLoader() {
   const pathname = usePathname()
   const [busy, setBusy] = useState(false)
   const prev = useRef(pathname)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   useEffect(() => {
     if (prev.current === pathname) return

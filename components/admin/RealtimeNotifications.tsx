@@ -22,7 +22,7 @@ export function RealtimeNotifications({ adminId }: { adminId: string }) {
   })
 
   useEffect(() => {
-    return addHandler((msg) => {
+    const cleanup = addHandler((msg) => {
       if (["new_order", "new_lead", "ticket_updated", "team_activity"].includes(msg.type)) {
         const notification: Notification = {
           id: `${Date.now()}`,
@@ -52,6 +52,7 @@ export function RealtimeNotifications({ adminId }: { adminId: string }) {
         setNotifications(prev => [notification, ...prev.slice(0, 19)])
       }
     })
+    return () => { cleanup() }
   }, [addHandler])
 
   const unread = notifications.filter(n => !n.read).length

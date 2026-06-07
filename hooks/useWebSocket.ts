@@ -17,7 +17,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const [isConnected, setIsConnected] = useState(false)
   const [lastMessage, setLastMessage] = useState<WSMessage | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimer = useRef<NodeJS.Timeout>()
+  const reconnectTimer = useRef<NodeJS.Timeout | undefined>(undefined)
   const messageHandlers = useRef<Set<MessageHandler>>(new Set())
   // Stable ref for options to avoid stale closures without causing re-connects
   const optionsRef = useRef(options)

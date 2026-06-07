@@ -24,7 +24,7 @@ export async function captureError(report: ErrorReport) {
   // Forward to Sentry if configured
   if (process.env.SENTRY_DSN) {
     try {
-      const Sentry = await import("@sentry/nextjs").catch(() => null)
+      const Sentry = await import("@sentry/nextjs" as string).catch(() => null)
       if (Sentry) {
         Sentry.captureException(
           error instanceof Error ? error : new Error(String(error)),
