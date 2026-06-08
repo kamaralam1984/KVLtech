@@ -198,11 +198,14 @@ export default function ClientPortalPage() {
   const [branding, setBranding] = useState({
     orderId: "", companyName: "", tagline: "", primaryColor: "#C9A227",
     secondaryColor: "#0F172A", fontPreference: "", phone: "", email: "",
-    address: "", website: "", logoNote: "",
+    address: "", website: "", logoNote: "", logoUrl: "",
   });
   const [brandingSaved, setBrandingSaved] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState(false);
   const [brandingError, setBrandingError] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState("");
+  const [logoDragOver, setLogoDragOver] = useState(false);
 
   const [ticket, setTicket] = useState({ subject: "", orderId: "", priority: "Medium", message: "" });
   const [ticketSent, setTicketSent] = useState(false);
@@ -365,6 +368,25 @@ export default function ClientPortalPage() {
   useEffect(() => {
     if (activeTab === "files" && filesOrderId) fetchProjectFiles(filesOrderId);
   }, [activeTab, filesOrderId, fetchProjectFiles]);
+
+  const uploadLogo = async (file: File) => {
+    setLogoError("");
+    if (!file.type.startsWith("image/")) { setLogoError("Sirf image files allowed hain"); return; }
+    if (file.size > 10 * 1024 * 1024) { setLogoError("File 10MB se badi hai"); return; }
+    setLogoUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/branding/upload", { method: "POST", credentials: "include", body: fd });
+      const data = await r.json();
+      if (r.ok && data.url) {
+        setBranding(b => ({ ...b, logoUrl: data.url }));
+      } else {
+        setLogoError(data.error || "Upload failed");
+      }
+    } catch { setLogoError("Upload failed — retry karein"); }
+    setLogoUploading(false);
+  };
 
   const uploadFile = async (file: File) => {
     if (!filesOrderId || fileUploading) return;
@@ -1214,18 +1236,45 @@ export default function ClientPortalPage() {
                         </div>
                         <div>
                           <label className={LABEL}>Logo Submission</label>
-                          <div className="flex items-start gap-3 p-4 rounded-xl border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-gold)] transition-colors">
-                            <div className="w-9 h-9 rounded-lg bg-[var(--color-gold)]/10 flex items-center justify-center shrink-0">
-                              <Upload size={18} className="text-[var(--color-gold)]" />
+                          {branding.logoUrl ? (
+                            <div className="rounded-xl border border-[var(--color-border)] p-4 flex items-center gap-4">
+                              <img src={branding.logoUrl} alt="Logo preview" className="h-16 w-16 object-contain rounded-lg border border-[var(--color-border)] bg-white p-1" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-green-600">✓ Logo uploaded successfully</p>
+                                <p className="text-xs text-[var(--color-text-muted)] truncate mt-1">{branding.logoUrl}</p>
+                              </div>
+                              <button type="button" onClick={() => setBranding(b => ({ ...b, logoUrl: "" }))}
+                                className="text-xs text-red-500 hover:text-red-700 border border-red-200 px-3 py-1.5 rounded-lg transition-colors shrink-0">
+                                Remove
+                              </button>
                             </div>
-                            <div>
-                              <p className="text-sm font-semibold text-[var(--color-text)]">Send Logo via WhatsApp</p>
-                              <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">PNG / SVG format · Min 500×500px</p>
-                              <a href="https://wa.me/919942000413" className="text-xs text-[var(--color-gold)] hover:underline mt-1 inline-flex items-center gap-1" target="_blank" rel="noopener noreferrer">
-                                <MessageCircle size={11} /> +91 9942000413
-                              </a>
-                            </div>
-                          </div>
+                          ) : (
+                            <label
+                              className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 border-dashed cursor-pointer transition-all ${logoDragOver ? "border-[var(--color-gold)] bg-[var(--color-gold)]/5" : "border-[var(--color-border)] hover:border-[var(--color-gold)]"}`}
+                              onDragOver={e => { e.preventDefault(); setLogoDragOver(true); }}
+                              onDragLeave={() => setLogoDragOver(false)}
+                              onDrop={e => { e.preventDefault(); setLogoDragOver(false); const f = e.dataTransfer.files[0]; if (f) uploadLogo(f); }}
+                            >
+                              <input type="file" className="hidden" accept="image/*,.svg,.png,.jpg,.jpeg,.webp,.gif,.avif,.bmp,.tiff,.ico,.heic"
+                                onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }} />
+                              {logoUploading ? (
+                                <Loader2 size={28} className="animate-spin text-[var(--color-gold)]" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-[var(--color-gold)]/10 flex items-center justify-center">
+                                  <Upload size={22} className="text-[var(--color-gold)]" />
+                                </div>
+                              )}
+                              <div className="text-center">
+                                <p className="text-sm font-semibold text-[var(--color-text)]">
+                                  {logoUploading ? "Uploading..." : "Click karo ya drag & drop karo"}
+                                </p>
+                                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                                  PNG, SVG, JPG, WebP, GIF, AVIF, BMP, TIFF, ICO, HEIC · Max 10MB
+                                </p>
+                              </div>
+                            </label>
+                          )}
+                          {logoError && <p className="text-xs text-red-500 mt-2 flex items-center gap-1"><AlertCircle size={12} />{logoError}</p>}
                         </div>
                         <div>
                           <label className={LABEL}>Additional Notes</label>
