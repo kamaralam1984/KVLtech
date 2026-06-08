@@ -59,11 +59,11 @@ export default function OrdersPage() {
     try {
       const [cr, pr] = await Promise.all([
         fetch("/api/admin/clients", { credentials: "include" }).then(r => r.json()),
-        fetch("/api/admin/products", { credentials: "include" }).then(r => r.json()),
+        fetch("/api/admin/products?dropdown=1", { credentials: "include" }).then(r => r.json()),
       ]);
-      setClients(cr.clients || cr || []);
-      setProducts(pr.products || pr || []);
-    } catch {}
+      setClients(Array.isArray(cr.clients) ? cr.clients : []);
+      setProducts(Array.isArray(pr.products) ? pr.products : []);
+    } catch (e) { console.error("loadDropdownData:", e); }
   }, []);
 
   const handleCreateOrder = async (e: React.FormEvent) => {

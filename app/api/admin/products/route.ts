@@ -9,6 +9,16 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
 
+  // Lightweight list for dropdowns — skip heavy joins
+  if (searchParams.get("dropdown") === "1") {
+    const products = await db.product.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, category: true, basicPrice: true, premiumPrice: true, slug: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    return NextResponse.json({ products });
+  }
+
   try {
     const products = await db.product.findMany({
       where: search ? {
