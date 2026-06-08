@@ -1147,7 +1147,10 @@ export default function ClientPortalPage() {
                           Our team has received your details. We'll apply them within 24 hours.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                          <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer" className="btn-gold">
+                          <button onClick={() => setActiveTab("orders")} className="btn-gold">
+                            <Package size={15} /> View My Orders
+                          </button>
+                          <a href="https://wa.me/919942000413" target="_blank" rel="noopener noreferrer" className="btn-outline">
                             <MessageCircle size={15} /> Track on WhatsApp
                           </a>
                           <button onClick={() => setBrandingSaved(false)} className="btn-outline">Edit Details</button>

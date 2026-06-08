@@ -56,6 +56,8 @@ export function EmptyState({
           {actionLink && (
             <a
               href={actionLink.href}
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-5 py-2 rounded-xl bg-[var(--color-gold)] text-white text-sm font-semibold hover:opacity-90 transition-opacity inline-block"
             >
               {actionLink.label}
