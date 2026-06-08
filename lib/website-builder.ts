@@ -119,7 +119,7 @@ ${options.language === "hindi" ? "Generate content in Hindi" : "Generate content
 Generate all sections with realistic, professional content. Make it specific to their industry, not generic.`
 
   const response = await groq.chat.completions.create({
-    model: "llama3-8b-8192",
+    model: "llama-3.1-8b-instant",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -154,7 +154,7 @@ Tone: ${context.tone || "professional"}
 Return ONLY JSON (no markdown): {"type": "${sectionType}", "heading": "...", "subheading": "...", "content": "...", "items": [{"title": "...", "description": "..."}]}`
 
   const response = await groq.chat.completions.create({
-    model: "llama3-8b-8192",
+    model: "llama-3.1-8b-instant",
     messages: [{ role: "user", content: prompt }],
     max_tokens: 600,
     temperature: 0.7,

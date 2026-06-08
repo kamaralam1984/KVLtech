@@ -75,7 +75,7 @@ Return ONLY a JSON object (no markdown):
 
   try {
     const response = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 600,
       temperature: 0.2,
@@ -153,7 +153,7 @@ Write a warm, professional email (150-200 words). Include specific next steps. S
 
   try {
     const response = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 400,
     });

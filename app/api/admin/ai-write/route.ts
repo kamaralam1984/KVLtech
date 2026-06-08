@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const groq = getGroq()!;
     const completion = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: promptFn(text, context || "") }],
       max_tokens: 800,
       temperature: 0.7,

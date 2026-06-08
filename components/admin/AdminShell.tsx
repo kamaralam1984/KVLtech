@@ -20,7 +20,7 @@ export function AdminShell({ children, overlays }: AdminShellProps) {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--color-bg-secondary)]">
+    <div className="dark admin-theme flex h-screen overflow-hidden bg-[var(--color-bg)]">
       <AdminSidebar
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}

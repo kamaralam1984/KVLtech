@@ -12,7 +12,7 @@ async function callGroq(prompt: string, maxTokens = 800): Promise<string> {
   const groq = getGroq();
   if (!groq) throw new Error("AI features require GROQ_API_KEY in .env");
   const completion = await groq.chat.completions.create({
-    model: "llama3-8b-8192",
+    model: "llama-3.1-8b-instant",
     messages: [{ role: "user", content: prompt }],
     max_tokens: maxTokens,
     temperature: 0.7,

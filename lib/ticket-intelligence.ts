@@ -51,7 +51,7 @@ Respond with ONLY this JSON:
   let analysis: TicketAnalysis
   try {
     const response = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 400,
       temperature: 0.2,
@@ -134,7 +134,7 @@ Write a clear, empathetic response (2-4 sentences). Be specific, professional, a
 
   try {
     const response = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 300,
       temperature: 0.4,

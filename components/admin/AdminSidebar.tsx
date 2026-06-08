@@ -136,7 +136,7 @@ export function AdminSidebar({ mobileOpen = false, onMobileClose }: AdminSidebar
     <motion.aside
       animate={{ width: collapsed ? 64 : 240 }}
       transition={{ duration: 0.25, ease: "easeInOut" }}
-      className="flex flex-col h-full border-r border-[rgba(201,162,39,0.1)] bg-[var(--color-bg)] glass-dark shrink-0 overflow-hidden"
+      className="flex flex-col h-full border-r border-[rgba(201,162,39,0.2)] bg-[#0B1437] shrink-0 overflow-hidden"
     >
       {/* Logo */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-[var(--color-border)] h-16 shrink-0">
@@ -152,7 +152,7 @@ export function AdminSidebar({ mobileOpen = false, onMobileClose }: AdminSidebar
           onClick={() => setCollapsed(!collapsed)}
           className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-secondary)] transition-colors ml-auto shrink-0"
         >
-          {collapsed ? <Menu size={16} className="text-[var(--color-text-secondary)]" /> : <ChevronLeft size={16} className="text-[var(--color-text-secondary)]" />}
+          {collapsed ? <Menu size={16} className="text-slate-300" /> : <ChevronLeft size={16} className="text-slate-300" />}
         </button>
       </div>
 
@@ -175,7 +175,7 @@ export function AdminSidebar({ mobileOpen = false, onMobileClose }: AdminSidebar
                 title={collapsed ? label : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors group relative ${active
                   ? "text-white shadow-[var(--shadow-card)]"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text)]"}`}
+                  : "text-slate-300 hover:bg-white/10 hover:text-white"}`}
               >
                 {active && (
                   <motion.div
@@ -217,12 +217,12 @@ export function AdminSidebar({ mobileOpen = false, onMobileClose }: AdminSidebar
       <div className="p-3 border-t border-[var(--color-border)] space-y-1">
         <Link href="/docs/api"
           title={collapsed ? "API Documentation" : undefined}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text)] transition-all">
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all">
           <ExternalLink size={18} className="shrink-0" />
           {!collapsed && <span className="text-sm font-medium">API Documentation</span>}
         </Link>
         <Link href="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text)] transition-all">
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300 hover:bg-white/10 hover:text-white transition-all">
           <LogOut size={18} className="shrink-0" />
           {!collapsed && <span className="text-sm font-medium">Back to Site</span>}
         </Link>
@@ -234,8 +234,8 @@ export function AdminSidebar({ mobileOpen = false, onMobileClose }: AdminSidebar
               {admin?.name?.[0]?.toUpperCase() || "A"}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-[var(--color-text)] truncate">{admin?.name || "Admin"}</p>
-              <p className="text-[10px] text-[var(--color-text-muted)] truncate">{admin?.role || "Administrator"}</p>
+              <p className="text-xs font-semibold text-white truncate">{admin?.name || "Admin"}</p>
+              <p className="text-[10px] text-slate-400 truncate">{admin?.role || "Administrator"}</p>
             </div>
             <button onClick={handleLogout} title="Logout"
               className="w-6 h-6 rounded-lg flex items-center justify-center text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-all shrink-0">

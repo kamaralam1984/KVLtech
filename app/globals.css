@@ -98,6 +98,21 @@
   --shadow-card-hover: 0 12px 40px rgba(0,0,0,0.5);
 }
 
+/* Admin panel — matches homepage navy blue theme */
+.admin-theme {
+  --color-bg: #0B1437;
+  --color-bg-secondary: #0F1C44;
+  --color-bg-tertiary: #162054;
+  --color-text: #F1F5F9;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+  --color-border: rgba(201,162,39,0.15);
+  --color-navy: #0B1437;
+  --color-navy-light: #162054;
+  --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-card-hover: 0 12px 40px rgba(0,0,0,0.6);
+}
+
 /* Scrollbar utility — hides scrollbar while keeping scroll functionality */
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
