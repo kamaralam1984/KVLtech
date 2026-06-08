@@ -14,9 +14,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
 
     // Amount is expected in paise (smallest unit)
-    const converted = from === "INR"
-      ? convertFromINR(amount, to)
-      : amount // TODO: cross-currency support
+    // Convert via INR as pivot: fromCurrency → INR → toCurrency
+    const rates = await getExchangeRates()
+    const amountInINR = from === "INR"
+      ? amount
+      : rates[from] > 0 ? Math.round((amount / 100 / rates[from]) * 100) : amount
+    const converted = to === "INR"
+      ? amountInINR
+      : convertFromINR(amountInINR, to)
 
     return NextResponse.json({
       from,

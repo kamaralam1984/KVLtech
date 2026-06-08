@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -324,7 +324,7 @@ export function AdminBottomNav() {
   );
 }
 
-export function AdminTopbar({ title }: { title: string }) {
+export function AdminTopbar({ title, action }: { title: string; action?: React.ReactNode }) {
   const openSearch = () => {
     document.dispatchEvent(new CustomEvent("open-search"));
   };
@@ -344,6 +344,7 @@ export function AdminTopbar({ title }: { title: string }) {
           <Menu size={20} className="text-[var(--color-text)]" />
         </button>
         <h1 className="font-display font-bold text-xl text-[var(--color-text)]">{title}</h1>
+        {action && <div className="hidden sm:block">{action}</div>}
       </div>
       <div className="flex items-center gap-3">
         <button

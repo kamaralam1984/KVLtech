@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
 import nodemailer from "nodemailer";
 import { db } from "@/lib/db";
 
-// Gmail SMTP transporter
-const transporter = nodemailer.createTransport({
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Fallback Gmail SMTP
+const gmailTransport = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: Number(process.env.SMTP_PORT) || 587,
   secure: false,
@@ -12,6 +15,88 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS,
   },
 });
+
+async function sendOtpEmail(to: string, name: string, otp: string) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+        <tr><td align="center">
+          <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+            <tr><td style="background:#0B1437;padding:28px 40px;text-align:center;">
+              <div style="font-size:22px;font-weight:800;color:#ffffff;">
+                KVL <span style="color:#C9A227;">TECH</span>
+              </div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:2px;text-transform:uppercase;margin-top:4px;">
+                kvlbusinesssolutions.com
+              </div>
+            </td></tr>
+            <tr><td style="padding:40px;">
+              <p style="margin:0 0 6px;font-size:14px;color:#6b7280;">
+                Hello, <strong style="color:#111827;">${name}</strong>
+              </p>
+              <h1 style="margin:0 0 20px;font-size:20px;font-weight:700;color:#111827;">
+                Verify your email address
+              </h1>
+              <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.6;">
+                Use the code below to complete your KVL TECH account registration.<br/>
+                This code expires in <strong>10 minutes</strong>.
+              </p>
+              <div style="background:#f9fafb;border:2px dashed #C9A227;border-radius:12px;padding:32px;text-align:center;margin-bottom:28px;">
+                <div style="font-size:46px;font-weight:900;letter-spacing:14px;color:#0B1437;font-family:monospace;">
+                  ${otp}
+                </div>
+                <div style="font-size:12px;color:#9ca3af;margin-top:10px;">
+                  One-Time Password &middot; Valid for 10 minutes
+                </div>
+              </div>
+              <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.7;">
+                Did not request this? You can safely ignore this email.
+              </p>
+            </td></tr>
+            <tr><td style="padding:20px 40px 28px;border-top:1px solid #f3f4f6;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#d1d5db;">
+                &copy; 2024 KVL TECH Pvt. Ltd.
+              </p>
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  // Try Resend first
+  if (process.env.RESEND_API_KEY) {
+    const { data, error } = await resend.emails.send({
+      from: "KVL TECH <onboarding@resend.dev>",
+      to,
+      subject: `${otp} — Your KVL TECH Verification Code`,
+      html,
+    });
+    if (data?.id) {
+      console.log("[send-otp] Resend OK:", data.id);
+      return;
+    }
+    console.error("[send-otp] Resend failed:", error);
+  }
+
+  // Fallback: Gmail SMTP
+  const smtpPass = process.env.SMTP_PASS || "";
+  if (process.env.SMTP_USER && smtpPass && !smtpPass.includes("xxxx") && !smtpPass.includes("placeholder")) {
+    await gmailTransport.sendMail({
+      from: `"KVL TECH" <${process.env.SMTP_USER}>`,
+      to,
+      subject: `${otp} — Your KVL TECH Verification Code`,
+      html,
+    });
+    console.log("[send-otp] Gmail SMTP OK");
+    return;
+  }
+
+  throw new Error("No email provider configured. Set RESEND_API_KEY or SMTP_USER/SMTP_PASS.");
+}
 
 // Global OTP store shared with verify-otp
 declare global {
@@ -68,61 +153,7 @@ export async function POST(req: NextRequest) {
       sentAt: Date.now(), name, phone, company, password,
     });
 
-    // Send via Gmail SMTP
-    await transporter.sendMail({
-      from: `"KVL TECH" <${process.env.SMTP_USER}>`,
-      to: emailLower,
-      subject: `${otp} — Your KVL TECH Verification Code`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,sans-serif;">
-          <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
-            <tr><td align="center">
-              <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-                <tr><td style="background:#0B1437;padding:28px 40px;text-align:center;">
-                  <div style="font-size:22px;font-weight:800;color:#ffffff;">
-                    KVL <span style="color:#C9A227;">TECH</span>
-                  </div>
-                  <div style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:2px;text-transform:uppercase;margin-top:4px;">
-                    kvlbusinesssolutions.com
-                  </div>
-                </td></tr>
-                <tr><td style="padding:40px;">
-                  <p style="margin:0 0 6px;font-size:14px;color:#6b7280;">
-                    Hello, <strong style="color:#111827;">${name}</strong>
-                  </p>
-                  <h1 style="margin:0 0 20px;font-size:20px;font-weight:700;color:#111827;">
-                    Verify your email address
-                  </h1>
-                  <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.6;">
-                    Use the code below to complete your KVL TECH account registration.<br/>
-                    This code expires in <strong>10 minutes</strong>.
-                  </p>
-                  <div style="background:#f9fafb;border:2px dashed #C9A227;border-radius:12px;padding:32px;text-align:center;margin-bottom:28px;">
-                    <div style="font-size:46px;font-weight:900;letter-spacing:14px;color:#0B1437;font-family:monospace;">
-                      ${otp}
-                    </div>
-                    <div style="font-size:12px;color:#9ca3af;margin-top:10px;">
-                      One-Time Password &middot; Valid for 10 minutes
-                    </div>
-                  </div>
-                  <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.7;">
-                    Did not request this? You can safely ignore this email.
-                  </p>
-                </td></tr>
-                <tr><td style="padding:20px 40px 28px;border-top:1px solid #f3f4f6;text-align:center;">
-                  <p style="margin:0;font-size:12px;color:#d1d5db;">
-                    &copy; 2024 KVL TECH Pvt. Ltd.
-                  </p>
-                </td></tr>
-              </table>
-            </td></tr>
-          </table>
-        </body>
-        </html>
-      `,
-    });
+    await sendOtpEmail(emailLower, name, otp);
 
     return NextResponse.json({ success: true });
 

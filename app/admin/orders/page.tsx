@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Filter, Download, Eye, CheckCircle2, Clock,
   XCircle, Loader2, RefreshCw, X, ChevronDown, Save,
-  MessageSquare, Send, Paperclip,
+  MessageSquare, Send, Paperclip, Plus,
 } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/AdminSidebar";
 import { TableSkeleton } from "@/components/ui/Skeleton";
@@ -46,6 +46,51 @@ export default function OrdersPage() {
 
   const [filterValues, setFilterValues] = useState<Record<string, any>>({});
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Create Order modal
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({ clientId: "", productId: "", plan: "BASIC", amount: "", notes: "", deliveryEst: "" });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState("");
+  const [clients, setClients] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+
+  const loadDropdownData = useCallback(async () => {
+    try {
+      const [cr, pr] = await Promise.all([
+        fetch("/api/admin/clients", { credentials: "include" }).then(r => r.json()),
+        fetch("/api/admin/products", { credentials: "include" }).then(r => r.json()),
+      ]);
+      setClients(cr.clients || cr || []);
+      setProducts(pr.products || pr || []);
+    } catch {}
+  }, []);
+
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError("");
+    if (!createForm.clientId || !createForm.productId || !createForm.amount) {
+      setCreateError("Client, product aur amount required hain.");
+      return;
+    }
+    setCreateLoading(true);
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ ...createForm, amount: parseInt(createForm.amount) * 100 }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCreateError(data.error || "Error"); }
+      else {
+        setCreateOpen(false);
+        setCreateForm({ clientId: "", productId: "", plan: "BASIC", amount: "", notes: "", deliveryEst: "" });
+        fetchOrders();
+      }
+    } catch { setCreateError("Network error."); }
+    setCreateLoading(false);
+  };
 
   const [chatOrder, setChatOrder] = useState<any>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -179,7 +224,12 @@ export default function OrdersPage() {
 
   return (
     <>
-      <AdminTopbar title="Orders" />
+      <AdminTopbar title="Orders" action={
+        <button onClick={() => { setCreateOpen(true); loadDropdownData(); }}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-gold)] text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+          <Plus size={15} /> New Order
+        </button>
+      } />
       <div className="p-6 space-y-5 max-w-[1400px]">
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -446,6 +496,87 @@ export default function OrdersPage() {
                   {chatSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Order Modal */}
+      <AnimatePresence>
+        {createOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={e => { if (e.target === e.currentTarget) setCreateOpen(false); }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="card w-full max-w-lg p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display font-bold text-lg text-[var(--color-text)]">Create New Order</h2>
+                <button onClick={() => setCreateOpen(false)} className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleCreateOrder} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Client *</label>
+                  <select value={createForm.clientId} onChange={e => setCreateForm(f => ({ ...f, clientId: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all">
+                    <option value="">— Select Client —</option>
+                    {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Product *</label>
+                  <select value={createForm.productId} onChange={e => setCreateForm(f => ({ ...f, productId: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all">
+                    <option value="">— Select Product —</option>
+                    {products.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.category})</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Plan *</label>
+                    <select value={createForm.plan} onChange={e => setCreateForm(f => ({ ...f, plan: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all">
+                      <option value="BASIC">Basic</option>
+                      <option value="STANDARD">Standard</option>
+                      <option value="PREMIUM">Premium</option>
+                      <option value="ENTERPRISE">Enterprise</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Amount (₹) *</label>
+                    <input type="number" min="1" value={createForm.amount}
+                      onChange={e => setCreateForm(f => ({ ...f, amount: e.target.value }))}
+                      placeholder="e.g. 15000"
+                      className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Delivery Estimate</label>
+                  <input type="date" value={createForm.deliveryEst}
+                    onChange={e => setCreateForm(f => ({ ...f, deliveryEst: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">Notes</label>
+                  <textarea value={createForm.notes} rows={2}
+                    onChange={e => setCreateForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder="Internal notes..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all resize-none" />
+                </div>
+                {createError && <p className="text-xs text-red-500">{createError}</p>}
+                <div className="flex gap-3 pt-1">
+                  <button type="button" onClick={() => setCreateOpen(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-[var(--color-border)] text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-gold)] transition-all">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={createLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-[var(--color-gold)] text-white text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center justify-center gap-2">
+                    {createLoading ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                    Create Order
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

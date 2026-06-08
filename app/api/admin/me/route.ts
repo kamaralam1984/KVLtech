@@ -6,13 +6,6 @@ export async function GET(req: NextRequest) {
   const user = requireAdmin(req);
   if (!user) return NextResponse.json({ admin: null }, { status: 401 });
 
-  // Dev bypass returns mock data
-  if (user.id === "dev") {
-    return NextResponse.json({
-      admin: { id: "dev", name: "Rahul Sharma", email: "admin@kvlbusinesssolutions.com", role: "SUPER_ADMIN" },
-    });
-  }
-
   try {
     const admin = await db.admin.findUnique({
       where: { id: user.id },

@@ -46,6 +46,68 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export async function POST(req: NextRequest) {
+  if (!requireAdmin(req))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const { clientId, productId, plan, amount, notes, deliveryEst, status } = await req.json();
+    if (!clientId || !productId || !plan || !amount)
+      return NextResponse.json({ error: "clientId, productId, plan, amount required" }, { status: 400 });
+
+    // Verify client and product exist
+    const [client, product] = await Promise.all([
+      db.client.findUnique({ where: { id: clientId } }),
+      db.product.findUnique({ where: { id: productId } }),
+    ]);
+    if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
+    if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+
+    // Generate unique order number
+    let orderNumber = "";
+    do {
+      orderNumber = "KVL" + Math.floor(Math.random() * 900000 + 100000);
+    } while (await db.order.findUnique({ where: { orderNumber } }));
+
+    const order = await db.order.create({
+      data: {
+        orderNumber,
+        clientId,
+        productId,
+        plan: plan as any,
+        status: (status || "PAYMENT_CONFIRMED") as any,
+        progress: 10,
+        amount,
+        notes: notes || null,
+        deliveryEst: deliveryEst ? new Date(deliveryEst) : null,
+      },
+    });
+
+    await db.orderStatusHistory.create({
+      data: { orderId: order.id, status: order.status, note: "Order created by admin" },
+    });
+
+    // Notify client
+    await db.notification.create({
+      data: {
+        clientId,
+        title: "New Order Created",
+        body: `Aapka order #${orderNumber} — ${product.name} create ho gaya hai!`,
+        type: "ORDER_UPDATE",
+        color: "#C9A227",
+      },
+    });
+
+    logAudit(req, "CREATE", "orders", order.id, `Order ${orderNumber} created for client ${client.name}`)
+    metrics.ordersTotal.inc({ status: order.status })
+
+    return NextResponse.json({ success: true, order });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: NextRequest) {
   if (!requireAdmin(req))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
