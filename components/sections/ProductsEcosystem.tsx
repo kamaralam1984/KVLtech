@@ -62,6 +62,7 @@ export function ProductsEcosystem() {
           photo: p.photo || "/photos/office-meeting.jpg",
           accentColor: meta.color,
           slug: p.slug,
+          demoUrl: p.demoUrl || null,
         };
       })
     : FALLBACK_PRODUCTS;
@@ -181,7 +182,9 @@ export function ProductsEcosystem() {
                     {/* Actions */}
                     <div className="flex gap-2">
                       <Link
-                        href={`/products/${product.slug}`}
+                        href={(product as any).demoUrl || `/products/${product.slug}`}
+                        target={(product as any).demoUrl ? "_blank" : undefined}
+                        rel={(product as any).demoUrl ? "noopener noreferrer" : undefined}
                         className="flex-1 py-2 text-center text-xs font-semibold rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-all"
                       >
                         {t.eco_view_demo}

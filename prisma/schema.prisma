@@ -78,7 +78,9 @@ model Product {
   basicPrice   Int
   premiumPrice Int
   isActive     Boolean     @default(true)
+  isFeatured   Boolean     @default(false)
   tag          String?
+  demoUrl      String?
   techStack    String[]
   deliverables String[]
   highlights   String[]

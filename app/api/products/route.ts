@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
         basicPrice: true,
         premiumPrice: true,
         photo: true,
+        demoUrl: true,
       },
       orderBy: { sortOrder: "asc" },
     });

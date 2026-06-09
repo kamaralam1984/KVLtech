@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, slug, tagline, description, category, basicPrice, premiumPrice, tag, photo, techStack, highlights, deliverables } = body;
+    const { name, slug, tagline, description, category, basicPrice, premiumPrice, tag, photo, demoUrl, techStack, highlights, deliverables } = body;
 
     if (!name || !slug || !category || !basicPrice || !premiumPrice)
       return NextResponse.json({ error: "Required fields missing" }, { status: 400 });
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         name, slug, tagline: tagline || "", description: description || "",
         category, basicPrice: Number(basicPrice), premiumPrice: Number(premiumPrice),
         photo: photo || "/photos/office-meeting.jpg", gallery: photo ? [photo] : [],
-        tag: tag || null,
+        tag: tag || null, demoUrl: demoUrl || null,
         techStack: techStack || [], highlights: highlights || [], deliverables: deliverables || [],
         plans: {
           create: [
@@ -117,6 +117,7 @@ export async function PATCH(req: NextRequest) {
         ...(updates.photo && { photo: updates.photo }),
         ...(updates.isActive !== undefined && { isActive: updates.isActive }),
         ...(updates.isFeatured !== undefined && { isFeatured: updates.isFeatured }),
+        ...(updates.demoUrl !== undefined && { demoUrl: updates.demoUrl || null }),
         ...(updates.techStack && { techStack: updates.techStack }),
         ...(updates.highlights && { highlights: updates.highlights }),
       },

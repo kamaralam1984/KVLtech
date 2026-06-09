@@ -29,7 +29,7 @@ const EMPTY_FORM = {
   name: "", slug: "", tagline: "", description: "",
   category: "WEBSITE", basicPrice: "", premiumPrice: "",
   tag: "", photo: "/photos/office-meeting.jpg",
-  techStack: "", highlights: "",
+  demoUrl: "", techStack: "", highlights: "",
 };
 
 const EXISTING_PHOTOS = [
@@ -222,6 +222,7 @@ export default function AdminProductsPage() {
       name: p.name, slug: p.slug, tagline: p.tagline || "", description: p.description || "",
       category: p.category, basicPrice: String(p.basicPrice), premiumPrice: String(p.premiumPrice),
       tag: p.tag || "", photo: p.photo || "/photos/office-meeting.jpg",
+      demoUrl: p.demoUrl || "",
       techStack: (p.techStack || []).join(", "),
       highlights: (p.highlights || []).join(", "),
     });
@@ -243,6 +244,7 @@ export default function AdminProductsPage() {
         description: form.description, category: form.category,
         basicPrice: Number(form.basicPrice), premiumPrice: Number(form.premiumPrice),
         tag: form.tag || null, photo: form.photo,
+        demoUrl: form.demoUrl || null,
         techStack: form.techStack.split(",").map(s => s.trim()).filter(Boolean),
         highlights: form.highlights.split(",").map(s => s.trim()).filter(Boolean),
       };
@@ -544,6 +546,13 @@ export default function AdminProductsPage() {
                     <input type="number" value={form.premiumPrice} onChange={e => setForm(f => ({ ...f, premiumPrice: e.target.value }))}
                       placeholder="24999" className={INPUT} />
                   </div>
+                </div>
+
+                <div>
+                  <label className={LABEL}>Demo URL (optional)</label>
+                  <input value={form.demoUrl} onChange={e => setForm(f => ({ ...f, demoUrl: e.target.value }))}
+                    placeholder="https://demo.example.com ya /products/restaurant-website" className={INPUT} />
+                  <p className="text-[10px] text-[var(--color-text-muted)] mt-1">Homepage pe &quot;View Demo&quot; button is URL pe jaayega</p>
                 </div>
 
                 <div>
