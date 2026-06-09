@@ -228,6 +228,7 @@ export function PropertiesPanel({
   onUpdateGlobalStyles,
 }: PropertiesPanelProps) {
   const [elementTab, setElementTab] = useState<"content" | "style" | "advanced">("content");
+  const [customCss, setCustomCss] = useState("");
 
   // ── Lookup helpers ──────────────────────────────────────────────────────────
 
@@ -1284,7 +1285,6 @@ export function PropertiesPanel({
     sectionId: string,
     columnId: string
   ) => {
-    const [customCss, setCustomCss] = useState("");
     return (
       <div className="px-4 py-3">
         <Toggle
