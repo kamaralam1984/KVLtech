@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import useBuilderState from './useBuilderState';
 import { ElementLibrary } from './ElementLibrary';
+import { getTemplateById } from './website-templates';
 import { PropertiesPanel } from './PropertiesPanel';
 import { BuilderCanvas } from './BuilderCanvas';
 import type { ElementType, SelectionState } from './builder-types';
@@ -219,6 +220,7 @@ export default function WebsiteBuilderPage() {
     addElement, removeElement, updateElement, duplicateElement,
     updateGlobalStyles, updateProjectName,
     saveToLocalStorage, loadFromLocalStorage,
+    loadTemplate,
   } = useBuilderState();
 
   const [previewMode, setPreviewMode] = useState(false);
@@ -227,6 +229,12 @@ export default function WebsiteBuilderPage() {
   const [showAI, setShowAI] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiMode, setAiMode] = useState<'generator' | 'prompt'>('generator');
+  const [aiBusinessDesc, setAiBusinessDesc] = useState('');
+  const [aiIndustry, setAiIndustry] = useState('Restaurant');
+  const [aiStyle, setAiStyle] = useState('Modern & Clean');
+  const [aiPages, setAiPages] = useState(['Home']);
+  const [aiColorTheme, setAiColorTheme] = useState('Professional');
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -373,6 +381,48 @@ export default function WebsiteBuilderPage() {
     addSection(preset);
   }, [addSection]);
 
+  const toggleAiPage = useCallback((page: string) => {
+    setAiPages(prev => prev.includes(page) ? prev.filter(p => p !== page) : [...prev, page]);
+  }, []);
+
+  const handleFullAIGenerate = useCallback(async () => {
+    if (!aiBusinessDesc.trim()) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch('/api/admin/website-builder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          action: 'generate-full-project',
+          businessDesc: aiBusinessDesc,
+          industry: aiIndustry,
+          style: aiStyle,
+          pages: aiPages,
+          colorTheme: aiColorTheme,
+          projectName: project.name,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.project) {
+          loadTemplate(data.project);
+          setShowAI(false);
+          showToast('success', 'AI website generated! Review and customize it.');
+        } else {
+          showToast('error', 'AI did not return a valid project structure.');
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast('error', (err as { error?: string }).error || 'AI generation failed.');
+      }
+    } catch {
+      showToast('error', 'Network error during AI generation.');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [aiBusinessDesc, aiIndustry, aiStyle, aiPages, aiColorTheme, project.name, loadTemplate, showToast]);
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -514,7 +564,17 @@ export default function WebsiteBuilderPage() {
         {/* LEFT PANEL - Element Library (hidden in preview mode) */}
         {!previewMode && (
           <div className="w-[280px] flex-shrink-0 border-r border-white/5 overflow-y-auto">
-            <ElementLibrary onAddElement={onAddElement} onAddSection={onAddSection} />
+            <ElementLibrary
+              onAddElement={onAddElement}
+              onAddSection={onAddSection}
+              onLoadTemplate={(templateId) => {
+                const template = getTemplateById(templateId);
+                if (template) {
+                  loadTemplate(template.buildProject());
+                  showToast('success', `Template "${template.name}" loaded!`);
+                }
+              }}
+            />
           </div>
         )}
 
@@ -597,52 +657,153 @@ export default function WebsiteBuilderPage() {
                 <button onClick={() => setShowAI(false)} className="text-gray-400 hover:text-white"><X size={18} /></button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                <p className="text-gray-400 text-sm">Describe what you want to build and AI will help generate content for your website.</p>
+              {/* Mode tabs */}
+              <div className="flex border-b border-white/5">
+                {(['generator', 'prompt'] as const).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => setAiMode(mode)}
+                    className={`flex-1 py-2.5 text-xs font-medium transition-colors ${aiMode === mode ? 'text-amber-400 border-b-2 border-amber-400' : 'text-gray-500 hover:text-gray-300'}`}
+                  >
+                    {mode === 'generator' ? 'AI Generator' : 'Quick Prompt'}
+                  </button>
+                ))}
+              </div>
 
-                {/* Quick prompts */}
-                <div>
-                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Quick Prompts</p>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      'Generate a hero section',
-                      'Add contact form',
-                      'Pricing plans for agency',
-                      'Restaurant menu section',
-                      'Team members section',
-                      'Testimonials from clients',
-                    ].map(prompt => (
-                      <button
-                        key={prompt}
-                        onClick={() => setAiPrompt(prompt)}
-                        className="text-xs px-2.5 py-1 rounded-full border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
+              <div className="flex-1 overflow-y-auto p-4">
+                {aiMode === 'generator' ? (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">🤖</div>
+                      <h3 className="text-white font-bold text-lg">AI Website Generator</h3>
+                      <p className="text-gray-400 text-xs mt-1">Tell us about your business — AI will build a complete website in seconds</p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-400 mb-1 block">Describe your business</label>
+                      <textarea
+                        value={aiBusinessDesc}
+                        onChange={e => setAiBusinessDesc(e.target.value)}
+                        placeholder="e.g. We are a restaurant in Mumbai serving authentic Mughlai cuisine since 1985. We offer dine-in, takeaway and catering services."
+                        rows={4}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white text-sm placeholder-gray-600 focus:border-amber-400 outline-none resize-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-400 mb-1 block">Industry</label>
+                      <select
+                        value={aiIndustry}
+                        onChange={e => setAiIndustry(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-amber-400 outline-none"
                       >
-                        {prompt}
-                      </button>
-                    ))}
+                        {['Restaurant', 'Agency/Studio', 'Healthcare/Clinic', 'Education', 'Real Estate', 'E-Commerce', 'Corporate/Finance', 'Technology/SaaS', 'Events/Wedding', 'Personal/Portfolio', 'Other'].map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-400 mb-2 block">Website Style</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['Modern & Clean', 'Bold & Colorful', 'Minimal', 'Classic & Elegant'].map(style => (
+                          <button key={style} onClick={() => setAiStyle(style)}
+                            className={`p-2 rounded-lg border text-xs font-medium transition-colors ${aiStyle === style ? 'border-amber-400 bg-amber-500/10 text-amber-400' : 'border-white/10 text-gray-400 hover:border-white/30'}`}>
+                            {style}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-400 mb-2 block">Pages to Generate</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['Home', 'About', 'Services', 'Portfolio', 'Contact', 'Blog'].map(page => (
+                          <button key={page} onClick={() => toggleAiPage(page)}
+                            className={`px-2.5 py-1 rounded-full border text-xs transition-colors ${aiPages.includes(page) ? 'border-amber-400 bg-amber-500/10 text-amber-400' : 'border-white/10 text-gray-400'}`}>
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-gray-400 mb-2 block">Color Theme</label>
+                      <div className="flex gap-2">
+                        {[
+                          { name: 'Professional', colors: ['#0B1437', '#C9A227'] },
+                          { name: 'Fresh', colors: ['#064E3B', '#10B981'] },
+                          { name: 'Creative', colors: ['#1E1B4B', '#6C63FF'] },
+                          { name: 'Warm', colors: ['#431407', '#EA580C'] },
+                          { name: 'Custom', colors: ['#374151', '#9CA3AF'] },
+                        ].map(theme => (
+                          <button key={theme.name} onClick={() => setAiColorTheme(theme.name)}
+                            title={theme.name}
+                            className={`flex-1 h-8 rounded-lg border-2 overflow-hidden transition-all ${aiColorTheme === theme.name ? 'border-amber-400 scale-105' : 'border-transparent hover:border-white/20'}`}>
+                            <div className="h-full flex">
+                              <div style={{ background: theme.colors[0], flex: 1 }} />
+                              <div style={{ background: theme.colors[1], flex: 1 }} />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button onClick={() => handleFullAIGenerate()}
+                      disabled={aiLoading || !aiBusinessDesc.trim()}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-[#0B1437] font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+                      {aiLoading ? <><Loader2 size={16} className="animate-spin" /> Generating Website...</> : <><Sparkles size={16} /> Generate Full Website</>}
+                    </button>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-gray-400 text-sm">Describe what you want to build and AI will help generate content for your website.</p>
 
-                {/* Prompt input */}
-                <div>
-                  <p className="text-xs text-gray-400 mb-2">Your prompt</p>
-                  <textarea
-                    value={aiPrompt}
-                    onChange={e => setAiPrompt(e.target.value)}
-                    placeholder="Describe what you need... e.g. 'Create a hero section for a restaurant with booking button'"
-                    rows={5}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white text-sm placeholder-gray-600 focus:border-amber-400 outline-none resize-none"
-                  />
-                </div>
+                    {/* Quick prompts */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Quick Prompts</p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          'Generate a hero section',
+                          'Add contact form',
+                          'Pricing plans for agency',
+                          'Restaurant menu section',
+                          'Team members section',
+                          'Testimonials from clients',
+                        ].map(prompt => (
+                          <button
+                            key={prompt}
+                            onClick={() => setAiPrompt(prompt)}
+                            className="text-xs px-2.5 py-1 rounded-full border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
+                          >
+                            {prompt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                <button
-                  onClick={handleAIGenerate}
-                  disabled={aiLoading || !aiPrompt.trim()}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-amber-500 text-[#0B1437] font-bold text-sm hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  {aiLoading ? 'Generating...' : 'Generate with AI'}
-                </button>
+                    {/* Prompt input */}
+                    <div>
+                      <p className="text-xs text-gray-400 mb-2">Your prompt</p>
+                      <textarea
+                        value={aiPrompt}
+                        onChange={e => setAiPrompt(e.target.value)}
+                        placeholder="Describe what you need... e.g. 'Create a hero section for a restaurant with booking button'"
+                        rows={5}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white text-sm placeholder-gray-600 focus:border-amber-400 outline-none resize-none"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleAIGenerate}
+                      disabled={aiLoading || !aiPrompt.trim()}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-amber-500 text-[#0B1437] font-bold text-sm hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                      {aiLoading ? 'Generating...' : 'Generate with AI'}
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>

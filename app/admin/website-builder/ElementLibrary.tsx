@@ -37,10 +37,12 @@ import {
   FileText,
 } from "lucide-react";
 import type { ElementType } from "./builder-types";
+import { WEBSITE_TEMPLATES, TEMPLATE_CATEGORIES } from "./website-templates";
 
 interface ElementLibraryProps {
   onAddElement: (type: ElementType, config?: Record<string, unknown>) => void;
   onAddSection: (preset?: string) => void;
+  onLoadTemplate?: (templateId: string) => void;
 }
 
 interface ElementDef {
@@ -151,9 +153,10 @@ const SECTION_PRESETS: SectionPreset[] = [
   { id: "blank", name: "Blank Section", icon: <Plus size={24} />, color: "#6B7280" },
 ];
 
-export function ElementLibrary({ onAddElement, onAddSection }: ElementLibraryProps) {
-  const [activeTab, setActiveTab] = useState<"elements" | "sections">("elements");
+export function ElementLibrary({ onAddElement, onAddSection, onLoadTemplate }: ElementLibraryProps) {
+  const [activeTab, setActiveTab] = useState<"elements" | "sections" | "templates">("elements");
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(
     Object.fromEntries(CATEGORIES.map((c) => [c.name, true]))
   );
@@ -228,6 +231,19 @@ export function ElementLibrary({ onAddElement, onAddSection }: ElementLibraryPro
         >
           Sections
         </button>
+        <button
+          onClick={() => setActiveTab("templates")}
+          className={`flex-1 py-2 text-xs font-medium transition-colors ${
+            activeTab === "templates" ? "text-white" : "text-gray-500 hover:text-gray-300"
+          }`}
+          style={
+            activeTab === "templates"
+              ? { borderBottom: `2px solid ${GOLD}`, color: "#fff" }
+              : { borderBottom: "2px solid transparent" }
+          }
+        >
+          Templates
+        </button>
       </div>
 
       {/* Scrollable content */}
@@ -278,7 +294,7 @@ export function ElementLibrary({ onAddElement, onAddSection }: ElementLibraryPro
               ))
             )}
           </div>
-        ) : (
+        ) : activeTab === "sections" ? (
           <div className="p-3 grid grid-cols-2 gap-2">
             {SECTION_PRESETS.map((preset) => (
               <button
@@ -293,6 +309,78 @@ export function ElementLibrary({ onAddElement, onAddSection }: ElementLibraryPro
                 <span className="text-sm text-white text-center leading-tight">{preset.name}</span>
               </button>
             ))}
+          </div>
+        ) : (
+          /* Templates Tab */
+          <div className="flex flex-col h-full">
+            {/* Category filter row */}
+            <div className="flex gap-1.5 overflow-x-auto px-3 py-2 flex-shrink-0 scrollbar-none">
+              {TEMPLATE_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className="flex-shrink-0 px-2 py-1 rounded text-[10px] font-medium transition-colors whitespace-nowrap"
+                  style={
+                    selectedCategory === cat.id
+                      ? { backgroundColor: GOLD, color: '#000' }
+                      : { backgroundColor: 'rgba(255,255,255,0.07)', color: '#9CA3AF' }
+                  }
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            {/* Count */}
+            <p className="text-[10px] text-gray-500 px-3 pb-1 flex-shrink-0">
+              Showing {
+                selectedCategory === 'all'
+                  ? WEBSITE_TEMPLATES.length
+                  : WEBSITE_TEMPLATES.filter(t => t.category === selectedCategory).length
+              } templates
+            </p>
+            {/* Grid */}
+            <div className="flex-1 overflow-y-auto min-h-0 p-3 grid grid-cols-2 gap-2 content-start">
+              {(selectedCategory === 'all'
+                ? WEBSITE_TEMPLATES
+                : WEBSITE_TEMPLATES.filter(t => t.category === selectedCategory)
+              ).map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => onLoadTemplate?.(template.id)}
+                  className="rounded-lg border border-white/10 overflow-hidden cursor-pointer transition-all text-left"
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'rgba(201,162,39,0.5)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
+                >
+                  {/* Preview swatch */}
+                  <div
+                    className="h-20 relative"
+                    style={{ backgroundColor: template.previewBg }}
+                  >
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-1.5"
+                      style={{ backgroundColor: template.previewAccent }}
+                    />
+                    <div
+                      className="absolute top-2 left-2 right-2 h-2 rounded opacity-30"
+                      style={{ backgroundColor: template.previewAccent }}
+                    />
+                    <div
+                      className="absolute top-6 left-2 w-8 h-1 rounded opacity-20"
+                      style={{ backgroundColor: template.previewAccent }}
+                    />
+                    <div
+                      className="absolute top-9 left-2 right-2 h-1 rounded opacity-15"
+                      style={{ backgroundColor: template.previewAccent }}
+                    />
+                  </div>
+                  {/* Info */}
+                  <div className="p-2" style={{ backgroundColor: '#111827' }}>
+                    <p className="text-xs font-semibold text-white leading-tight truncate">{template.name}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5 capitalize">{template.category}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

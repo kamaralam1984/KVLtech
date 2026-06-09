@@ -627,6 +627,13 @@ function useBuilderState() {
     }
   }, []);
 
+  const loadTemplate = useCallback((project: WebsiteProject) => {
+    dispatch({ type: 'SET_PROJECT', project });
+    if (project.pages.length > 0) {
+      setCurrentPageId(project.pages[0].id);
+    }
+  }, []);
+
   return {
     project,
     currentPage,
@@ -650,6 +657,7 @@ function useBuilderState() {
     updateProjectName,
     saveToLocalStorage,
     loadFromLocalStorage,
+    loadTemplate,
   };
 }
 

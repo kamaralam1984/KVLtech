@@ -68,6 +68,257 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Generate full project via AI
+    if (action === 'generate-full-project') {
+      const { businessDesc, industry, style, pages, colorTheme, projectName } = body as {
+        businessDesc: string;
+        industry: string;
+        style: string;
+        pages: string[];
+        colorTheme: string;
+        projectName: string;
+      };
+
+      if (!businessDesc?.trim()) {
+        return NextResponse.json({ error: 'businessDesc is required' }, { status: 400 });
+      }
+
+      // Color themes mapping
+      const colorThemes: Record<string, { primary: string; secondary: string; accent: string }> = {
+        'Professional': { primary: '#C9A227', secondary: '#0B1437', accent: '#3B82F6' },
+        'Fresh': { primary: '#10B981', secondary: '#064E3B', accent: '#34D399' },
+        'Creative': { primary: '#6C63FF', secondary: '#1E1B4B', accent: '#FF6584' },
+        'Warm': { primary: '#EA580C', secondary: '#431407', accent: '#FCD34D' },
+        'Custom': { primary: '#6B7280', secondary: '#1F2937', accent: '#9CA3AF' },
+      };
+      const colors = colorThemes[colorTheme] || colorThemes['Professional'];
+
+      // Font mapping by industry
+      const fontMap: Record<string, { heading: string; body: string }> = {
+        'Restaurant': { heading: 'Playfair Display', body: 'Lato' },
+        'Agency/Studio': { heading: 'Montserrat', body: 'Inter' },
+        'Healthcare/Clinic': { heading: 'Poppins', body: 'Open Sans' },
+        'Education': { heading: 'Poppins', body: 'Roboto' },
+        'Real Estate': { heading: 'Raleway', body: 'Open Sans' },
+        'E-Commerce': { heading: 'Montserrat', body: 'Inter' },
+        'Corporate/Finance': { heading: 'Raleway', body: 'Roboto' },
+        'Technology/SaaS': { heading: 'Inter', body: 'Inter' },
+        'Events/Wedding': { heading: 'Playfair Display', body: 'Lato' },
+        'Personal/Portfolio': { heading: 'Poppins', body: 'Inter' },
+      };
+      const fonts = fontMap[industry] || { heading: 'Poppins', body: 'Inter' };
+
+      // Use AI to generate content
+      const aiPrompt = `Generate website content for this business:
+${businessDesc}
+
+Industry: ${industry}
+Style: ${style}
+
+Return a JSON object with this exact structure (no markdown, pure JSON):
+{
+  "businessName": "string",
+  "tagline": "catchy tagline",
+  "heroHeading": "main hero heading",
+  "heroSubheading": "subheading",
+  "heroText": "1-2 sentence hero description",
+  "heroCTA": "button text",
+  "aboutHeading": "about section heading",
+  "aboutText": "2-3 sentence about description",
+  "services": [
+    {"title": "service 1", "description": "brief description"},
+    {"title": "service 2", "description": "brief description"},
+    {"title": "service 3", "description": "brief description"}
+  ],
+  "marqueeItems": ["item 1", "item 2", "item 3", "item 4", "item 5"],
+  "testimonial": {"name": "client name", "role": "role/company", "text": "testimonial text", "rating": 5},
+  "ctaHeading": "call to action heading",
+  "ctaText": "call to action text",
+  "ctaButton": "button text",
+  "footerTagline": "footer tagline",
+  "navLinks": ["Home", "About", "Services", "Contact"]
+}`;
+
+      let aiContent: Record<string, unknown> = {};
+      try {
+        const Groq = (await import('groq-sdk')).default;
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const completion = await groq.chat.completions.create({
+          model: 'llama-3.1-8b-instant',
+          messages: [{ role: 'user', content: aiPrompt }],
+          temperature: 0.7,
+          max_tokens: 1000,
+        });
+        const raw = completion.choices[0]?.message?.content || '{}';
+        // Extract JSON from response
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          aiContent = JSON.parse(jsonMatch[0]);
+        }
+      } catch {
+        // Use fallback content if AI fails
+        aiContent = {
+          businessName: projectName || 'My Business',
+          tagline: 'Your Success is Our Mission',
+          heroHeading: 'Welcome to Our Website',
+          heroSubheading: 'Quality Service You Can Trust',
+          heroText: 'We provide exceptional services tailored to your needs.',
+          heroCTA: 'Get Started',
+          aboutHeading: 'About Us',
+          aboutText: 'We are dedicated to providing the best experience for our clients.',
+          services: [
+            { title: 'Service One', description: 'Professional service delivery' },
+            { title: 'Service Two', description: 'Expert consultation' },
+            { title: 'Service Three', description: '24/7 support' },
+          ],
+          marqueeItems: ['Quality Service', 'Fast Delivery', '24/7 Support', 'Expert Team', 'Best Prices'],
+          testimonial: { name: 'Happy Client', role: 'Business Owner', text: 'Excellent service! Highly recommended.', rating: 5 },
+          ctaHeading: 'Ready to Get Started?',
+          ctaText: 'Contact us today for a free consultation.',
+          ctaButton: 'Contact Us',
+          footerTagline: 'Building better businesses',
+          navLinks: ['Home', 'About', 'Services', 'Contact'],
+        };
+      }
+
+      // Build the WebsiteProject from AI content
+      const gid = (() => { let n = 0; return (p = 'x') => `${p}${++n}`; })();
+
+      const navLinks = ((aiContent.navLinks as string[]) || ['Home', 'About', 'Services', 'Contact']).map((label: string) => ({ label, href: '#' }));
+
+      const makeSection = (
+        name: string,
+        elementType: string,
+        config: Record<string, unknown>,
+        bg: string = '#ffffff'
+      ) => ({
+        id: gid('sec'),
+        name,
+        columns: [{
+          id: gid('col'),
+          width: 100,
+          elements: [{
+            id: gid('el'),
+            type: elementType,
+            styles: {},
+            config,
+          }],
+        }],
+        background: { type: 'color' as const, value: bg },
+        padding: { top: 0, bottom: 0 },
+        margin: { top: 0, bottom: 0 },
+        maxWidth: 'xl' as const,
+      });
+
+      const services = (aiContent.services as Array<{ title: string; description: string }>) || [];
+      const testimonial = (aiContent.testimonial as { name: string; role: string; text: string; rating: number } | undefined) ?? { name: '', role: '', text: '', rating: 5 };
+
+      // pages variable is declared but sections are built for Home page only
+      void pages;
+
+      const sections = [
+        makeSection('Navigation', 'navbar', {
+          logoText: (aiContent.businessName as string) || projectName || 'Brand',
+          links: navLinks,
+          sticky: true,
+          transparent: false,
+        }, colors.secondary),
+        makeSection('Hero', 'hero', {
+          heading: (aiContent.heroHeading as string) || 'Welcome',
+          subheading: (aiContent.heroSubheading as string) || '',
+          text: (aiContent.heroText as string) || '',
+          cta: { label: (aiContent.heroCTA as string) || 'Get Started', href: '#', variant: 'primary', size: 'lg' },
+          secondaryCta: { label: 'Learn More', href: '#about', variant: 'outline', size: 'lg' },
+          overlay: 60,
+          align: 'center',
+          bgImage: '',
+        }, colors.secondary),
+        makeSection('Marquee', 'marquee', {
+          items: (aiContent.marqueeItems as string[]) || ['Quality Service', 'Fast Delivery', 'Expert Team'],
+          speed: 25,
+          direction: 'left',
+          separator: '  ✦  ',
+        }, '#0a0f20'),
+        makeSection('Features', 'iconbox', {
+          icon: '⭐',
+          title: services[0]?.title || 'Our Service',
+          description: services[0]?.description || 'Professional service',
+          align: 'center',
+        }, '#ffffff'),
+        makeSection('Counter', 'counter', {
+          items: [
+            { value: 500, label: 'Happy Clients', suffix: '+' },
+            { value: 100, label: 'Projects Done', suffix: '+' },
+            { value: 5, label: 'Years Experience', suffix: '+' },
+            { value: 99, label: 'Satisfaction', suffix: '%' },
+          ],
+        }, colors.secondary),
+        makeSection('Testimonial', 'testimonial', {
+          name: testimonial.name || 'Satisfied Client',
+          role: testimonial.role || 'Business Owner',
+          text: testimonial.text || 'Excellent service! Highly recommended.',
+          rating: testimonial.rating || 5,
+        }, '#f8f9fa'),
+        makeSection('CTA', 'cta', {
+          heading: (aiContent.ctaHeading as string) || 'Ready to Get Started?',
+          text: (aiContent.ctaText as string) || 'Contact us today.',
+          cta: { label: (aiContent.ctaButton as string) || 'Get Started', href: '#contact', variant: 'primary', size: 'lg' },
+          bgColor: colors.secondary,
+        }, colors.secondary),
+        makeSection('Contact', 'form', {
+          fields: [
+            { id: 'name', type: 'text', label: 'Your Name', placeholder: 'Enter your name', required: true },
+            { id: 'email', type: 'email', label: 'Email Address', placeholder: 'your@email.com', required: true },
+            { id: 'phone', type: 'phone', label: 'Phone Number', placeholder: '+91 98765 43210', required: false },
+            { id: 'message', type: 'textarea', label: 'Message', placeholder: 'How can we help you?', required: true },
+          ],
+          submitLabel: 'Send Message',
+          successMessage: 'Thank you! We will get back to you soon.',
+        }, '#f8f9fa'),
+        makeSection('Footer', 'footer', {
+          logoText: (aiContent.businessName as string) || projectName || 'Brand',
+          tagline: (aiContent.footerTagline as string) || 'Building better businesses',
+          columns: [
+            { heading: 'Company', links: navLinks.slice(0, 4) },
+            { heading: 'Contact', links: [{ label: 'Email Us', href: '#' }, { label: 'Call Us', href: '#' }] },
+          ],
+          socials: [{ platform: 'facebook', url: '#' }, { platform: 'instagram', url: '#' }],
+          copyright: `2026 ${(aiContent.businessName as string) || projectName}. All rights reserved.`,
+        }, colors.secondary),
+      ];
+
+      const project = {
+        id: gid('proj'),
+        name: (aiContent.businessName as string) || projectName || 'AI Generated Website',
+        pages: [{
+          id: gid('pg'),
+          name: 'Home',
+          slug: 'home',
+          sections,
+          seo: {
+            title: (aiContent.businessName as string) || projectName || '',
+            description: (aiContent.heroText as string) || '',
+            keywords: industry,
+          },
+        }],
+        globalStyles: {
+          primaryColor: colors.primary,
+          secondaryColor: colors.secondary,
+          accentColor: colors.accent,
+          headingFont: fonts.heading,
+          bodyFont: fonts.body,
+          baseFontSize: 16,
+          maxWidth: 1280,
+          borderRadius: 'md',
+        },
+        customCSS: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      return NextResponse.json({ project });
+    }
+
     // Generate full website (default action)
     const { prompt, industry, style, language } = body as {
       prompt: string
