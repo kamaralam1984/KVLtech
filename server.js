@@ -204,6 +204,14 @@ global.wsGetStats = () => ({ clients: clients.size, channels: channelClients.siz
 app.prepare().then(() => {
   const server = createServer(async (req, res) => {
     const parsedUrl = parse(req.url, true)
+
+    // Health check endpoint — no Next.js overhead
+    if (parsedUrl.pathname === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" })
+      res.end(JSON.stringify({ status: "ok", uptime: process.uptime() }))
+      return
+    }
+
     await handle(req, res, parsedUrl)
   })
 
