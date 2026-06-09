@@ -12,7 +12,7 @@ module.exports = {
         HOSTNAME: "0.0.0.0",
       },
       // Restart if RAM exceeds 400MB (prevents OOM-caused crashes)
-      max_memory_restart: "400M",
+      max_memory_restart: "600M",
       // Faster restart on crash
       exp_backoff_restart_delay: 100,
       // Wait for app to be ready before switching traffic
