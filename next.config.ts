@@ -1,8 +1,9 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
-  // Standalone output for Docker — production only (causes reload loops in dev)
-  output: process.env.NODE_ENV === "production" ? "standalone" : undefined,
+  // Standalone output for Docker only — set STANDALONE_BUILD=true in Dockerfile/docker-compose
+  // Do NOT use with custom server.js (PM2) — causes crash loop
+  output: process.env.STANDALONE_BUILD === "true" ? "standalone" : undefined,
 
   // Disable double-rendering in development
   reactStrictMode: false,
