@@ -684,6 +684,7 @@ export default function WebsiteBuilderPage() {
                 onDeleteSection={removeSection}
                 onDeleteElement={removeElement}
                 onDuplicateElement={duplicateElement}
+                onUpdateElement={updateElement}
               />
             )}
           </div>

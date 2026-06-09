@@ -3,7 +3,8 @@
 import React, { useState, useCallback } from 'react'
 import { Plus, Trash2, Copy, ChevronUp, ChevronDown, Settings } from 'lucide-react'
 import { renderElement } from './ElementRenderers'
-import type { BuilderPage, Section, GlobalStyles, SelectionState, ElementType } from './builder-types'
+import { FloatingToolbar } from './FloatingToolbar'
+import type { BuilderPage, Section, GlobalStyles, SelectionState, ElementType, BuilderElement, CSSStyles } from './builder-types'
 
 interface BuilderCanvasProps {
   page: BuilderPage
@@ -18,6 +19,7 @@ interface BuilderCanvasProps {
   onDeleteSection: (sectionId: string) => void
   onDeleteElement: (sectionId: string, columnId: string, elementId: string) => void
   onDuplicateElement: (sectionId: string, columnId: string, elementId: string) => void
+  onUpdateElement?: (sectionId: string, columnId: string, elementId: string, updates: Partial<BuilderElement>) => void
 }
 
 export function BuilderCanvas({
@@ -33,6 +35,7 @@ export function BuilderCanvas({
   onDeleteSection,
   onDeleteElement,
   onDuplicateElement,
+  onUpdateElement,
 }: BuilderCanvasProps) {
   const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null)
   const [hoveredElementId, setHoveredElementId] = useState<string | null>(null)
@@ -259,7 +262,22 @@ export function BuilderCanvas({
                     >
                       {renderElement(el, globalStyles, previewMode)}
 
-                      {/* Element toolbar */}
+                      {/* Floating style toolbar — appears above selected element */}
+                      {selection.elementId === el.id && !previewMode && onUpdateElement && (
+                        <FloatingToolbar
+                          element={el}
+                          onUpdateStyles={(styles: Partial<CSSStyles>) =>
+                            onUpdateElement(sec.id, col.id, el.id, {
+                              styles: { ...el.styles, ...styles },
+                            })
+                          }
+                          onUpdateProp={(prop) =>
+                            onUpdateElement(sec.id, col.id, el.id, prop)
+                          }
+                        />
+                      )}
+
+                      {/* Element hover toolbar (duplicate/delete) */}
                       {hoveredElementId === el.id && !previewMode && (
                         <div style={{ position: 'absolute', top: 2, right: 2, zIndex: 50, display: 'flex', gap: 2, background: '#0B1437', borderRadius: 6, padding: '2px 4px' }}>
                           <button
