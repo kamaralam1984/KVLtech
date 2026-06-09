@@ -116,6 +116,7 @@ export async function PATCH(req: NextRequest) {
         ...(updates.tag !== undefined && { tag: updates.tag || null }),
         ...(updates.photo && { photo: updates.photo }),
         ...(updates.isActive !== undefined && { isActive: updates.isActive }),
+        ...(updates.isFeatured !== undefined && { isFeatured: updates.isFeatured }),
         ...(updates.techStack && { techStack: updates.techStack }),
         ...(updates.highlights && { highlights: updates.highlights }),
       },

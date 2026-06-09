@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useState, useEffect } from "react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -18,18 +19,52 @@ const fadeUp = {
   }),
 };
 
-// INR base prices for featured products
-const FEATURED_PRODUCTS_RAW = [
-  { icon: Utensils, name: "Restaurant Website", tag: "Most Popular", basicINR: 12999, premiumINR: 24999, category: "Food & Hospitality", photo: "/photos/restaurant.jpg", accentColor: "#FF6B35", slug: "restaurant-website" },
-  { icon: GraduationCap, name: "School Management System", tag: "Best Seller", basicINR: 29999, premiumINR: 59999, category: "Education", photo: "/photos/school.jpg", accentColor: "#16A34A", slug: "school-management-system" },
-  { icon: Hospital, name: "Hospital Management System", tag: "Enterprise", basicINR: 49999, premiumINR: 99999, category: "Healthcare", photo: "/photos/hospital.jpg", accentColor: "#0891B2", slug: "hospital-management-system" },
-  { icon: ShoppingCart, name: "E-commerce Platform", tag: "New", basicINR: 19999, premiumINR: 39999, category: "Retail", photo: "/photos/fashion.jpg", accentColor: "#7C3AED", slug: "e-commerce-platform" },
-  { icon: Building2, name: "Real Estate Website", tag: "Premium", basicINR: 22999, premiumINR: 44999, category: "Real Estate", photo: "/photos/office-meeting.jpg", accentColor: "#C9A227", slug: "real-estate-website" },
-  { icon: Globe, name: "Hotel Booking Website", tag: "Popular", basicINR: 24999, premiumINR: 49999, category: "Hospitality", photo: "/photos/person-laptop.jpg", accentColor: "#0F172A", slug: "hotel-booking-website" },
+// Category → icon + color mapping
+const CAT_META: Record<string, { icon: any; color: string }> = {
+  WEBSITE:  { icon: Globe,         color: "#0891B2" },
+  SOFTWARE: { icon: Cpu,           color: "#7C3AED" },
+  SAAS:     { icon: BarChart3,     color: "#16A34A" },
+  MOBILE:   { icon: Smartphone,    color: "#F59E0B" },
+};
+
+// Fallback hardcoded products (shown if DB has no featured products yet)
+const FALLBACK_PRODUCTS = [
+  { icon: Utensils,     name: "Restaurant Website",        tag: "Most Popular", basicINR: 12999, premiumINR: 24999, category: "Food & Hospitality", photo: "/photos/restaurant.jpg",    accentColor: "#FF6B35", slug: "restaurant-website" },
+  { icon: GraduationCap, name: "School Management System", tag: "Best Seller",  basicINR: 29999, premiumINR: 59999, category: "Education",          photo: "/photos/school.jpg",         accentColor: "#16A34A", slug: "school-management-system" },
+  { icon: Hospital,     name: "Hospital Management System", tag: "Enterprise",  basicINR: 49999, premiumINR: 99999, category: "Healthcare",          photo: "/photos/hospital.jpg",       accentColor: "#0891B2", slug: "hospital-management-system" },
+  { icon: ShoppingCart, name: "E-commerce Platform",        tag: "New",         basicINR: 19999, premiumINR: 39999, category: "Retail",              photo: "/photos/fashion.jpg",        accentColor: "#7C3AED", slug: "e-commerce-platform" },
+  { icon: Building2,    name: "Real Estate Website",         tag: "Premium",    basicINR: 22999, premiumINR: 44999, category: "Real Estate",         photo: "/photos/office-meeting.jpg", accentColor: "#C9A227", slug: "real-estate-website" },
+  { icon: Globe,        name: "Hotel Booking Website",       tag: "Popular",    basicINR: 24999, premiumINR: 49999, category: "Hospitality",         photo: "/photos/person-laptop.jpg",  accentColor: "#0F172A", slug: "hotel-booking-website" },
 ];
 
 export function ProductsEcosystem() {
   const { t, formatPrice } = useLanguage();
+  const [dbProducts, setDbProducts] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    fetch("/api/products?featured=true")
+      .then(r => r.json())
+      .then(d => { if (d.products?.length) setDbProducts(d.products); })
+      .catch(() => {});
+  }, []);
+
+  // Map DB products to display shape; fallback to hardcoded if none featured in DB
+  const featuredProducts = dbProducts
+    ? dbProducts.map(p => {
+        const meta = CAT_META[p.category] || { icon: Globe, color: "#0F172A" };
+        return {
+          icon: meta.icon,
+          name: p.name,
+          tag: p.tag || "",
+          basicINR: p.basicPrice,
+          premiumINR: p.premiumPrice,
+          category: p.tagline || p.category,
+          photo: p.photo || "/photos/office-meeting.jpg",
+          accentColor: meta.color,
+          slug: p.slug,
+        };
+      })
+    : FALLBACK_PRODUCTS;
 
   const categories = [
     { icon: Globe, title: t.cat_web_t, desc: t.cat_web_d, color: "#0F172A", count: t.cat_web_c, href: "/products/websites" },
@@ -92,7 +127,7 @@ export function ProductsEcosystem() {
             {t.eco_featured}
           </h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {FEATURED_PRODUCTS_RAW.map((product, i) => (
+            {featuredProducts.map((product, i) => (
               <motion.div
                 key={product.name}
                 custom={i}

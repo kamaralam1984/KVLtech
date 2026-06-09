@@ -8,7 +8,7 @@ import {
   Search, Plus, Edit2, Eye, TrendingUp, Package,
   Loader2, RefreshCw, X, Save, ToggleLeft, ToggleRight,
   ChevronDown, AlertCircle, CheckCircle2, Globe, Cpu, Smartphone, BarChart3,
-  Upload, ImageIcon, Trash2 as TrashIcon, Link2,
+  Upload, ImageIcon, Trash2 as TrashIcon, Link2, Star,
 } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/AdminSidebar";
 
@@ -189,6 +189,7 @@ export default function AdminProductsPage() {
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [featuringId, setFeaturingId] = useState<string | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -277,6 +278,18 @@ export default function AdminProductsPage() {
     setTogglingId(null);
   };
 
+  const toggleFeatured = async (product: any) => {
+    setFeaturingId(product.id);
+    await fetch("/api/admin/products", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id: product.id, isFeatured: !product.isFeatured }),
+    });
+    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, isFeatured: !p.isFeatured } : p));
+    setFeaturingId(null);
+  };
+
   const totalRevenue = products.reduce((s, p) => s + (p.revenue || 0), 0);
   const topProduct = [...products].sort((a, b) => (b.orderCount || 0) - (a.orderCount || 0))[0];
 
@@ -348,7 +361,7 @@ export default function AdminProductsPage() {
             <table className="w-full">
               <thead className="bg-[var(--color-bg-secondary)] border-b border-[var(--color-border)]">
                 <tr>
-                  {["Product", "Category", "Basic Price", "Premium Price", "Orders", "Revenue", "Status", "Actions"].map(h => (
+                  {["Product", "Category", "Basic Price", "Premium Price", "Orders", "Revenue", "Featured", "Status", "Actions"].map(h => (
                     <th key={h} className="text-left py-3 px-4 text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -394,6 +407,18 @@ export default function AdminProductsPage() {
                         <span className="text-sm font-semibold text-[var(--color-text)]">
                           {product.revenue > 0 ? `₹${(product.revenue / 100000).toFixed(2)}L` : "—"}
                         </span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <button onClick={() => toggleFeatured(product)} disabled={featuringId === product.id}
+                          title={product.isFeatured ? "Homepage se hatao" : "Homepage pe dikhao"}
+                          className="flex items-center gap-1.5 text-xs font-semibold transition-colors disabled:opacity-50">
+                          {featuringId === product.id
+                            ? <Loader2 size={14} className="animate-spin" />
+                            : <Star size={16} className={product.isFeatured ? "fill-[var(--color-gold)] text-[var(--color-gold)]" : "text-[var(--color-text-muted)]"} />}
+                          <span className={product.isFeatured ? "text-[var(--color-gold)]" : "text-[var(--color-text-muted)]"}>
+                            {product.isFeatured ? "Yes" : "No"}
+                          </span>
+                        </button>
                       </td>
                       <td className="py-3.5 px-4">
                         <button onClick={() => toggleActive(product)} disabled={togglingId === product.id}
