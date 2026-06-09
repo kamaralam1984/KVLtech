@@ -601,7 +601,7 @@ export default function WebsiteBuilderPage() {
       </div>
 
       {/* MAIN AREA */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
 
         {/* LEFT PANEL - Element Library (hidden in preview mode) */}
         {!previewMode && (
@@ -659,17 +659,37 @@ export default function WebsiteBuilderPage() {
           </div>
         </div>
 
-        {/* RIGHT PANEL - Properties (hidden in preview mode) */}
+        {/* RIGHT PANEL - Sliding Properties Panel */}
         {!previewMode && (
-          <div className="w-[320px] flex-shrink-0 border-l border-white/5 overflow-y-auto">
-            <PropertiesPanel
-              selection={selection}
-              project={project}
-              onUpdateElement={updateElement}
-              onUpdateSection={updateSection}
-              onUpdateGlobalStyles={updateGlobalStyles}
-            />
-          </div>
+          <>
+            {/* Slide-in panel */}
+            <motion.div
+              initial={false}
+              animate={{ x: selection.level !== null ? 0 : 320 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="absolute right-0 top-0 bottom-0 w-[320px] z-20 border-l border-white/10 bg-[#0B1437] overflow-y-auto shadow-2xl"
+            >
+              <PropertiesPanel
+                selection={selection}
+                project={project}
+                onUpdateElement={updateElement}
+                onUpdateSection={updateSection}
+                onUpdateGlobalStyles={updateGlobalStyles}
+              />
+            </motion.div>
+
+            {/* Global settings tab — visible when no element selected */}
+            <motion.button
+              animate={{ opacity: selection.level !== null ? 0 : 1, pointerEvents: selection.level !== null ? 'none' : 'auto' }}
+              transition={{ duration: 0.15 }}
+              onClick={() => setSelection({ pageId: currentPage?.id || null, sectionId: null, columnId: null, elementId: null, level: null })}
+              title="Global Settings"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-[#0B1437] border border-white/10 border-r-0 rounded-l-lg px-1.5 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-amber-400 transition-colors shadow-lg"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+              <span className="text-[9px] font-medium" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>SETTINGS</span>
+            </motion.button>
+          </>
         )}
       </div>
 
