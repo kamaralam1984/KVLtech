@@ -7,6 +7,7 @@ import {
   Monitor, Tablet, Smartphone, ZoomIn, ZoomOut,
   Plus, Sparkles, X, ChevronDown, Loader2,
   CheckCircle, AlertCircle, FileDown, Globe,
+  Code2, FileCode2, Braces,
 } from 'lucide-react';
 import useBuilderState from './useBuilderState';
 import { ElementLibrary } from './ElementLibrary';
@@ -238,6 +239,11 @@ export default function WebsiteBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showDeployModal, setShowDeployModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState<'html'|'nextjs'|'php'>('html');
+  const [deployFormat, setDeployFormat] = useState<'html'|'nextjs'|'php'>('html');
+  const [deploying, setDeploying] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [projectNameDraft, setProjectNameDraft] = useState(project.name);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -305,31 +311,58 @@ export default function WebsiteBuilderPage() {
     }
   }, [project, showToast, saveToLocalStorage]);
 
-  const handleExport = useCallback(async () => {
+  const handleExport = useCallback(async (format: 'html'|'nextjs'|'php' = 'html') => {
     setExporting(true);
+    setShowExportModal(false);
     try {
       const res = await fetch('/api/admin/website-builder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ action: 'export', website: project }),
+        body: JSON.stringify({ action: 'export', website: project, format }),
       });
       if (res.ok) {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = (project.name || 'website').replace(/\s+/g, '-').toLowerCase() + '.html';
+        const extMap = { html: '.html', nextjs: '.tsx', php: '.php' };
+        a.download = (project.name || 'website').replace(/\s+/g, '-').toLowerCase() + (extMap[format] || '.html');
         a.click();
         URL.revokeObjectURL(url);
-        showToast('success', 'HTML exported!');
+        const fmtLabel = { html: 'HTML', nextjs: 'Next.js', php: 'PHP' }[format];
+        showToast('success', `${fmtLabel} file exported successfully!`);
       } else {
-        showToast('error', 'Export failed.');
+        showToast('error', 'Export failed. Please try again.');
       }
     } catch {
       showToast('error', 'Export failed.');
     } finally {
       setExporting(false);
+    }
+  }, [project, showToast]);
+
+  const handleDeploy = useCallback(async (format: 'html'|'nextjs'|'php' = 'html') => {
+    setDeploying(true);
+    setShowDeployModal(false);
+    try {
+      const res = await fetch('/api/admin/website-builder/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ website: project, format }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const fmtLabel = { html: 'HTML', nextjs: 'Next.js', php: 'PHP' }[format];
+        showToast('success', `Deployed as ${fmtLabel}! URL: ${data.url || data.path || 'generated-sites/'}`);
+      } else {
+        showToast('error', 'Deploy failed.');
+      }
+    } catch {
+      showToast('error', 'Deploy failed.');
+    } finally {
+      setDeploying(false);
     }
   }, [project, showToast]);
 
@@ -540,12 +573,21 @@ export default function WebsiteBuilderPage() {
           </button>
 
           <button
-            onClick={handleExport}
+            onClick={() => setShowExportModal(true)}
             disabled={exporting}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
           >
             {exporting ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
             Export
+          </button>
+
+          <button
+            onClick={() => setShowDeployModal(true)}
+            disabled={deploying}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+          >
+            {deploying ? <Loader2 size={13} className="animate-spin" /> : <Globe size={13} />}
+            Deploy
           </button>
 
           <button
@@ -630,6 +672,175 @@ export default function WebsiteBuilderPage() {
           </div>
         )}
       </div>
+
+      {/* EXPORT FORMAT MODAL */}
+      <AnimatePresence>
+        {showExportModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+              onClick={() => setShowExportModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-[#0D1628] border border-white/10 rounded-2xl p-6 w-full max-w-lg"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-white font-bold text-lg">Export Website</h3>
+                    <p className="text-gray-400 text-xs mt-0.5">Choose the language/framework to export in</p>
+                  </div>
+                  <button onClick={() => setShowExportModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {[
+                    {
+                      id: 'html' as const,
+                      icon: '🌐',
+                      label: 'HTML',
+                      desc: 'Single .html file',
+                      detail: 'Works everywhere. Open in any browser. No setup needed.',
+                      color: '#F97316',
+                    },
+                    {
+                      id: 'nextjs' as const,
+                      icon: '⚛️',
+                      label: 'Next.js',
+                      desc: 'React component (.tsx)',
+                      detail: 'Ready to use in Next.js 14+ with App Router.',
+                      color: '#3B82F6',
+                    },
+                    {
+                      id: 'php' as const,
+                      icon: '🐘',
+                      label: 'PHP',
+                      desc: 'PHP template (.php)',
+                      detail: 'Works on any PHP server (cPanel, shared hosting).',
+                      color: '#8B5CF6',
+                    },
+                  ].map(fmt => (
+                    <button
+                      key={fmt.id}
+                      onClick={() => setExportFormat(fmt.id)}
+                      className={`relative p-4 rounded-xl border-2 text-left transition-all ${
+                        exportFormat === fmt.id
+                          ? 'border-amber-400 bg-amber-500/10'
+                          : 'border-white/10 bg-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      {exportFormat === fmt.id && (
+                        <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center">
+                          <CheckCircle size={10} className="text-[#0B1437]" />
+                        </div>
+                      )}
+                      <div className="text-2xl mb-2">{fmt.icon}</div>
+                      <div className="text-white font-bold text-sm mb-0.5">{fmt.label}</div>
+                      <div className="text-gray-400 text-[11px]">{fmt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 mb-4 text-xs text-gray-400">
+                  {exportFormat === 'html' && '🌐 Generates a complete standalone HTML file with all styles and scripts embedded. Perfect for static hosting or email templates.'}
+                  {exportFormat === 'nextjs' && '⚛️ Generates a Next.js page.tsx component with Tailwind CSS classes. Drop it into your existing Next.js project.'}
+                  {exportFormat === 'php' && '🐘 Generates an index.php file with PHP variables for dynamic content. Works on cPanel, Hostinger, GoDaddy shared hosting.'}
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={() => setShowExportModal(false)} className="flex-1 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:border-white/20 transition-colors">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleExport(exportFormat)}
+                    disabled={exporting}
+                    className="flex-1 py-2.5 rounded-lg bg-amber-500 text-[#0B1437] font-bold text-sm hover:bg-amber-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                    Export as {exportFormat === 'html' ? 'HTML' : exportFormat === 'nextjs' ? 'Next.js' : 'PHP'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* DEPLOY FORMAT MODAL */}
+      <AnimatePresence>
+        {showDeployModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+              onClick={() => setShowDeployModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-[#0D1628] border border-white/10 rounded-2xl p-6 w-full max-w-lg"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-white font-bold text-lg">Deploy Website</h3>
+                    <p className="text-gray-400 text-xs mt-0.5">Choose the language/format to deploy to server</p>
+                  </div>
+                  <button onClick={() => setShowDeployModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  {[
+                    { id: 'html' as const, icon: '🌐', label: 'HTML', desc: 'Static HTML page', detail: 'Deployed to /generated-sites/ instantly accessible.' },
+                    { id: 'nextjs' as const, icon: '⚛️', label: 'Next.js', desc: 'Next.js route', detail: 'Creates a Next.js page route on this server.' },
+                    { id: 'php' as const, icon: '🐘', label: 'PHP', desc: 'PHP file', detail: 'Saves PHP file to generated-sites directory.' },
+                  ].map(fmt => (
+                    <button
+                      key={fmt.id}
+                      onClick={() => setDeployFormat(fmt.id)}
+                      className={`relative p-4 rounded-xl border-2 text-left transition-all ${
+                        deployFormat === fmt.id
+                          ? 'border-amber-400 bg-amber-500/10'
+                          : 'border-white/10 bg-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      {deployFormat === fmt.id && (
+                        <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center">
+                          <CheckCircle size={10} className="text-[#0B1437]" />
+                        </div>
+                      )}
+                      <div className="text-2xl mb-2">{fmt.icon}</div>
+                      <div className="text-white font-bold text-sm mb-0.5">{fmt.label}</div>
+                      <div className="text-gray-400 text-[11px]">{fmt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-3 mb-4 text-xs text-gray-400">
+                  {deployFormat === 'html' && '🌐 Deploys as a static HTML page at kvlbusinesssolutions.com/generated-sites/your-website.html — live instantly.'}
+                  {deployFormat === 'nextjs' && '⚛️ Creates a new Next.js page route. Access at /generated-sites/your-website after server restart.'}
+                  {deployFormat === 'php' && '🐘 Saves as a PHP file. Accessible via the web server if PHP is configured.'}
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={() => setShowDeployModal(false)} className="flex-1 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:border-white/20">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeploy(deployFormat)}
+                    disabled={deploying}
+                    className="flex-1 py-2.5 rounded-lg bg-green-600 text-white font-bold text-sm hover:bg-green-500 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {deploying ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
+                    Deploy as {deployFormat === 'html' ? 'HTML' : deployFormat === 'nextjs' ? 'Next.js' : 'PHP'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* AI DRAWER */}
       <AnimatePresence>
