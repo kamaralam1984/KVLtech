@@ -608,19 +608,19 @@ export default function WebsiteBuilderPage() {
       </div>
 
       {/* MAIN AREA */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
 
         {/* LEFT PANEL - Element Library */}
         {!previewMode && (
-          <div className="flex flex-shrink-0 relative">
+          <div className="flex flex-shrink-0 relative h-full">
             <motion.div
               initial={false}
               animate={{ width: showLeftPanel ? 280 : 0, opacity: showLeftPanel ? 1 : 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="overflow-hidden border-r border-white/5 bg-[#0B1437]"
+              className="overflow-hidden border-r border-white/5 bg-[#0B1437] h-full"
               style={{ minWidth: 0 }}
             >
-              <div className="w-[280px]">
+              <div className="w-[280px] h-full overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent' }}>
                 <ElementLibrary
                   onAddElement={onAddElement}
                   onAddSection={onAddSection}
@@ -692,7 +692,7 @@ export default function WebsiteBuilderPage() {
 
         {/* RIGHT PANEL - Properties (slide toggle) */}
         {!previewMode && (
-          <div className="flex flex-shrink-0 relative">
+          <div className="flex flex-shrink-0 relative h-full">
             {/* Right toggle button */}
             <button
               onClick={() => setShowRightPanel(v => !v)}
@@ -711,10 +711,10 @@ export default function WebsiteBuilderPage() {
               initial={false}
               animate={{ width: showRightPanel ? 320 : 0, opacity: showRightPanel ? 1 : 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="overflow-hidden border-l border-white/5 bg-[#0B1437]"
+              className="overflow-hidden border-l border-white/5 bg-[#0B1437] h-full"
               style={{ minWidth: 0 }}
             >
-              <div className="w-[320px] h-full overflow-y-auto">
+              <div className="w-[320px] h-full overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.15) transparent' }}>
                 <PropertiesPanel
                   selection={selection}
                   project={project}
