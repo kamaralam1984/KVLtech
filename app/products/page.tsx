@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, ArrowRight, Star, SlidersHorizontal, X } from "lucide-react";
-import { GlassCard } from "@/components/ui/GlassCard";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
@@ -102,8 +101,21 @@ export default function ProductsPage() {
         </section>
 
         {/* Filters + Grid */}
-        <section className="py-12 bg-[var(--color-bg)]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-12 bg-[var(--color-bg)] relative overflow-hidden">
+          {/* Page-level nakkashi background */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <svg className="absolute top-0 left-0 w-full h-full opacity-[0.025] dark:opacity-[0.035]" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="nakk" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+                  <path d="M30 2L58 30L30 58L2 30Z" stroke="#C9A227" strokeWidth="0.8" fill="none"/>
+                  <circle cx="30" cy="30" r="6" stroke="#C9A227" strokeWidth="0.6" fill="none"/>
+                  <circle cx="30" cy="30" r="1.5" fill="#C9A227"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#nakk)"/>
+            </svg>
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             {/* Filter bar */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
               {/* Category tabs */}
@@ -173,67 +185,95 @@ export default function ProductsPage() {
                   {filtered.map((product, i) => (
                     <motion.div
                       key={product.slug}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 24 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.06, duration: 0.4 }}
+                      transition={{ delay: i * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                       className="h-full"
                     >
-                      <GlassCard
-                        variant="dark"
-                        tilt
-                        lift
-                        glow={product.tag === "Most Popular" || product.tag === "Best Seller"}
-                        className="h-full flex flex-col group"
-                      >
-                        {/* Photo */}
-                        <div className="h-48 relative overflow-hidden rounded-t-2xl">
+                      <div className="relative h-full flex flex-col group bg-white dark:bg-[#0D1628] rounded-3xl overflow-hidden border border-gray-100 dark:border-white/[0.07] shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:shadow-[0_2px_24px_rgba(0,0,0,0.35)] hover:shadow-[0_12px_48px_rgba(201,162,39,0.18)] dark:hover:shadow-[0_12px_48px_rgba(201,162,39,0.12)] transition-all duration-500 hover:-translate-y-1.5">
+
+                        {/* ── Nakkashi background ornaments ── */}
+                        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                          {/* Top-right concentric arcs */}
+                          <svg className="absolute -top-6 -right-6 opacity-[0.07] dark:opacity-[0.1]" width="120" height="120" viewBox="0 0 120 120" fill="none">
+                            <circle cx="120" cy="0" r="40"  stroke="#C9A227" strokeWidth="1.2"/>
+                            <circle cx="120" cy="0" r="60"  stroke="#C9A227" strokeWidth="0.9"/>
+                            <circle cx="120" cy="0" r="80"  stroke="#C9A227" strokeWidth="0.7"/>
+                            <circle cx="120" cy="0" r="100" stroke="#C9A227" strokeWidth="0.5"/>
+                          </svg>
+                          {/* Bottom-left tiny diamond lattice */}
+                          <svg className="absolute bottom-0 left-0 opacity-[0.05] dark:opacity-[0.08]" width="80" height="80" viewBox="0 0 80 80" fill="none">
+                            {[0,20,40,60,80].map(x => [0,20,40,60,80].map(y => (
+                              <rect key={`${x}-${y}`} x={x-4} y={y-4} width="8" height="8" rx="1" transform={`rotate(45 ${x} ${y})`} stroke="#C9A227" strokeWidth="0.8"/>
+                            )))}
+                          </svg>
+                          {/* Soft gold radial glow */}
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-[radial-gradient(circle,rgba(201,162,39,0.08)_0%,transparent_70%)]" />
+                        </div>
+
+                        {/* ── Image ── */}
+                        <div className="relative h-52 overflow-hidden shrink-0">
                           <Image
                             src={product.photo}
                             alt={product.name}
                             fill
-                            className="object-cover transition-transform duration-500 group-hover:scale-105 animate-float-slow"
+                            className="object-cover transition-transform duration-700 group-hover:scale-105"
                             sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
                           {product.tag && (
-                            <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold bg-[var(--color-gold)] text-white rounded-full">
+                            <span className="absolute top-3.5 left-3.5 px-3 py-1 text-[10px] font-bold tracking-wide bg-[#C9A227] text-black rounded-full shadow-lg">
                               {product.tag}
                             </span>
                           )}
-                          <span className="absolute top-3 right-3 px-2.5 py-1 text-[10px] font-semibold bg-black/40 text-white rounded-full backdrop-blur-sm">
+                          <span className="absolute top-3.5 right-3.5 px-2.5 py-1 text-[10px] font-semibold text-white bg-white/15 backdrop-blur-md rounded-full border border-white/20">
                             {CAT_LABEL[product.category] || product.category}
                           </span>
+                          {/* Product name overlay on image bottom */}
+                          <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 pt-6">
+                            <h3 className="font-display font-bold text-base text-white leading-snug drop-shadow-sm">
+                              {product.name}
+                            </h3>
+                          </div>
                         </div>
 
-                        {/* Content */}
-                        <div className="p-5 flex flex-col flex-1">
-                          <h3 className="font-display font-bold text-lg text-[var(--color-text)] mb-1 leading-tight">
-                            {product.name}
-                          </h3>
-                          <p className="text-sm text-[var(--color-text-secondary)] mb-4 leading-relaxed flex-1">
+                        {/* ── Gold ornamental divider ── */}
+                        <div className="flex items-center gap-1.5 px-5 pt-4 pb-0">
+                          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#C9A227]/40 to-transparent" />
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0 opacity-60">
+                            <path d="M7 0L8.5 5.5H14L9.5 8.5L11 14L7 10.5L3 14L4.5 8.5L0 5.5H5.5L7 0Z" fill="#C9A227"/>
+                          </svg>
+                          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#C9A227]/40 to-transparent" />
+                        </div>
+
+                        {/* ── Content ── */}
+                        <div className="px-5 pt-3 pb-5 flex flex-col flex-1 relative">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed line-clamp-2 flex-1">
                             {product.tagline}
                           </p>
 
                           {/* Highlights */}
-                          <div className="flex flex-wrap gap-1.5 mb-4">
-                            {(product.highlights || []).slice(0, 2).map((h: string) => (
-                              <span key={h} className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full bg-[var(--color-gold)]/10 text-[var(--color-gold)]">
-                                <Star size={9} fill="currentColor" /> {h}
-                              </span>
-                            ))}
-                          </div>
+                          {(product.highlights || []).length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mb-4">
+                              {(product.highlights || []).slice(0, 2).map((h: string) => (
+                                <span key={h} className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-[#C9A227]/10 text-amber-700 dark:text-[#C9A227] border border-amber-200/60 dark:border-[#C9A227]/20">
+                                  <Star size={8} fill="currentColor" /> {h}
+                                </span>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Pricing */}
                           <div className="grid grid-cols-2 gap-2 mb-4">
-                            <div className="p-2.5 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border)] text-center">
-                              <p className="text-[10px] text-[var(--color-text-muted)] mb-0.5">Basic</p>
-                              <p className="font-display font-bold text-sm text-[var(--color-text)]">
+                            <div className="text-center p-2.5 rounded-2xl bg-gray-50 dark:bg-white/[0.04] border border-gray-100 dark:border-white/[0.07]">
+                              <p className="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-0.5 font-semibold">Basic</p>
+                              <p className="font-display font-bold text-sm text-gray-800 dark:text-white">
                                 {formatPrice(product.basicPrice)}
                               </p>
                             </div>
-                            <div className="p-2.5 rounded-xl bg-[var(--color-gold)]/8 border border-[var(--color-gold)]/20 text-center">
-                              <p className="text-[10px] text-[var(--color-gold)] mb-0.5">{t.product_premium}</p>
-                              <p className="font-display font-bold text-sm text-[var(--color-gold)]">
+                            <div className="text-center p-2.5 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50/50 dark:from-[#C9A227]/12 dark:to-[#C9A227]/5 border border-amber-200/50 dark:border-[#C9A227]/25">
+                              <p className="text-[9px] text-amber-600 dark:text-[#C9A227] uppercase tracking-widest mb-0.5 font-semibold">{t.product_premium}</p>
+                              <p className="font-display font-bold text-sm text-amber-700 dark:text-[#C9A227]">
                                 {formatPrice(product.premiumPrice)}
                               </p>
                             </div>
@@ -243,19 +283,19 @@ export default function ProductsPage() {
                           <div className="flex gap-2">
                             <Link
                               href={`/products/${product.slug}`}
-                              className="flex-1 py-2.5 text-center text-sm font-semibold rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-all"
+                              className="flex-1 py-2.5 text-center text-xs font-semibold rounded-xl border border-gray-200 dark:border-white/[0.1] text-gray-600 dark:text-gray-300 hover:border-[#C9A227] hover:text-amber-700 dark:hover:text-[#C9A227] transition-all duration-300"
                             >
                               View Details
                             </Link>
                             <Link
                               href={`/products/${product.slug}#buy`}
-                              className="flex-1 py-2.5 text-center text-sm font-semibold rounded-xl bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-light)] transition-all flex items-center justify-center gap-1.5"
+                              className="flex-1 py-2.5 text-center text-xs font-bold rounded-xl bg-[#1B2A4A] dark:bg-[#C9A227] text-white dark:text-black hover:bg-[#253d6e] dark:hover:brightness-110 transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm"
                             >
-                              Buy Now <ArrowRight size={14} />
+                              Buy Now <ArrowRight size={12} />
                             </Link>
                           </div>
                         </div>
-                      </GlassCard>
+                      </div>
                     </motion.div>
                   ))}
                 </motion.div>
