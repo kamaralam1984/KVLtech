@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,30 +11,51 @@ import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { ProductRecommender } from "@/components/ui/ProductRecommender";
-import { PRODUCTS, CATEGORIES } from "@/lib/products";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+const CATEGORIES = [
+  { value: "all", label: "All Products" },
+  { value: "WEBSITE", label: "Websites" },
+  { value: "SOFTWARE", label: "Software" },
+  { value: "SAAS", label: "SaaS" },
+  { value: "MOBILE", label: "Mobile Apps" },
+];
+
+const CAT_LABEL: Record<string, string> = {
+  WEBSITE: "Website", SOFTWARE: "Software", SAAS: "SaaS", MOBILE: "Mobile",
+};
 
 export default function ProductsPage() {
   const { t, formatPrice } = useLanguage();
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("popular");
+  const [products, setProducts] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then(r => r.json())
+      .then(data => { if (data.products) setProducts(data.products); })
+      .catch(() => {})
+      .finally(() => setProductsLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
-    let list = [...PRODUCTS];
+    let list = [...products];
     if (activeCategory !== "all") list = list.filter(p => p.category === activeCategory);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.tagline.toLowerCase().includes(q) ||
-        p.categoryLabel.toLowerCase().includes(q)
+        (CAT_LABEL[p.category] || "").toLowerCase().includes(q)
       );
     }
     if (sortBy === "price-asc") list.sort((a, b) => a.basicPrice - b.basicPrice);
     if (sortBy === "price-desc") list.sort((a, b) => b.basicPrice - a.basicPrice);
     return list;
-  }, [activeCategory, search, sortBy]);
+  }, [products, activeCategory, search, sortBy]);
 
   return (
     <>
@@ -124,14 +145,19 @@ export default function ProductsPage() {
 
             {/* Products grid */}
             <AnimatePresence mode="wait">
-              {filtered.length === 0 ? (
+              {productsLoading ? (
+                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
+                  <div className="w-8 h-8 border-2 border-[var(--color-gold)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-[var(--color-text-muted)]">Loading products...</p>
+                </motion.div>
+              ) : filtered.length === 0 ? (
                 <motion.div
                   key="empty"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-center py-20"
                 >
-                  <p className="text-[var(--color-text-muted)] text-lg mb-4">No products found for &ldquo;{search}&rdquo;</p>
+                  <p className="text-[var(--color-text-muted)] text-lg mb-4">{search ? `No products found for "${search}"` : "No products available."}</p>
                   <button onClick={() => { setSearch(""); setActiveCategory("all"); }} className="btn-outline">
                     Clear filters
                   </button>
@@ -175,7 +201,7 @@ export default function ProductsPage() {
                             </span>
                           )}
                           <span className="absolute top-3 right-3 px-2.5 py-1 text-[10px] font-semibold bg-black/40 text-white rounded-full backdrop-blur-sm">
-                            {product.categoryLabel}
+                            {CAT_LABEL[product.category] || product.category}
                           </span>
                         </div>
 
@@ -190,7 +216,7 @@ export default function ProductsPage() {
 
                           {/* Highlights */}
                           <div className="flex flex-wrap gap-1.5 mb-4">
-                            {product.highlights.slice(0, 2).map(h => (
+                            {(product.highlights || []).slice(0, 2).map((h: string) => (
                               <span key={h} className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full bg-[var(--color-gold)]/10 text-[var(--color-gold)]">
                                 <Star size={9} fill="currentColor" /> {h}
                               </span>

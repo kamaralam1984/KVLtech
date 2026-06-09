@@ -8,7 +8,7 @@ import {
   Search, Plus, Edit2, Eye, TrendingUp, Package,
   Loader2, RefreshCw, X, Save, ToggleLeft, ToggleRight,
   ChevronDown, AlertCircle, CheckCircle2, Globe, Cpu, Smartphone, BarChart3,
-  Upload, ImageIcon, Trash2 as TrashIcon, Link2, Star,
+  Upload, ImageIcon, Trash2 as TrashIcon, Trash2, Link2, Star, Database,
 } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/AdminSidebar";
 
@@ -190,6 +190,10 @@ export default function AdminProductsPage() {
   const [formSuccess, setFormSuccess] = useState("");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [featuringId, setFeaturingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [seedMsg, setSeedMsg] = useState("");
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -280,6 +284,32 @@ export default function AdminProductsPage() {
     setTogglingId(null);
   };
 
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
+    await fetch("/api/admin/products", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id: deleteConfirm.id }),
+    });
+    setProducts(prev => prev.filter(p => p.id !== deleteConfirm.id));
+    setDeleteConfirm(null);
+    setDeleting(false);
+  };
+
+  const handleSeed = async () => {
+    setSeedLoading(true);
+    setSeedMsg("");
+    try {
+      const res = await fetch("/api/admin/products/seed", { method: "POST", credentials: "include" });
+      const data = await res.json();
+      setSeedMsg(data.message || (res.ok ? "Seeded!" : "Seed failed."));
+      if (res.ok) await fetchProducts();
+    } catch { setSeedMsg("Network error."); }
+    setSeedLoading(false);
+  };
+
   const toggleFeatured = async (product: any) => {
     setFeaturingId(product.id);
     await fetch("/api/admin/products", {
@@ -342,11 +372,25 @@ export default function AdminProductsPage() {
             <button onClick={fetchProducts} className="w-9 h-9 flex items-center justify-center rounded-xl border border-[var(--color-border)] hover:border-[var(--color-gold)] transition-all text-[var(--color-text-secondary)]">
               <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             </button>
+            {!loading && products.length === 0 && (
+              <button onClick={handleSeed} disabled={seedLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-all disabled:opacity-60 shrink-0">
+                {seedLoading ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
+                Seed 12 Products
+              </button>
+            )}
             <button onClick={openAdd} className="flex items-center gap-2 btn-gold text-sm shrink-0">
               <Plus size={16} /> Add Product
             </button>
           </div>
         </div>
+
+        {/* Seed message */}
+        {seedMsg && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-sm">
+            <CheckCircle2 size={15} /> {seedMsg}
+          </div>
+        )}
 
         {/* Summary strip */}
         {!loading && products.length > 0 && (
@@ -444,6 +488,10 @@ export default function AdminProductsPage() {
                           <button onClick={() => openEdit(product)}
                             className="w-7 h-7 rounded-lg border border-[var(--color-border)] flex items-center justify-center hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] dark:hover:text-white transition-all text-[var(--color-text-secondary)]">
                             <Edit2 size={13} />
+                          </button>
+                          <button onClick={() => setDeleteConfirm(product)}
+                            className="w-7 h-7 rounded-lg border border-[var(--color-border)] flex items-center justify-center hover:border-red-500 hover:text-red-500 transition-all text-[var(--color-text-secondary)]">
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </td>
@@ -580,6 +628,35 @@ export default function AdminProductsPage() {
                   className="btn-gold flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
                   {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                   {saving ? "Saving..." : modal === "add" ? "Add Product" : "Save Changes"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setDeleteConfirm(null)}>
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+              className="bg-[var(--color-bg)] rounded-2xl w-full max-w-sm shadow-[var(--shadow-luxury)] p-6"
+              onClick={e => e.stopPropagation()}>
+              <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-950/40 flex items-center justify-center mb-4">
+                <Trash2 size={22} className="text-red-500" />
+              </div>
+              <h3 className="font-display font-bold text-lg text-[var(--color-text)] mb-1">Delete Product?</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] mb-5">
+                <span className="font-semibold text-[var(--color-text)]">{deleteConfirm.name}</span> ko delete karna chahte hain? Yeh action undo nahi hogi.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeleteConfirm(null)} className="btn-outline flex-1">Cancel</button>
+                <button onClick={handleDelete} disabled={deleting}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-60">
+                  {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                  {deleting ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </motion.div>
