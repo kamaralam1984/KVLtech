@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -36,7 +36,7 @@ const CAT_LABEL: Record<string, string> = {
   WEBSITE: "Website", SOFTWARE: "Software", SAAS: "SaaS", MOBILE: "Mobile",
 };
 
-export default function ProductsPage() {
+function ProductsContent() {
   const { t, formatPrice } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -364,5 +364,13 @@ export default function ProductsPage() {
       <ChatWidget />
       <ProductRecommender />
     </>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
+      <ProductsContent />
+    </Suspense>
   );
 }
