@@ -1,836 +1,673 @@
-"use client"
+"use client";
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles, Loader2, Copy, Check, Download,
-  Globe, Code2, Eye, Braces, Save, Share2, ExternalLink, Plus,
-  LayoutTemplate, Rocket, ChevronDown, ChevronUp, Clock, RefreshCw,
-} from "lucide-react"
-import { AdminTopbar } from "@/components/admin/AdminSidebar"
-import type { GeneratedWebsite, WebsiteSection } from "@/lib/website-builder"
-import { INDUSTRY_TEMPLATES, INDUSTRY_LIST } from "@/lib/website-templates"
-import { WebsiteBuilderEditor } from "@/components/admin/WebsiteBuilderEditor"
-import { WebsitePreviewFrame } from "@/components/admin/WebsitePreviewFrame"
-import { Confetti } from "@/components/ui/Confetti"
+  Save, Eye, EyeOff, Download, Undo2, Redo2,
+  Monitor, Tablet, Smartphone, ZoomIn, ZoomOut,
+  Plus, Sparkles, X, ChevronDown, Loader2,
+  CheckCircle, AlertCircle, FileDown, Globe,
+} from 'lucide-react';
+import useBuilderState from './useBuilderState';
+import { ElementLibrary } from './ElementLibrary';
+import { PropertiesPanel } from './PropertiesPanel';
+import { BuilderCanvas } from './BuilderCanvas';
+import type { ElementType, SelectionState } from './builder-types';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── getDefaultConfig ─────────────────────────────────────────────────────────
 
-function useToast() {
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
-  const show = (msg: string, ok = true) => {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3500)
+function getDefaultConfig(type: ElementType): Record<string, unknown> {
+  switch (type) {
+    case 'heading':
+      return { text: 'Your Heading', level: 2 };
+    case 'paragraph':
+      return { text: 'Write your content here. Click to edit.' };
+    case 'richtext':
+      return { html: '<p>Rich text content here.</p>' };
+    case 'quote':
+      return { text: 'Inspirational quote goes here.' };
+    case 'list':
+      return { items: ['First item', 'Second item', 'Third item'], ordered: false };
+    case 'button':
+      return { label: 'Click Here', href: '#', variant: 'primary', size: 'md' };
+    case 'buttongroup':
+      return {
+        buttons: [
+          { label: 'Primary', href: '#', variant: 'primary', size: 'md' },
+          { label: 'Secondary', href: '#', variant: 'outline', size: 'md' },
+        ],
+      };
+    case 'image':
+      return { src: '/photos/office-meeting.jpg', alt: 'Image', fit: 'cover' };
+    case 'gallery':
+      return {
+        images: [
+          { src: '/photos/restaurant.jpg', alt: 'Photo 1', fit: 'cover' },
+          { src: '/photos/school.jpg', alt: 'Photo 2', fit: 'cover' },
+          { src: '/photos/hospital.jpg', alt: 'Photo 3', fit: 'cover' },
+        ],
+        columns: 3,
+        gap: 16,
+        style: 'grid',
+      };
+    case 'slider':
+      return {
+        slides: [
+          { src: '/photos/restaurant.jpg', heading: 'Welcome', text: 'Your tagline here' },
+          { src: '/photos/school.jpg', heading: 'Our Work', text: 'Quality results' },
+        ],
+        autoPlay: true,
+        interval: 4000,
+        arrows: true,
+        dots: true,
+        effect: 'slide',
+      };
+    case 'marquee':
+      return {
+        items: ['Quality Service', 'Fast Delivery', '24/7 Support', 'Best Prices', 'Trusted by Clients'],
+        speed: 30,
+        direction: 'left',
+        separator: ' · ',
+      };
+    case 'video':
+      return { src: '', poster: '', autoPlay: false, muted: true, controls: true, loop: false };
+    case 'divider':
+      return { style: 'solid' };
+    case 'spacer':
+      return { height: 48 };
+    case 'icon':
+      return { name: 'Star', size: 48, color: '#C9A227' };
+    case 'iconbox':
+      return { icon: 'Star', title: 'Feature Title', description: 'Describe this feature here.', align: 'center' };
+    case 'card':
+      return { title: 'Card Title', text: 'Card description here.', image: '', buttonLabel: 'Learn More', buttonHref: '#' };
+    case 'counter':
+      return {
+        items: [
+          { value: 1000, label: 'Happy Clients', suffix: '+' },
+          { value: 500, label: 'Projects Done', suffix: '+' },
+          { value: 99, label: 'Satisfaction', suffix: '%' },
+        ],
+      };
+    case 'countdown':
+      return { targetDate: '2026-12-31T23:59:59', label: 'Launch Countdown' };
+    case 'progress':
+      return {
+        items: [
+          { label: 'Web Design', value: 90 },
+          { label: 'Development', value: 85 },
+          { label: 'SEO', value: 75 },
+        ],
+      };
+    case 'testimonial':
+      return {
+        name: 'Satisfied Client',
+        role: 'Business Owner',
+        company: '',
+        text: 'Excellent service! Highly recommended.',
+        rating: 5,
+      };
+    case 'pricing':
+      return [
+        {
+          name: 'Basic',
+          price: '₹9,999',
+          period: 'one-time',
+          features: ['5 Pages', 'Mobile Responsive', 'Contact Form'],
+          cta: { label: 'Get Started', href: '#', variant: 'outline', size: 'md' },
+          highlighted: false,
+        },
+        {
+          name: 'Premium',
+          price: '₹24,999',
+          period: 'one-time',
+          features: ['Everything in Basic', 'Admin Panel', '3 Months Support'],
+          cta: { label: 'Buy Now', href: '#', variant: 'primary', size: 'md' },
+          highlighted: true,
+          badge: 'Popular',
+        },
+      ] as unknown as Record<string, unknown>;
+    case 'accordion':
+      return {
+        items: [
+          { id: 'q1', question: 'What do you offer?', answer: 'We offer complete digital solutions.' },
+          { id: 'q2', question: 'How long does it take?', answer: 'Usually 3-15 business days.' },
+        ],
+      };
+    case 'tabs':
+      return {
+        items: [
+          { id: 't1', label: 'Design', content: 'Beautiful modern design' },
+          { id: 't2', label: 'Development', content: 'Clean optimized code' },
+          { id: 't3', label: 'Support', content: '24/7 support included' },
+        ],
+      };
+    case 'form':
+      return {
+        fields: [
+          { id: 'name', type: 'text', label: 'Your Name', placeholder: 'Enter your name', required: true },
+          { id: 'email', type: 'email', label: 'Email', placeholder: 'your@email.com', required: true },
+          { id: 'message', type: 'textarea', label: 'Message', placeholder: 'Your message...', required: true },
+        ],
+        submitLabel: 'Send Message',
+        successMessage: 'Thank you! We will contact you soon.',
+      };
+    case 'map':
+      return { address: 'Mumbai, India', zoom: 14, height: 400 };
+    case 'social':
+      return {
+        links: [
+          { platform: 'facebook', url: '#' },
+          { platform: 'instagram', url: '#' },
+          { platform: 'twitter', url: '#' },
+        ],
+      };
+    case 'navbar':
+      return {
+        logo: '',
+        logoText: 'Your Brand',
+        links: [
+          { label: 'Home', href: '#' },
+          { label: 'About', href: '#' },
+          { label: 'Contact', href: '#' },
+        ],
+        sticky: true,
+        transparent: false,
+      };
+    case 'footer':
+      return {
+        logo: '',
+        tagline: 'Building better businesses',
+        columns: [
+          { heading: 'Company', links: [{ label: 'About', href: '#' }, { label: 'Contact', href: '#' }] },
+          { heading: 'Services', links: [{ label: 'Web Design', href: '#' }, { label: 'Development', href: '#' }] },
+        ],
+        socials: [{ platform: 'facebook', url: '#' }],
+        copyright: '2026 Your Brand. All rights reserved.',
+      };
+    case 'hero':
+      return {
+        heading: 'Welcome to Our Website',
+        subheading: 'Your Success is Our Mission',
+        text: 'We build amazing digital experiences that transform your business.',
+        cta: { label: 'Get Started', href: '#', variant: 'primary', size: 'lg' },
+        secondaryCta: { label: 'Learn More', href: '#', variant: 'outline', size: 'lg' },
+        overlay: 40,
+        align: 'center',
+        bgImage: '',
+      };
+    case 'cta':
+      return {
+        heading: 'Ready to Get Started?',
+        text: 'Contact us today for a free consultation.',
+        cta: { label: 'Contact Us', href: '#', variant: 'primary', size: 'lg' },
+        bgColor: '#0B1437',
+      };
+    default:
+      return {};
   }
-  return { toast, show }
 }
 
-function useCopy() {
-  const [copied, setCopied] = useState(false)
-  const copy = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-  return { copied, copy }
-}
-
-const SECTION_TYPES: WebsiteSection["type"][] = [
-  "hero", "about", "services", "portfolio", "testimonials", "pricing", "faq", "contact", "cta",
-]
-
-const STYLE_OPTIONS = [
-  { value: "modern", label: "Modern", desc: "Clean & bold" },
-  { value: "classic", label: "Classic", desc: "Timeless elegance" },
-  { value: "minimal", label: "Minimal", desc: "Less is more" },
-  { value: "corporate", label: "Corporate", desc: "Professional trust" },
-] as const
-
-const QUICK_PROMPTS = [
-  { label: "Restaurant in Jaipur", prompt: "A traditional Rajasthani thali restaurant in Jaipur serving authentic Rajasthani cuisine with a royal ambience, catering services, and home delivery" },
-  { label: "CA Firm in Mumbai", prompt: "A CA firm in Mumbai providing GST filing, income tax returns, company registration, startup advisory, and audit services for SMEs and startups" },
-  { label: "Tech Startup in Bangalore", prompt: "A SaaS startup in Bangalore building AI-powered tools for small businesses including automated invoicing, CRM, and inventory management solutions" },
-]
-
-const EXAMPLE_PLACEHOLDERS = [
-  "A restaurant in Delhi serving North Indian cuisine, perfect for family dining and corporate events...",
-  "A CA firm in Mumbai offering GST filing, income tax, and startup registration...",
-  "A yoga and wellness center in Pune with certified instructors, online and offline classes...",
-  "A fashion boutique in Jaipur specializing in bridal wear and ethnic collections...",
-]
-
-const LS_DRAFT_KEY = "kvl_website_builder_draft"
-
-interface DraftData {
-  website: GeneratedWebsite
-  htmlPreview: string
-  savedAt: string
-}
-
-interface SavedSite {
-  fileName: string
-  businessName: string
-  industry: string
-  tagline: string
-  jsonUrl: string
-  htmlUrl: string
-  previewUrl: string
-  savedAt: string
-  size: number
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function WebsiteBuilderPage() {
-  const { toast, show } = useToast()
-  const jsonCopy = useCopy()
-  const htmlCopy = useCopy()
-  const deployUrlCopy = useCopy()
+  const {
+    project, currentPage, selection,
+    setCurrentPageId, setSelection,
+    canUndo, canRedo, undo, redo,
+    addSection, removeSection, moveSection, duplicateSection, updateSection,
+    addElement, removeElement, updateElement, duplicateElement,
+    updateGlobalStyles, updateProjectName,
+    saveToLocalStorage, loadFromLocalStorage,
+  } = useBuilderState();
 
-  // Form state
-  const [prompt, setPrompt] = useState("")
-  const [industry, setIndustry] = useState("")
-  const [style, setStyle] = useState<"modern" | "classic" | "minimal" | "corporate">("modern")
-  const [language, setLanguage] = useState<"english" | "hindi" | "both">("english")
-  const [selectedSections, setSelectedSections] = useState<Set<string>>(
-    new Set(["hero", "about", "services", "pricing", "testimonials", "faq", "contact"])
-  )
+  const [previewMode, setPreviewMode] = useState(false);
+  const [deviceWidth, setDeviceWidth] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [zoom, setZoom] = useState(100);
+  const [showAI, setShowAI] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [projectNameDraft, setProjectNameDraft] = useState(project.name);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
-  // Generation state
-  const [loading, setLoading] = useState(false)
-  const [website, setWebsite] = useState<GeneratedWebsite | null>(null)
-  const [htmlPreview, setHtmlPreview] = useState<string>("")
-  const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null)
+  // ─── Effects ───────────────────────────────────────────────────────────────
 
-  // UI state
-  const [activeTab, setActiveTab] = useState<"preview" | "json" | "html">("preview")
-  const [saving, setSaving] = useState(false)
-  const [savedUrl, setSavedUrl] = useState<string>("")
-  const [placeholderIdx, setPlaceholderIdx] = useState(0)
-  const [unsaved, setUnsaved] = useState(false)
+  const showToast = useCallback((type: 'success' | 'error', message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
 
-  // Deploy state
-  const [deploying, setDeploying] = useState(false)
-  const [deployResult, setDeployResult] = useState<{ deployUrl: string; downloadUrl: string } | null>(null)
-  const [showConfetti, setShowConfetti] = useState(false)
-
-  // Saved sites panel
-  const [showSavedSites, setShowSavedSites] = useState(false)
-  const [savedSites, setSavedSites] = useState<SavedSite[]>([])
-  const [loadingSites, setLoadingSites] = useState(false)
-
-  // Draft state
-  const [hasDraft, setHasDraft] = useState(false)
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Rotate placeholder
+  // Sync project name draft when project.name changes externally
   useEffect(() => {
-    const id = setInterval(() => setPlaceholderIdx(i => (i + 1) % EXAMPLE_PLACEHOLDERS.length), 4000)
-    return () => clearInterval(id)
-  }, [])
+    setProjectNameDraft(project.name);
+  }, [project.name]);
 
-  // Check for draft on mount
+  // Keyboard shortcuts
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (ctrl && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+      } else if (ctrl && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Escape') {
+        setSelection({ pageId: null, sectionId: null, columnId: null, elementId: null, level: null });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [undo, redo]);
+
+  // Auto-save debounce (30s)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveToLocalStorage();
+    }, 30_000);
+    return () => clearTimeout(timer);
+  }, [project, saveToLocalStorage]);
+
+  // ─── Handlers ──────────────────────────────────────────────────────────────
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
     try {
-      const raw = localStorage.getItem(LS_DRAFT_KEY)
-      if (raw) setHasDraft(true)
-    } catch {}
-  }, [])
-
-  // Auto-save to localStorage every 30s when there's a website
-  useEffect(() => {
-    if (!website) return
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
-    autoSaveTimer.current = setTimeout(() => {
-      try {
-        const draft: DraftData = { website, htmlPreview, savedAt: new Date().toISOString() }
-        localStorage.setItem(LS_DRAFT_KEY, JSON.stringify(draft))
-      } catch {}
-    }, 30_000)
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current) }
-  }, [website, htmlPreview])
-
-  const restoreDraft = () => {
-    try {
-      const raw = localStorage.getItem(LS_DRAFT_KEY)
-      if (!raw) return
-      const draft: DraftData = JSON.parse(raw)
-      setWebsite(draft.website)
-      setHtmlPreview(draft.htmlPreview)
-      setActiveTab("preview")
-      setHasDraft(false)
-      show("Draft restored!")
+      const res = await fetch('/api/admin/website-builder/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ website: project }),
+      });
+      if (res.ok) showToast('success', 'Website saved successfully!');
+      else showToast('error', 'Failed to save. Please try again.');
     } catch {
-      show("Failed to restore draft", false)
+      showToast('error', 'Network error. Auto-saved locally.');
+      saveToLocalStorage();
+    } finally {
+      setSaving(false);
     }
-  }
+  }, [project, showToast, saveToLocalStorage]);
 
-  const clearDraft = () => {
-    try { localStorage.removeItem(LS_DRAFT_KEY) } catch {}
-    setHasDraft(false)
-  }
-
-  const toggleSection = (s: string) => {
-    setSelectedSections(prev => {
-      const next = new Set(prev)
-      if (next.has(s)) next.delete(s)
-      else next.add(s)
-      return next
-    })
-  }
-
-  const applyTemplate = (key: string) => {
-    const tpl = INDUSTRY_TEMPLATES[key]
-    if (!tpl) return
-    setIndustry(key)
-    setStyle(tpl.style)
-    setPrompt(tpl.samplePrompt)
-    setSelectedSections(new Set(tpl.sections))
-  }
-
-  const refreshHtml = useCallback(async (updated: GeneratedWebsite) => {
+  const handleExport = useCallback(async () => {
+    setExporting(true);
     try {
-      const res = await fetch("/api/admin/website-builder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "export", website: updated }),
-        credentials: "include",
-      })
-      const text = await res.text()
-      if (text.startsWith("<!DOCTYPE")) setHtmlPreview(text)
-    } catch {}
-  }, [])
+      const res = await fetch('/api/admin/website-builder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ action: 'export', website: project }),
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (project.name || 'website').replace(/\s+/g, '-').toLowerCase() + '.html';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('success', 'HTML exported!');
+      } else {
+        showToast('error', 'Export failed.');
+      }
+    } catch {
+      showToast('error', 'Export failed.');
+    } finally {
+      setExporting(false);
+    }
+  }, [project, showToast]);
 
-  const handleWebsiteChange = useCallback((updated: GeneratedWebsite) => {
-    setWebsite(updated)
-    setUnsaved(true)
-    refreshHtml(updated)
-  }, [refreshHtml])
-
-  const handleRegenerateSection = useCallback(async (sectionType: string) => {
-    if (!website) return
-    setRegeneratingSection(sectionType)
+  const handleAIGenerate = useCallback(async () => {
+    if (!aiPrompt.trim()) return;
+    setAiLoading(true);
     try {
-      const res = await fetch("/api/admin/website-builder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/admin/website-builder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
-          action: "regenerate-section",
-          sectionType,
-          businessName: website.businessName,
-          industry: website.industry,
+          action: 'generate',
+          prompt: aiPrompt,
+          businessName: project.name,
+          industry: 'general',
+          style: 'modern',
+          language: 'en',
         }),
-        credentials: "include",
-      })
-      const data = await res.json()
-      if (data.section) {
-        const updatedSections = website.sections.map(s =>
-          s.type === sectionType ? data.section : s
-        )
-        handleWebsiteChange({ ...website, sections: updatedSections })
-        show(`${sectionType} section regenerated!`)
-      }
-    } catch {
-      show("Regeneration failed", false)
-    } finally {
-      setRegeneratingSection(null)
-    }
-  }, [website, handleWebsiteChange, show])
-
-  const generate = useCallback(async () => {
-    if (!prompt.trim()) { show("Please describe the business first.", false); return }
-    setLoading(true)
-    setSavedUrl("")
-    setDeployResult(null)
-
-    try {
-      const res = await fetch("/api/admin/website-builder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, industry, style, language }),
-        credentials: "include",
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        show(data.error || "Generation failed", false)
-        return
-      }
-
-      setWebsite(data.website)
-      setHtmlPreview(data.htmlPreview)
-      setActiveTab("preview")
-      setUnsaved(true)
-      setHasDraft(false)
-      show("Website generated successfully!")
-    } catch {
-      show("Network error. Please try again.", false)
-    } finally {
-      setLoading(false)
-    }
-  }, [prompt, industry, style, language, show])
-
-  const downloadHTML = () => {
-    if (!htmlPreview || !website) return
-    const blob = new Blob([htmlPreview], { type: "text/html" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${website.businessName.replace(/\s+/g, "-").toLowerCase()}-website.html`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const saveWebsite = async () => {
-    if (!website) return
-    setSaving(true)
-    try {
-      const res = await fetch("/api/admin/website-builder/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ website }),
-        credentials: "include",
-      })
-      const data = await res.json()
+      });
       if (res.ok) {
-        setSavedUrl(data.previewUrl)
-        setUnsaved(false)
-        show("Saved! Preview link ready.")
-        // Save draft timestamp
-        try {
-          const draft: DraftData = { website, htmlPreview, savedAt: new Date().toISOString() }
-          localStorage.setItem(LS_DRAFT_KEY, JSON.stringify(draft))
-        } catch {}
+        showToast('success', 'AI content generated! Add sections from the Elements panel.');
+        setShowAI(false);
+        setAiPrompt('');
       } else {
-        show(data.error || "Save failed", false)
+        showToast('error', 'AI generation failed. Check your API key.');
       }
     } catch {
-      show("Save failed", false)
+      showToast('error', 'AI service unavailable.');
     } finally {
-      setSaving(false)
+      setAiLoading(false);
     }
-  }
+  }, [aiPrompt, project.name, showToast]);
 
-  const deployPreview = async () => {
-    if (!website) return
-    setDeploying(true)
-    try {
-      const res = await fetch("/api/admin/website-builder/deploy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ website }),
-        credentials: "include",
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setDeployResult({ deployUrl: data.deployUrl, downloadUrl: data.downloadUrl })
-        setShowConfetti(true)
-        setTimeout(() => setShowConfetti(false), 4000)
-        show("Preview deployed!")
-      } else {
-        show(data.error || "Deploy failed", false)
-      }
-    } catch {
-      show("Deploy failed", false)
-    } finally {
-      setDeploying(false)
+  const onAddElement = useCallback((type: ElementType, config?: Record<string, unknown>) => {
+    const cfg = config || getDefaultConfig(type);
+    const targetSectionId = selection.sectionId || currentPage?.sections[0]?.id;
+    const targetColumnId = selection.columnId || currentPage?.sections[0]?.columns[0]?.id;
+    if (targetSectionId && targetColumnId) {
+      addElement(targetSectionId, targetColumnId, type, cfg);
+    } else if (currentPage) {
+      // Add a new section first, then add element
+      addSection();
+      // Can't get the new section ID synchronously, so just add section
     }
-  }
+  }, [selection, currentPage, addElement, addSection]);
 
-  const copyShareLink = () => {
-    if (!savedUrl) { show("Save the website first to get a share link.", false); return }
-    const full = `${window.location.origin}${savedUrl}`
-    navigator.clipboard.writeText(full)
-    show("Share link copied!")
-  }
+  const onAddSection = useCallback((preset?: string) => {
+    addSection(preset);
+  }, [addSection]);
 
-  const loadSavedSites = async () => {
-    setLoadingSites(true)
-    try {
-      const res = await fetch("/api/admin/website-builder/save", { credentials: "include" })
-      const data = await res.json()
-      if (res.ok) setSavedSites(data.sites || [])
-    } catch {}
-    setLoadingSites(false)
-  }
-
-  const loadSite = async (jsonUrl: string) => {
-    try {
-      const res = await fetch(jsonUrl)
-      const w: GeneratedWebsite = await res.json()
-      setWebsite(w)
-      setUnsaved(false)
-      await refreshHtml(w)
-      setActiveTab("preview")
-      show(`Loaded: ${w.businessName}`)
-    } catch {
-      show("Failed to load site", false)
-    }
-  }
-
-  const toggleSavedSites = () => {
-    if (!showSavedSites) loadSavedSites()
-    setShowSavedSites(v => !v)
-  }
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-[var(--color-bg)]">
-      <AdminTopbar title="AI Website Builder" />
+    <div className="flex flex-col h-screen bg-[#0B1437] overflow-hidden">
 
-      {/* Confetti */}
-      {showConfetti && <Confetti trigger={showConfetti} />}
+      {/* TOP TOOLBAR */}
+      <div className="flex items-center justify-between px-4 h-12 bg-[#060E24] border-b border-white/5 flex-shrink-0 z-40">
 
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${toast.ok ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
-          {toast.msg}
-        </div>
-      )}
+        {/* Left: Project name + page selector */}
+        <div className="flex items-center gap-3">
+          {/* Back link */}
+          <a href="/admin" className="text-gray-500 hover:text-white transition-colors text-xs">← Admin</a>
+          <div className="w-px h-4 bg-white/10" />
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* ── LEFT PANEL ────────────────────────────────────────────────────── */}
-        <div className="w-[400px] shrink-0 border-r border-[var(--color-border)] flex flex-col overflow-y-auto">
-          <div className="p-5 space-y-5">
-
-            {/* Header */}
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-[var(--color-gold)]/10">
-                <Sparkles size={20} className="text-[var(--color-gold)]" />
-              </div>
-              <div>
-                <h1 className="font-bold text-base text-[var(--color-text)]">AI Website Builder</h1>
-                <p className="text-xs text-[var(--color-text-muted)]">Generate complete websites from a description</p>
-              </div>
-            </div>
-
-            {/* Draft restore banner */}
-            {hasDraft && !website && (
-              <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-yellow-300 bg-yellow-50">
-                <div className="flex items-center gap-2">
-                  <Clock size={14} className="text-yellow-600 shrink-0" />
-                  <p className="text-xs font-medium text-yellow-800">You have an unsaved draft</p>
-                </div>
-                <div className="flex gap-1">
-                  <button onClick={restoreDraft} className="text-xs font-semibold text-yellow-700 hover:text-yellow-900 transition-colors">Restore</button>
-                  <span className="text-yellow-400">·</span>
-                  <button onClick={clearDraft} className="text-xs text-yellow-500 hover:text-yellow-700 transition-colors">Dismiss</button>
-                </div>
-              </div>
-            )}
-
-            {/* Autosave indicator */}
-            {website && (
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${unsaved ? "bg-yellow-400 animate-pulse" : "bg-green-400"}`} />
-                <span className="text-xs text-[var(--color-text-muted)]">
-                  {unsaved ? "Unsaved changes" : "All saved"}
-                </span>
-              </div>
-            )}
-
-            {/* Prompt */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5 uppercase tracking-wide">
-                Business Description
-              </label>
-              <div className="relative">
-                <textarea
-                  value={prompt}
-                  onChange={e => setPrompt(e.target.value.slice(0, 500))}
-                  placeholder={EXAMPLE_PLACEHOLDERS[placeholderIdx]}
-                  rows={5}
-                  className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all placeholder:text-[var(--color-text-muted)] resize-none"
-                />
-                <span className="absolute bottom-2 right-3 text-[10px] text-[var(--color-text-muted)]">{prompt.length}/500</span>
-              </div>
-            </div>
-
-            {/* Quick start chips */}
-            <div>
-              <p className="text-xs font-semibold text-[var(--color-text-muted)] mb-2 uppercase tracking-wide">Quick Start</p>
-              <div className="flex flex-wrap gap-2">
-                {QUICK_PROMPTS.map(q => (
-                  <button
-                    key={q.label}
-                    onClick={() => setPrompt(q.prompt)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all"
-                  >
-                    <Plus size={10} /> {q.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Industry Templates */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5 uppercase tracking-wide">
-                Industry
-              </label>
-              <select
-                value={industry}
-                onChange={e => {
-                  setIndustry(e.target.value)
-                  if (e.target.value) applyTemplate(e.target.value)
-                }}
-                className="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-gold)] transition-all"
-              >
-                <option value="">Select industry (optional)</option>
-                {INDUSTRY_LIST.map(({ key, label }) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Style Selector */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5 uppercase tracking-wide">
-                Visual Style
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {STYLE_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setStyle(opt.value)}
-                    className={`p-3 rounded-xl border text-left transition-all ${style === opt.value ? "border-[var(--color-gold)] bg-[var(--color-gold)]/5" : "border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-gold)]/50"}`}
-                  >
-                    <p className="text-sm font-semibold text-[var(--color-text)]">{opt.label}</p>
-                    <p className="text-xs text-[var(--color-text-muted)]">{opt.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Language */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5 uppercase tracking-wide">
-                Content Language
-              </label>
-              <div className="flex gap-2">
-                {(["english", "hindi", "both"] as const).map(lang => (
-                  <button
-                    key={lang}
-                    onClick={() => setLanguage(lang)}
-                    className={`flex-1 py-2 rounded-xl border text-sm font-medium capitalize transition-all ${language === lang ? "border-[var(--color-gold)] bg-[var(--color-gold)]/10 text-[var(--color-gold)]" : "border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:border-[var(--color-gold)]/50"}`}
-                  >
-                    {lang === "both" ? "Both" : lang.charAt(0).toUpperCase() + lang.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Sections */}
-            <div>
-              <label className="block text-xs font-semibold text-[var(--color-text)] mb-1.5 uppercase tracking-wide">
-                Sections to Include
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {SECTION_TYPES.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => toggleSection(s)}
-                    className={`py-2 px-1 rounded-xl border text-xs font-medium capitalize transition-all ${selectedSections.has(s) ? "border-[var(--color-gold)] bg-[var(--color-gold)]/10 text-[var(--color-gold)]" : "border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:border-[var(--color-gold)]/40"}`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Generate Button */}
-            <button
-              onClick={generate}
-              disabled={loading || !prompt.trim()}
-              className="w-full py-3 rounded-xl bg-[var(--color-gold)] text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 transition-all shadow-md"
-            >
-              {loading ? (
-                <><Loader2 size={16} className="animate-spin" /> Generating Website...</>
-              ) : (
-                <><Sparkles size={16} /> Generate Website</>
-              )}
-            </button>
-
-            {/* Industry Template Cards (only when no website) */}
-            {!website && (
-              <div>
-                <p className="text-xs font-semibold text-[var(--color-text-muted)] mb-3 uppercase tracking-wide flex items-center gap-1">
-                  <LayoutTemplate size={12} /> Industry Templates
-                </p>
-                <div className="space-y-2">
-                  {Object.entries(INDUSTRY_TEMPLATES).slice(0, 5).map(([key, tpl]) => (
-                    <button
-                      key={key}
-                      onClick={() => applyTemplate(key)}
-                      className="w-full text-left px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-gold)] transition-all group"
-                    >
-                      <p className="text-sm font-semibold text-[var(--color-text)] group-hover:text-[var(--color-gold)] transition-colors">{tpl.label}</p>
-                      <p className="text-xs text-[var(--color-text-muted)] line-clamp-1 mt-0.5">{tpl.samplePrompt}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Section Editor (shown after generation) */}
-          {website && (
-            <div className="border-t border-[var(--color-border)] p-5 flex-1 flex flex-col min-h-0">
-              <WebsiteBuilderEditor
-                website={website}
-                onChange={handleWebsiteChange}
-                onRegenerateSection={handleRegenerateSection}
-                regeneratingSection={regeneratingSection}
-              />
-            </div>
-          )}
-
-          {/* Saved Sites Panel */}
-          <div className="border-t border-[var(--color-border)]">
-            <button
-              onClick={toggleSavedSites}
-              className="w-full flex items-center justify-between px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-            >
-              <span className="flex items-center gap-2"><Save size={12} /> Saved Sites</span>
-              {showSavedSites ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            </button>
-
-            {showSavedSites && (
-              <div className="px-5 pb-5 space-y-2">
-                {loadingSites && (
-                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] py-2">
-                    <Loader2 size={12} className="animate-spin" /> Loading...
-                  </div>
-                )}
-                {!loadingSites && savedSites.length === 0 && (
-                  <p className="text-xs text-[var(--color-text-muted)] py-2">No saved sites yet.</p>
-                )}
-                {savedSites.map(site => (
-                  <div
-                    key={site.fileName}
-                    className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)]"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[var(--color-text)] truncate">{site.businessName}</p>
-                      <p className="text-[10px] text-[var(--color-text-muted)]">
-                        {new Date(site.savedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => loadSite(site.jsonUrl)}
-                        className="px-2 py-1 text-[10px] font-semibold bg-[var(--color-gold)]/10 text-[var(--color-gold)] rounded-lg hover:bg-[var(--color-gold)]/20 transition-colors"
-                      >
-                        Load
-                      </button>
-                      <a
-                        href={site.previewUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-gold)] transition-colors"
-                      >
-                        <ExternalLink size={12} />
-                      </a>
-                    </div>
-                  </div>
-                ))}
-                <button
-                  onClick={loadSavedSites}
-                  className="w-full flex items-center justify-center gap-1 py-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-                >
-                  <RefreshCw size={11} /> Refresh
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── RIGHT PANEL ────────────────────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {!website ? (
-            // Empty state
-            <div className="flex-1 flex items-center justify-center p-8">
-              <div className="text-center max-w-sm">
-                <div className="w-16 h-16 rounded-2xl bg-[var(--color-gold)]/10 flex items-center justify-center mx-auto mb-4">
-                  <Globe size={28} className="text-[var(--color-gold)]" />
-                </div>
-                <h2 className="text-xl font-bold text-[var(--color-text)] mb-2">Build a Website with AI</h2>
-                <p className="text-sm text-[var(--color-text-muted)] mb-6">
-                  Describe any business on the left panel and click Generate. The AI will create a complete website with content, sections, SEO, and a downloadable HTML file — in seconds.
-                </p>
-                <div className="space-y-2">
-                  {QUICK_PROMPTS.map(q => (
-                    <button
-                      key={q.label}
-                      onClick={() => setPrompt(q.prompt)}
-                      className="w-full px-4 py-2.5 text-left rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-sm hover:border-[var(--color-gold)] transition-all"
-                    >
-                      <span className="font-medium text-[var(--color-text)]">{q.label}</span>
-                      <p className="text-xs text-[var(--color-text-muted)] line-clamp-1 mt-0.5">{q.prompt.slice(0, 70)}...</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+          {/* Project name (editable) */}
+          {editingName ? (
+            <input
+              ref={nameInputRef}
+              value={projectNameDraft}
+              onChange={e => setProjectNameDraft(e.target.value)}
+              onBlur={() => { updateProjectName(projectNameDraft); setEditingName(false); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { updateProjectName(projectNameDraft); setEditingName(false); }
+                if (e.key === 'Escape') { setProjectNameDraft(project.name); setEditingName(false); }
+              }}
+              className="bg-white/10 text-white text-sm font-semibold px-2 py-0.5 rounded border border-amber-400 outline-none"
+              autoFocus
+            />
           ) : (
-            <>
-              {/* Tab bar */}
-              <div className="border-b border-[var(--color-border)] px-4 py-2 flex items-center justify-between shrink-0 bg-[var(--color-bg-secondary)]">
-                <div className="flex gap-1">
-                  {([
-                    { id: "preview", label: "Preview", icon: Eye },
-                    { id: "json", label: "JSON", icon: Braces },
-                    { id: "html", label: "HTML Code", icon: Code2 },
-                  ] as const).map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? "bg-[var(--color-gold)] text-white" : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]"}`}
-                    >
-                      <tab.icon size={13} /> {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Deploy result banner */}
-              {deployResult && (
-                <div className="shrink-0 px-4 py-2.5 bg-green-50 border-b border-green-200 flex items-center gap-3">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-xs font-semibold text-green-800">Preview live at:</span>
-                    <a
-                      href={deployResult.deployUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-green-700 hover:text-green-900 underline truncate"
-                    >
-                      {window.location.origin}{deployResult.deployUrl}
-                    </a>
-                  </div>
-                  <button
-                    onClick={() => deployUrlCopy.copy(`${window.location.origin}${deployResult.deployUrl}`)}
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors shrink-0"
-                  >
-                    {deployUrlCopy.copied ? <Check size={11} /> : <Copy size={11} />}
-                    {deployUrlCopy.copied ? "Copied!" : "Copy"}
-                  </button>
-                  <a
-                    href={deployResult.deployUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shrink-0"
-                  >
-                    <ExternalLink size={11} /> Open
-                  </a>
-                </div>
-              )}
-
-              {/* Tab content */}
-              <div className="flex-1 overflow-hidden flex flex-col">
-                {activeTab === "preview" && (
-                  <WebsitePreviewFrame htmlContent={htmlPreview} />
-                )}
-
-                {activeTab === "json" && (
-                  <div className="p-4 flex-1 overflow-auto">
-                    <div className="relative h-full">
-                      <div className="absolute top-3 right-3 z-10">
-                        <button
-                          onClick={() => jsonCopy.copy(JSON.stringify(website, null, 2))}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-xs font-medium hover:border-[var(--color-gold)] transition-all"
-                        >
-                          {jsonCopy.copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-                          {jsonCopy.copied ? "Copied!" : "Copy JSON"}
-                        </button>
-                      </div>
-                      <pre className="bg-[var(--color-bg)] rounded-xl p-4 text-xs overflow-auto h-full border border-[var(--color-border)] text-[var(--color-text)] leading-relaxed pt-12">
-                        {JSON.stringify(website, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "html" && (
-                  <div className="p-4 flex-1 overflow-auto">
-                    <div className="relative h-full">
-                      <div className="absolute top-3 right-3 z-10 flex gap-2">
-                        <button
-                          onClick={() => htmlCopy.copy(htmlPreview)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-lg text-xs font-medium hover:border-[var(--color-gold)] transition-all"
-                        >
-                          {htmlCopy.copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-                          {htmlCopy.copied ? "Copied!" : "Copy HTML"}
-                        </button>
-                        <button
-                          onClick={downloadHTML}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-gold)] text-white rounded-lg text-xs font-semibold hover:opacity-90 transition-all"
-                        >
-                          <Download size={12} /> Download HTML
-                        </button>
-                      </div>
-                      <pre className="bg-[var(--color-bg)] rounded-xl p-4 text-xs overflow-auto h-full border border-[var(--color-border)] text-[var(--color-text)] leading-relaxed pt-12 font-mono">
-                        {htmlPreview}
-                      </pre>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Bottom action bar */}
-              <div className="border-t border-[var(--color-border)] bg-[var(--color-bg)] px-5 py-3 flex items-center gap-3 shrink-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-[var(--color-text)] truncate">{website.businessName}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] truncate">{website.tagline}</p>
-                </div>
-
-                {savedUrl && (
-                  <a
-                    href={savedUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-green-300 bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 transition-all"
-                  >
-                    <ExternalLink size={12} /> View Live
-                  </a>
-                )}
-
-                <button
-                  onClick={copyShareLink}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all"
-                >
-                  <Share2 size={14} /> Share
-                </button>
-
-                <button
-                  onClick={downloadHTML}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--color-border)] text-sm font-medium hover:border-[var(--color-gold)] hover:text-[var(--color-gold)] transition-all"
-                >
-                  <Download size={14} /> Download
-                </button>
-
-                {/* Deploy Preview button */}
-                <button
-                  onClick={deployPreview}
-                  disabled={deploying}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-gold)]/10 border border-[var(--color-gold)] text-[var(--color-gold)] text-sm font-semibold hover:bg-[var(--color-gold)]/20 disabled:opacity-50 transition-all"
-                >
-                  {deploying ? <Loader2 size={14} className="animate-spin" /> : <Rocket size={14} />}
-                  Deploy Preview
-                </button>
-
-                <button
-                  onClick={saveWebsite}
-                  disabled={saving}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[var(--color-gold)] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-all"
-                >
-                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                  Save Template
-                </button>
-              </div>
-            </>
+            <button
+              onClick={() => { setProjectNameDraft(project.name); setEditingName(true); }}
+              className="text-white text-sm font-semibold hover:text-amber-400 transition-colors"
+            >
+              {project.name}
+            </button>
           )}
+
+          {/* Page selector */}
+          <div className="relative">
+            <select
+              value={currentPage?.id || ''}
+              onChange={e => setCurrentPageId(e.target.value)}
+              className="bg-white/5 border border-white/10 text-gray-300 text-xs rounded px-2 py-1 pr-6 outline-none focus:border-amber-400 appearance-none cursor-pointer"
+            >
+              {project.pages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* Center: Device + Zoom */}
+        <div className="flex items-center gap-2">
+          {/* Device buttons */}
+          <div className="flex bg-white/5 rounded-lg p-0.5 gap-0.5">
+            {[
+              { id: 'desktop' as const, icon: Monitor, label: 'Desktop' },
+              { id: 'tablet' as const, icon: Tablet, label: 'Tablet' },
+              { id: 'mobile' as const, icon: Smartphone, label: 'Mobile' },
+            ].map(({ id, icon: Icon, label }) => (
+              <button
+                key={id}
+                onClick={() => setDeviceWidth(id)}
+                title={label}
+                className={`p-1.5 rounded-md transition-colors ${deviceWidth === id ? 'bg-amber-500/20 text-amber-400' : 'text-gray-500 hover:text-gray-300'}`}
+              >
+                <Icon size={14} />
+              </button>
+            ))}
+          </div>
+
+          {/* Zoom */}
+          <div className="flex items-center gap-1 bg-white/5 rounded-lg px-2 py-1">
+            <button onClick={() => setZoom(z => Math.max(50, z - 25))} className="text-gray-400 hover:text-white"><ZoomOut size={12} /></button>
+            <span className="text-xs text-gray-300 w-10 text-center">{zoom}%</span>
+            <button onClick={() => setZoom(z => Math.min(200, z + 25))} className="text-gray-400 hover:text-white"><ZoomIn size={12} /></button>
+          </div>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={undo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+            className="p-1.5 rounded text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <Undo2 size={14} />
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Y)"
+            className="p-1.5 rounded text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <Redo2 size={14} />
+          </button>
+
+          <div className="w-px h-4 bg-white/10" />
+
+          <button
+            onClick={() => setPreviewMode(!previewMode)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${previewMode ? 'bg-amber-500/20 text-amber-400' : 'text-gray-400 hover:text-white'}`}
+          >
+            {previewMode ? <EyeOff size={13} /> : <Eye size={13} />}
+            {previewMode ? 'Exit Preview' : 'Preview'}
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+          >
+            {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+            Save
+          </button>
+
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+          >
+            {exporting ? <Loader2 size={13} className="animate-spin" /> : <FileDown size={13} />}
+            Export
+          </button>
+
+          <button
+            onClick={() => setShowAI(!showAI)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors border border-amber-500/20"
+          >
+            <Sparkles size={13} />
+            AI
+          </button>
         </div>
       </div>
+
+      {/* MAIN AREA */}
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* LEFT PANEL - Element Library (hidden in preview mode) */}
+        {!previewMode && (
+          <div className="w-[280px] flex-shrink-0 border-r border-white/5 overflow-y-auto">
+            <ElementLibrary onAddElement={onAddElement} onAddSection={onAddSection} />
+          </div>
+        )}
+
+        {/* CENTER - Canvas */}
+        <div
+          className="flex-1 overflow-auto bg-[#1A2040] relative"
+          onClick={() => setSelection({ pageId: currentPage?.id || null, sectionId: null, columnId: null, elementId: null, level: null })}
+        >
+          {/* Canvas frame for tablet/mobile */}
+          <div
+            style={{
+              width: deviceWidth === 'desktop' ? '100%' : deviceWidth === 'tablet' ? '768px' : '390px',
+              margin: deviceWidth === 'desktop' ? '0' : '2rem auto',
+              transform: `scale(${zoom / 100})`,
+              transformOrigin: 'top center',
+              border: deviceWidth !== 'desktop' ? '1px solid rgba(255,255,255,0.1)' : 'none',
+              borderRadius: deviceWidth === 'mobile' ? '24px' : deviceWidth === 'tablet' ? '12px' : '0',
+              overflow: 'hidden',
+              minHeight: '100vh',
+            }}
+          >
+            {currentPage && (
+              <BuilderCanvas
+                page={currentPage}
+                selection={selection}
+                globalStyles={project.globalStyles}
+                previewMode={previewMode}
+                deviceWidth={deviceWidth}
+                onSelect={setSelection}
+                onDrop={(sectionId, columnId, elementType, index) => {
+                  addElement(sectionId, columnId, elementType as ElementType, getDefaultConfig(elementType as ElementType));
+                }}
+                onMoveSection={moveSection}
+                onDuplicateSection={duplicateSection}
+                onDeleteSection={removeSection}
+                onDeleteElement={removeElement}
+                onDuplicateElement={duplicateElement}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT PANEL - Properties (hidden in preview mode) */}
+        {!previewMode && (
+          <div className="w-[320px] flex-shrink-0 border-l border-white/5 overflow-y-auto">
+            <PropertiesPanel
+              selection={selection}
+              project={project}
+              onUpdateElement={updateElement}
+              onUpdateSection={updateSection}
+              onUpdateGlobalStyles={updateGlobalStyles}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* AI DRAWER */}
+      <AnimatePresence>
+        {showAI && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 z-40"
+              onClick={() => setShowAI(false)}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-full w-96 bg-[#060E24] border-l border-white/10 z-50 flex flex-col"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={18} className="text-amber-400" />
+                  <h3 className="text-white font-semibold">AI Assistant</h3>
+                </div>
+                <button onClick={() => setShowAI(false)} className="text-gray-400 hover:text-white"><X size={18} /></button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <p className="text-gray-400 text-sm">Describe what you want to build and AI will help generate content for your website.</p>
+
+                {/* Quick prompts */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 uppercase tracking-wider">Quick Prompts</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      'Generate a hero section',
+                      'Add contact form',
+                      'Pricing plans for agency',
+                      'Restaurant menu section',
+                      'Team members section',
+                      'Testimonials from clients',
+                    ].map(prompt => (
+                      <button
+                        key={prompt}
+                        onClick={() => setAiPrompt(prompt)}
+                        className="text-xs px-2.5 py-1 rounded-full border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Prompt input */}
+                <div>
+                  <p className="text-xs text-gray-400 mb-2">Your prompt</p>
+                  <textarea
+                    value={aiPrompt}
+                    onChange={e => setAiPrompt(e.target.value)}
+                    placeholder="Describe what you need... e.g. 'Create a hero section for a restaurant with booking button'"
+                    rows={5}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white text-sm placeholder-gray-600 focus:border-amber-400 outline-none resize-none"
+                  />
+                </div>
+
+                <button
+                  onClick={handleAIGenerate}
+                  disabled={aiLoading || !aiPrompt.trim()}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-amber-500 text-[#0B1437] font-bold text-sm hover:bg-amber-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {aiLoading ? 'Generating...' : 'Generate with AI'}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* TOAST */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-sm font-medium ${
+              toast.type === 'success'
+                ? 'bg-green-900/90 text-green-200 border border-green-700/50'
+                : 'bg-red-900/90 text-red-200 border border-red-700/50'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+            {toast.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
-  )
+  );
 }
