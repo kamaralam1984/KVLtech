@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +12,17 @@ import { ChatWidget } from "@/components/ui/ChatWidget";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { ProductRecommender } from "@/components/ui/ProductRecommender";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+// Map URL param values → internal category values
+const PARAM_TO_CAT: Record<string, string> = {
+  websites: "WEBSITE",
+  website: "WEBSITE",
+  software: "SOFTWARE",
+  saas: "SAAS",
+  mobile: "MOBILE",
+  "mobile-apps": "MOBILE",
+  digital: "WEBSITE",
+};
 
 const CATEGORIES = [
   { value: "all", label: "All Products" },
@@ -26,11 +38,38 @@ const CAT_LABEL: Record<string, string> = {
 
 export default function ProductsPage() {
   const { t, formatPrice } = useLanguage();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("popular");
   const [products, setProducts] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+
+  // Read category from URL on mount and when URL changes
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    if (cat) {
+      const mapped = PARAM_TO_CAT[cat.toLowerCase()];
+      if (mapped) setActiveCategory(mapped);
+      else setActiveCategory("all");
+    } else {
+      setActiveCategory("all");
+    }
+  }, [searchParams]);
+
+  // Update URL when category button clicked
+  const handleCategoryChange = (cat: string) => {
+    setActiveCategory(cat);
+    const catToParam: Record<string, string> = {
+      WEBSITE: "websites", SOFTWARE: "software", SAAS: "saas", MOBILE: "mobile",
+    };
+    if (cat === "all") {
+      router.push("/products", { scroll: false });
+    } else {
+      router.push(`/products?category=${catToParam[cat] || cat.toLowerCase()}`, { scroll: false });
+    }
+  };
 
   useEffect(() => {
     fetch("/api/products")
@@ -123,7 +162,7 @@ export default function ProductsPage() {
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat.value}
-                    onClick={() => setActiveCategory(cat.value)}
+                    onClick={() => handleCategoryChange(cat.value)}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                       activeCategory === cat.value
                         ? "bg-[var(--color-navy)] text-white shadow-sm"
@@ -170,7 +209,7 @@ export default function ProductsPage() {
                   className="text-center py-20"
                 >
                   <p className="text-[var(--color-text-muted)] text-lg mb-4">{search ? `No products found for "${search}"` : "No products available."}</p>
-                  <button onClick={() => { setSearch(""); setActiveCategory("all"); }} className="btn-outline">
+                  <button onClick={() => { setSearch(""); handleCategoryChange("all"); }} className="btn-outline">
                     Clear filters
                   </button>
                 </motion.div>
