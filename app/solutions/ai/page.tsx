@@ -29,6 +29,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -287,7 +288,7 @@ export default function AISolutionsPage() {
                 Intelligent automation that understands your customers, answers their questions, and converts them into
                 buyers — 24/7. No staff required. No missed opportunities.
               </motion.p>
-              <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+              <motion.div variants={fadeUp} className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
                 <Link href="/contact" className="btn-gold">
                   Start Free 14-Day Trial
                   <ArrowRight className="inline ml-2 w-5 h-5" />
@@ -295,6 +296,23 @@ export default function AISolutionsPage() {
                 <Link href="#how-it-works" className="btn-outline">
                   See How It Works
                 </Link>
+              </motion.div>
+
+              {/* Hero Image */}
+              <motion.div variants={fadeUp} className="relative mb-16">
+                <div
+                  className="absolute inset-0 rounded-3xl blur-2xl opacity-20 scale-95"
+                  style={{ background: "var(--color-gold)" }}
+                />
+                <Image
+                  src="/images/ai-powered-tools.png"
+                  alt="AI-Powered Tools That Work While You Sleep"
+                  width={1100}
+                  height={620}
+                  priority
+                  className="relative rounded-3xl shadow-2xl w-full object-cover border border-[var(--color-border)]"
+                  style={{ maxHeight: 520 }}
+                />
               </motion.div>
 
               {/* Stats Bar */}
