@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const order = await razorpay.orders.create({
       amount: amount * 100, // paise mein
       currency: "INR",
-      receipt: `kvl_${productSlug}_${Date.now()}`,
+      receipt: `kvl_${Date.now()}`,
       notes: { productSlug, plan, name, phone, email },
     });
 
@@ -31,8 +31,10 @@ export async function POST(req: NextRequest) {
       currency: order.currency,
       keyId: process.env.RAZORPAY_KEY_ID,
     });
-  } catch (err) {
-    console.error("Razorpay create-order error:", err);
-    return NextResponse.json({ error: "Payment initiation failed" }, { status: 500 });
+  } catch (err: any) {
+    const errStr = JSON.stringify(err, null, 2);
+    const msg = err?.error?.description || err?.message || errStr;
+    console.error("Razorpay create-order error:", errStr);
+    return NextResponse.json({ error: `Payment failed: ${msg}` }, { status: 500 });
   }
 }
