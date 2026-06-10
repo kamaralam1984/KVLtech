@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,6 +23,7 @@ const PROJECTS = [
 ];
 
 export default function PortfolioPage() {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState("All");
   const [selected, setSelected] = useState<typeof PROJECTS[0] | null>(null);
   const [dbProjects, setDbProjects] = useState<any[]>([]);
@@ -211,7 +213,7 @@ export default function PortfolioPage() {
         <section className="py-16 bg-[var(--color-navy)]">
           <div className="max-w-3xl mx-auto text-center px-4">
             <h2 className="font-display font-bold text-3xl sm:text-4xl text-white mb-4">
-              Aapka Project Next Ho Sakta Hai
+              {t.portfolio_cta_title}
             </h2>
             <p className="text-white/60 mb-7">Join 5,000+ businesses that transformed their digital presence with KVL TECH.</p>
             <Link href="/contact" className="btn-gold inline-flex items-center gap-2">

@@ -210,6 +210,7 @@ export interface Translations {
   stat_support: string;
 
   // ── CTA section ───────────────────────────────────────────────────────────
+  portfolio_cta_title: string;
   cta_title: string;
   cta_title_gold: string;
   cta_sub: string;
@@ -348,6 +349,7 @@ const t: Record<string, Partial<Translations>> = {
     stat_uptime: "Uptime Guarantee",
     stat_support: "Expert Support",
     // CTA
+    portfolio_cta_title: "Your Project Could Be Next",
     cta_title: "Ready to Transform",
     cta_title_gold: "Your Business?",
     cta_sub: "Let's build something amazing together.",
@@ -483,6 +485,7 @@ const t: Record<string, Partial<Translations>> = {
     stat_uptime: "अपटाइम गारंटी",
     stat_support: "विशेषज्ञ सहायता",
     // CTA
+    portfolio_cta_title: "आपका प्रोजेक्ट अगला हो सकता है",
     cta_title: "क्या आप बदलने के लिए तैयार हैं",
     cta_title_gold: "अपना बिज़नेस?",
     cta_sub: "आइए मिलकर कुछ शानदार बनाएं।",
@@ -618,6 +621,7 @@ const t: Record<string, Partial<Translations>> = {
     stat_uptime: "ضمان التشغيل",
     stat_support: "دعم متخصص",
     // CTA
+    portfolio_cta_title: "مشروعك قد يكون التالي",
     cta_title: "هل أنت مستعد لتحويل",
     cta_title_gold: "عملك؟",
     cta_sub: "لنبنِ شيئاً رائعاً معاً.",
@@ -732,6 +736,7 @@ const t: Record<string, Partial<Translations>> = {
     stat_projects: "Proyectos Completados",
     stat_uptime: "Garantía de Uptime",
     stat_support: "Soporte Experto",
+    portfolio_cta_title: "Tu Proyecto Podría Ser el Siguiente",
     cta_title: "¿Listo para Transformar",
     cta_title_gold: "Tu Negocio?",
     cta_sub: "Construyamos algo increíble juntos.",
@@ -840,6 +845,7 @@ const t: Record<string, Partial<Translations>> = {
     stat_projects: "Projets Réalisés",
     stat_uptime: "Garantie de Disponibilité",
     stat_support: "Support Expert",
+    portfolio_cta_title: "Votre Projet Pourrait Être le Prochain",
     cta_title: "Prêt à Transformer",
     cta_title_gold: "Votre Entreprise?",
     cta_sub: "Construisons quelque chose d'incroyable ensemble.",
