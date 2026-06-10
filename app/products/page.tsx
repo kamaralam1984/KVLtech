@@ -87,9 +87,11 @@ function ProductsContent() {
 
   // Update URL when category button clicked
   const handleCategoryChange = (cat: string) => {
+    if (cat === "SAAS") { router.push("/products/saas"); return; }
+    if (cat === "MOBILE") { router.push("/products/mobile"); return; }
     setActiveCategory(cat);
     const catToParam: Record<string, string> = {
-      WEBSITE: "websites", SOFTWARE: "software", SAAS: "saas", MOBILE: "mobile",
+      WEBSITE: "websites", SOFTWARE: "software",
     };
     if (cat === "all") {
       router.push("/products", { scroll: false });

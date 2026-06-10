@@ -71,8 +71,8 @@ export function Navbar() {
       children: [
         { label: "Website Templates", href: "/products?category=websites" },
         { label: "Software Solutions", href: "/products?category=software" },
-        { label: "SaaS Products", href: "/products?category=saas" },
-        { label: "Mobile Apps", href: "/products?category=mobile" },
+        { label: "SaaS Products", href: "/products/saas" },
+        { label: "Mobile Apps", href: "/products/mobile" },
       ],
     },
     {
