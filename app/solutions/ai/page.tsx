@@ -310,8 +310,7 @@ export default function AISolutionsPage() {
                   width={1100}
                   height={620}
                   priority
-                  className="relative rounded-3xl shadow-2xl w-full object-cover border border-[var(--color-border)]"
-                  style={{ maxHeight: 520 }}
+                  className="relative rounded-3xl shadow-2xl w-full h-auto border border-[var(--color-border)]"
                 />
               </motion.div>
 
