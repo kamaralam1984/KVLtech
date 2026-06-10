@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
@@ -244,6 +245,23 @@ export default function MarketingPage() {
                 <Link href="#packages" className="btn-outline">
                   View Packages
                 </Link>
+              </motion.div>
+
+              {/* Hero Image */}
+              <motion.div variants={fadeUp} className="w-full mt-10 relative">
+                <div
+                  className="absolute inset-0 rounded-3xl blur-2xl opacity-20 scale-95"
+                  style={{ background: "var(--color-gold)" }}
+                />
+                <Image
+                  src="/images/marketing-funnels.png"
+                  alt="Marketing Funnels for Business Growth"
+                  width={1100}
+                  height={620}
+                  priority
+                  className="relative rounded-3xl shadow-2xl w-full object-cover border border-[var(--color-border)]"
+                  style={{ maxHeight: 520 }}
+                />
               </motion.div>
             </motion.div>
           </div>
