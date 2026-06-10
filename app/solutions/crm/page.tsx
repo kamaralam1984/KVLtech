@@ -24,6 +24,7 @@ import {
   Award,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -260,6 +261,22 @@ export default function CRMSolutionsPage() {
                 <Link href="#pricing" className="btn-outline px-8 py-4 text-lg font-semibold rounded-xl">
                   View Pricing
                 </Link>
+              </motion.div>
+
+              {/* Hero Image */}
+              <motion.div variants={fadeUp} className="relative mt-12">
+                <div
+                  className="absolute inset-0 rounded-3xl blur-2xl opacity-20 scale-95"
+                  style={{ background: "var(--color-gold)" }}
+                />
+                <Image
+                  src="/images/crm-indian-businesses.png"
+                  alt="CRM for Indian Businesses - Simplified"
+                  width={1100}
+                  height={620}
+                  priority
+                  className="relative rounded-3xl shadow-2xl w-full h-auto border border-[var(--color-border)]"
+                />
               </motion.div>
             </motion.div>
           </div>
