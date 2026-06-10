@@ -13,6 +13,21 @@ import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
 import { ProductRecommender } from "@/components/ui/ProductRecommender";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+const STATIC_PRODUCTS = [
+  { slug: "restaurant-website", name: "Restaurant Website", tagline: "Grow your restaurant business online", category: "WEBSITE", photo: "/photos/restaurant.jpg", basicPrice: 14999, premiumPrice: 29999, tag: "Popular", highlights: ["Online ordering", "Table reservation", "+300% orders"] },
+  { slug: "ecommerce-platform", name: "E-commerce Platform", tagline: "Launch your online store in days", category: "WEBSITE", photo: "/photos/fashion.jpg", basicPrice: 24999, premiumPrice: 49999, tag: "Hot", highlights: ["250% sales increase", "Razorpay integration", "Inventory management"] },
+  { slug: "hotel-booking-website", name: "Hotel Booking Website", tagline: "Boost direct bookings, cut OTA commissions", category: "WEBSITE", photo: "/photos/restaurant.jpg", basicPrice: 19999, premiumPrice: 39999, highlights: ["Direct bookings +180%", "No OTA commission"] },
+  { slug: "real-estate-website", name: "Real Estate Website", tagline: "Showcase properties, generate quality leads", category: "WEBSITE", photo: "/photos/office-meeting.jpg", basicPrice: 17999, premiumPrice: 34999, highlights: ["3X more leads", "Property search", "Virtual tour"] },
+  { slug: "gym-fitness-website", name: "Gym & Fitness Website", tagline: "Grow your fitness business online", category: "WEBSITE", photo: "/photos/gym.jpg", basicPrice: 12999, premiumPrice: 24999, highlights: ["Membership management", "Class booking"] },
+  { slug: "portfolio-website", name: "Portfolio Website", tagline: "Stand out with a stunning portfolio", category: "WEBSITE", photo: "/photos/portfolio.jpg", basicPrice: 7999, premiumPrice: 14999, highlights: ["Stunning design", "Fast loading", "SEO optimized"] },
+  { slug: "school-management-system", name: "School Management System", tagline: "Complete digital transformation for your school", category: "SOFTWARE", photo: "/photos/school.jpg", basicPrice: 29999, premiumPrice: 59999, tag: "Best Seller", highlights: ["80% workload reduction", "95% parent satisfaction"] },
+  { slug: "hospital-management-system", name: "Hospital Management System", tagline: "Streamline patient care with smart automation", category: "SOFTWARE", photo: "/photos/hospital.jpg", basicPrice: 49999, premiumPrice: 99999, tag: "Enterprise", highlights: ["70% faster operations", "90% patient satisfaction"] },
+  { slug: "inventory-management", name: "Inventory Management System", tagline: "Track stock, reduce waste, boost profits", category: "SOFTWARE", photo: "/photos/inventory.jpg", basicPrice: 19999, premiumPrice: 39999, highlights: ["Barcode scanning", "Real-time alerts"] },
+  { slug: "hr-payroll-software", name: "HR & Payroll Software", tagline: "Automate HR, save hours every month", category: "SOFTWARE", photo: "/photos/hr.jpg", basicPrice: 24999, premiumPrice: 49999, highlights: ["Payroll automation", "Tax compliance"] },
+  { slug: "crm-software", name: "CRM Software", tagline: "Convert more leads, retain more clients", category: "SOFTWARE", photo: "/photos/crm.jpg", basicPrice: 22999, premiumPrice: 44999, highlights: ["Lead pipeline", "Follow-up automation"] },
+  { slug: "billing-software", name: "Billing & Invoice Software", tagline: "Professional invoices, faster payments", category: "SOFTWARE", photo: "/photos/billing.jpg", basicPrice: 14999, premiumPrice: 29999, highlights: ["GST compliant", "Auto payment reminders"] },
+];
+
 // Map URL param values → internal category values
 const PARAM_TO_CAT: Record<string, string> = {
   websites: "WEBSITE",
@@ -74,8 +89,14 @@ function ProductsContent() {
   useEffect(() => {
     fetch("/api/products")
       .then(r => r.json())
-      .then(data => { if (data.products) setProducts(data.products); })
-      .catch(() => {})
+      .then(data => {
+        if (data.products && data.products.length > 0) {
+          setProducts(data.products);
+        } else {
+          setProducts(STATIC_PRODUCTS as any[]);
+        }
+      })
+      .catch(() => { setProducts(STATIC_PRODUCTS as any[]); })
       .finally(() => setProductsLoading(false));
   }, []);
 
