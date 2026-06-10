@@ -1,21 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 const logos = [
-  { name: "CBRE", color: "#007A33", bg: "#F0FAF4", textColor: "#007A33", weight: "800", size: "text-lg" },
-  { name: "Radisson", color: "#1A2B6B", bg: "#EEF0F8", textColor: "#1A2B6B", weight: "700", size: "text-base" },
-  { name: "Amul", color: "#EF2020", bg: "#FEF2F2", textColor: "#EF2020", weight: "800", size: "text-xl" },
-  { name: "OYO", color: "#EF2020", bg: "#FEF2F2", textColor: "#EF2020", weight: "900", size: "text-xl" },
-  { name: "TATA", color: "#003087", bg: "#EEF2FB", textColor: "#003087", weight: "800", size: "text-lg" },
-  { name: "Godrej", color: "#1C1C1C", bg: "#F5F5F5", textColor: "#1C1C1C", weight: "700", size: "text-base" },
-  { name: "HDFC BANK", color: "#004C8F", bg: "#EEF4FC", textColor: "#004C8F", weight: "800", size: "text-sm" },
-  { name: "IDFC FIRST", color: "#E8730A", bg: "#FEF5EE", textColor: "#E8730A", weight: "800", size: "text-sm" },
-  { name: "Infosys", color: "#007CC3", bg: "#EEF7FD", textColor: "#007CC3", weight: "700", size: "text-base" },
-  { name: "Reliance", color: "#1C3A6E", bg: "#EEF1F8", textColor: "#1C3A6E", weight: "800", size: "text-base" },
+  { name: "OYO",        src: "/logos/oyo.svg",      bg: "#FEF2F2", border: "#EF202025", w: 80,  h: 36 },
+  { name: "TATA",       src: "/logos/tata.svg",     bg: "#EEF2FB", border: "#00308725", w: 90,  h: 36 },
+  { name: "Godrej",     src: "/logos/godrej.svg",   bg: "#F5F5F5", border: "#1C1C1C20", w: 110, h: 36 },
+  { name: "HDFC Bank",  src: "/logos/hdfc.svg",     bg: "#EEF4FC", border: "#004C8F25", w: 130, h: 44 },
+  { name: "IDFC FIRST", src: "/logos/idfc.svg",     bg: "#FEF5EE", border: "#E8730A25", w: 110, h: 44 },
+  { name: "Infosys",    src: "/logos/infosys.svg",  bg: "#EEF7FD", border: "#007CC325", w: 110, h: 36 },
+  { name: "Reliance",   src: "/logos/reliance.svg", bg: "#EEF1F8", border: "#1C3A6E25", w: 130, h: 36 },
+  { name: "Amul",       src: "/logos/amul.svg",     bg: "#FEF2F2", border: "#EF202025", w: 90,  h: 36 },
+  { name: "CBRE",       src: "/logos/cbre.svg",     bg: "#F0FAF4", border: "#007A3325", w: 90,  h: 36 },
+  { name: "Radisson",   src: "/logos/radisson.svg", bg: "#EEF0F8", border: "#1A2B6B25", w: 140, h: 44 },
 ];
 
-// Duplicate for seamless marquee
 const allLogos = [...logos, ...logos];
 
 export function TrustedBy() {
@@ -41,22 +41,22 @@ export function TrustedBy() {
               className="mx-3 flex items-center justify-center shrink-0"
             >
               <div
-                className="flex items-center justify-center px-6 py-3 rounded-xl border transition-all hover:scale-105 cursor-default min-w-[110px] dark:bg-white/5 dark:border-white/10"
+                className="flex items-center justify-center px-5 py-3 rounded-xl border transition-all hover:scale-105 cursor-default dark:bg-white/90"
                 style={{
-                  background: `var(--logo-bg, ${logo.bg})`,
-                  borderColor: `${logo.color}25`,
+                  background: logo.bg,
+                  borderColor: logo.border,
+                  minWidth: logo.w + 24,
+                  minHeight: logo.h + 16,
                 }}
               >
-                <span
-                  className={`font-display ${logo.size} tracking-tight leading-none dark:opacity-90`}
-                  style={{
-                    color: logo.textColor,
-                    fontWeight: logo.weight,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {logo.name}
-                </span>
+                <Image
+                  src={logo.src}
+                  alt={logo.name}
+                  width={logo.w}
+                  height={logo.h}
+                  className="object-contain"
+                  unoptimized
+                />
               </div>
             </div>
           ))}
