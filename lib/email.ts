@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = "KVL TECH <onboarding@resend.dev>"; // change to verified domain in prod
+const RESEND_FROM = process.env.EMAIL_FROM || "onboarding@resend.dev";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://kvlbusinesssolutions.com";
 
 export async function sendEmailWithFallback(
@@ -12,42 +12,47 @@ export async function sendEmailWithFallback(
   opts?: { fromName?: string; fromAddr?: string }
 ) {
   const fromName = opts?.fromName || "KVL TECH";
-  const fromAddr = opts?.fromAddr;
-  const fromField = fromAddr
-    ? `${fromName} <${fromAddr}>`
-    : FROM;
+  const rawFrom = opts?.fromAddr || RESEND_FROM;
+  // Use as-is if already "Name <email>" format, else wrap it
+  const fromField = rawFrom.includes("<") ? rawFrom : `${fromName} <${rawFrom}>`;
 
-  // 1. Try Resend
+  // 1. Try Resend (requires verified domain at resend.com/domains)
   if (process.env.RESEND_API_KEY) {
     const { data, error } = await resend.emails.send({ from: fromField, to, subject, html });
     if (data?.id) {
       console.log("[RESEND] Sent:", data.id, "→", to);
       return;
     }
-    console.error("[RESEND] Failed:", error);
+    console.error("[RESEND] Failed:", JSON.stringify(error));
   }
 
-  // 2. Fallback: Gmail SMTP (checks both SMTP_* and EMAIL_* env vars)
-  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
-  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-  if (smtpUser && smtpPass && !smtpPass.includes("xxxx") && !smtpPass.includes("placeholder")) {
-    const transport = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: Number(process.env.SMTP_PORT) || 587,
+  // 2. Brevo SMTP (free 300/day — no domain verification needed)
+  if (process.env.BREVO_EMAIL && process.env.BREVO_SMTP_KEY) {
+    const brevo = nodemailer.createTransport({
+      host: "smtp-relay.brevo.com",
+      port: 587,
       secure: false,
-      auth: { user: smtpUser, pass: smtpPass },
+      auth: { user: process.env.BREVO_EMAIL, pass: process.env.BREVO_SMTP_KEY },
     });
-    await transport.sendMail({
-      from: `"${fromName}" <${smtpUser}>`,
-      to, subject, html,
-    });
-    console.log("[GMAIL SMTP] Sent →", to);
+    await brevo.sendMail({ from: `"${fromName}" <${process.env.BREVO_EMAIL}>`, to, subject, html });
+    console.log("[BREVO] Sent →", to);
     return;
   }
 
-  // Dev: print reset URL so it can be tested manually
-  console.warn("[EMAIL] No working email provider. Logging for dev:");
-  console.log("[EMAIL] TO:", to, "| SUBJECT:", subject);
+  // 3. Gmail SMTP (last resort — 500/day limit)
+  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+  if (smtpUser && smtpPass && !smtpPass.includes("xxxx") && !smtpPass.includes("placeholder")) {
+    const gmail = nodemailer.createTransport({
+      host: "smtp.gmail.com", port: 587, secure: false,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+    await gmail.sendMail({ from: `"${fromName}" <${smtpUser}>`, to, subject, html });
+    console.log("[GMAIL] Sent →", to);
+    return;
+  }
+
+  console.warn("[EMAIL] No provider worked. TO:", to, "SUBJECT:", subject);
   const match = html.match(/href="(https?:\/\/[^"]+reset-password[^"]+)"/);
   if (match) console.log("[EMAIL] RESET LINK:", match[1]);
 }
@@ -94,7 +99,7 @@ export async function sendOrderConfirmationEmail({
   productName: string; plan: string; amount: number;
 }) {
   await resend.emails.send({
-    from: FROM,
+    from: `KVL TECH <${RESEND_FROM}>`,
     to,
     subject: `Order Confirmed — ${orderNumber} | KVL TECH`,
     html: `
@@ -142,7 +147,7 @@ export async function sendOrderStatusEmail({
   const label = statusLabels[status] || status.replace(/_/g, " ");
 
   await resend.emails.send({
-    from: FROM,
+    from: `KVL TECH <${RESEND_FROM}>`,
     to,
     subject: `Order Update: ${label} — ${orderNumber}`,
     html: `
@@ -198,7 +203,7 @@ export async function sendWelcomeSequenceEmail(client: {
   `);
 
   await resend.emails.send({
-    from: FROM,
+    from: `KVL TECH <${RESEND_FROM}>`,
     to: client.email,
     subject: `Welcome to KVL TECH, ${client.name} ji! Aapka portal ready hai`,
     html,
@@ -231,7 +236,7 @@ export async function sendLeadFollowupEmail(lead: {
   `);
 
   await resend.emails.send({
-    from: FROM,
+    from: `KVL TECH <${RESEND_FROM}>`,
     to: lead.email,
     subject: `${lead.name} ji, aapki KVL TECH enquiry receive ho gayi ✓`,
     html,
@@ -275,7 +280,7 @@ export async function sendDemoReminderEmail(lead: {
   `);
 
   await resend.emails.send({
-    from: FROM,
+    from: `KVL TECH <${RESEND_FROM}>`,
     to: lead.email,
     subject: `${lead.name} ji — ek FREE demo ke liye 15 min doge? 🚀`,
     html,
@@ -338,7 +343,7 @@ export async function sendBrandingReminderEmail(client: {
   `);
 
   await resend.emails.send({
-    from: FROM,
+    from: `KVL TECH <${RESEND_FROM}>`,
     to: client.email,
     subject: `Action required: ${client.orderNumber} — Branding form abhi submit karo`,
     html,

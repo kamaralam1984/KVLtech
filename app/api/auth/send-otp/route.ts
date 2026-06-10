@@ -5,10 +5,21 @@ import { db } from "@/lib/db";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Fallback Gmail SMTP
+// Brevo SMTP (free 300/day — preferred fallback)
+const brevoTransport = nodemailer.createTransport({
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.BREVO_EMAIL,
+    pass: process.env.BREVO_SMTP_KEY,
+  },
+});
+
+// Gmail SMTP (last resort — has daily limits)
 const gmailTransport = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT) || 587,
+  host: "smtp.gmail.com",
+  port: 587,
   secure: false,
   auth: {
     user: process.env.SMTP_USER,
@@ -67,35 +78,46 @@ async function sendOtpEmail(to: string, name: string, otp: string) {
     </html>
   `;
 
-  // Try Resend first
+  const subject = `${otp} — Your KVL TECH Verification Code`;
+
+  // 1. Try Resend (requires verified domain at resend.com/domains)
   if (process.env.RESEND_API_KEY) {
+    const emailFrom = process.env.EMAIL_FROM || "onboarding@resend.dev";
+    // Use as-is if already "Name <email>" format, else wrap it
+    const fromField = emailFrom.includes("<") ? emailFrom : `KVL TECH <${emailFrom}>`;
     const { data, error } = await resend.emails.send({
-      from: "KVL TECH <onboarding@resend.dev>",
-      to,
-      subject: `${otp} — Your KVL TECH Verification Code`,
-      html,
+      from: fromField,
+      to, subject, html,
     });
     if (data?.id) {
       console.log("[send-otp] Resend OK:", data.id);
       return;
     }
-    console.error("[send-otp] Resend failed:", error);
+    console.error("[send-otp] Resend failed:", JSON.stringify(error));
   }
 
-  // Fallback: Gmail SMTP
-  const smtpPass = process.env.SMTP_PASS || "";
-  if (process.env.SMTP_USER && smtpPass && !smtpPass.includes("xxxx") && !smtpPass.includes("placeholder")) {
-    await gmailTransport.sendMail({
-      from: `"KVL TECH" <${process.env.SMTP_USER}>`,
-      to,
-      subject: `${otp} — Your KVL TECH Verification Code`,
-      html,
+  // 2. Brevo SMTP (free 300/day — no domain verification needed)
+  if (process.env.BREVO_EMAIL && process.env.BREVO_SMTP_KEY) {
+    await brevoTransport.sendMail({
+      from: `"KVL TECH" <${process.env.BREVO_EMAIL}>`,
+      to, subject, html,
     });
-    console.log("[send-otp] Gmail SMTP OK");
+    console.log("[send-otp] Brevo OK");
     return;
   }
 
-  throw new Error("No email provider configured. Set RESEND_API_KEY or SMTP_USER/SMTP_PASS.");
+  // 3. Gmail SMTP (last resort — 500 email/day limit)
+  const smtpPass = process.env.SMTP_PASS || "";
+  if (process.env.SMTP_USER && smtpPass && !smtpPass.includes("xxxx")) {
+    await gmailTransport.sendMail({
+      from: `"KVL TECH" <${process.env.SMTP_USER}>`,
+      to, subject, html,
+    });
+    console.log("[send-otp] Gmail OK");
+    return;
+  }
+
+  throw new Error("No email provider available. Verify domain at resend.com/domains or set BREVO_EMAIL + BREVO_SMTP_KEY.");
 }
 
 // Global OTP store shared with verify-otp
