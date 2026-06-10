@@ -27,6 +27,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -264,6 +265,23 @@ export default function AutomationPage() {
                 <Link href="/pricing" className="btn-outline">
                   View Pricing
                 </Link>
+              </motion.div>
+
+              {/* Hero Image */}
+              <motion.div
+                variants={fadeUp}
+                className="mt-14 relative"
+              >
+                <div className="absolute inset-0 rounded-3xl blur-2xl opacity-20 scale-95" style={{ background: 'var(--color-gold)' }} />
+                <Image
+                  src="/images/automate-amplify.png"
+                  alt="Automate Your Business, Amplify Your Growth"
+                  width={1100}
+                  height={620}
+                  priority
+                  className="relative rounded-3xl shadow-2xl w-full object-cover border border-white/10"
+                  style={{ maxHeight: 520 }}
+                />
               </motion.div>
             </motion.div>
 
