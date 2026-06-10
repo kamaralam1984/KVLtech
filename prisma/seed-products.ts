@@ -106,7 +106,7 @@ const PRODUCTS = [
     slug: "gym-fitness-website", name: "Gym & Fitness Website",
     tagline: "Grow your fitness business online",
     description: "Gym website with membership plans, class schedules, online payments, and member portal.",
-    category: "WEBSITE" as const, photo: "/photos/gym.jpg", gallery: ["/photos/gym.jpg"],
+    category: "WEBSITE" as const, photo: "/photos/gym.png", gallery: ["/photos/gym.png"],
     basicPrice: 12999, premiumPrice: 24999, sortOrder: 7,
     techStack: ["Next.js", "React", "PostgreSQL"],
     highlights: ["Membership management", "Class booking"],
