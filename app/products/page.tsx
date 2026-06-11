@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, ArrowRight, Star, SlidersHorizontal, X } from "lucide-react";
+import { Search, ArrowRight, Star, SlidersHorizontal, X, Sparkles, LayoutGrid } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ChatWidget } from "@/components/ui/ChatWidget";
@@ -372,6 +372,150 @@ function ProductsContent() {
                       </div>
                     </motion.div>
                   ))}
+
+                  {/* ── Special Option Card: Custom Project ── */}
+                  <motion.div
+                    key="custom-project"
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: filtered.length * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    className="h-full"
+                  >
+                    <div className="relative h-full flex flex-col group bg-white dark:bg-[#0D1628] rounded-3xl overflow-hidden border-2 border-[#C9A227] shadow-[0_2px_16px_rgba(201,162,39,0.12)] dark:shadow-[0_2px_24px_rgba(201,162,39,0.18)] hover:shadow-[0_12px_48px_rgba(201,162,39,0.30)] dark:hover:shadow-[0_12px_48px_rgba(201,162,39,0.22)] transition-all duration-500 hover:-translate-y-1.5">
+
+                      {/* Background glow */}
+                      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-[radial-gradient(circle,rgba(201,162,39,0.12)_0%,transparent_70%)]" />
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-[radial-gradient(circle,rgba(201,162,39,0.08)_0%,transparent_70%)]" />
+                        <svg className="absolute -top-4 -right-4 opacity-[0.12] dark:opacity-[0.18]" width="120" height="120" viewBox="0 0 120 120" fill="none">
+                          <circle cx="120" cy="0" r="40"  stroke="#C9A227" strokeWidth="1.5"/>
+                          <circle cx="120" cy="0" r="65"  stroke="#C9A227" strokeWidth="1"/>
+                          <circle cx="120" cy="0" r="90"  stroke="#C9A227" strokeWidth="0.6"/>
+                        </svg>
+                      </div>
+
+                      {/* Icon area */}
+                      <div className="relative flex items-center justify-center h-52 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100/60 dark:from-[#C9A227]/10 dark:via-[#C9A227]/6 dark:to-[#C9A227]/3 shrink-0">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#C9A227] to-amber-600 flex items-center justify-center shadow-[0_8px_32px_rgba(201,162,39,0.4)]">
+                            <Sparkles size={36} className="text-white" />
+                          </div>
+                          <span className="px-3 py-1 text-[10px] font-bold tracking-wide bg-[#C9A227] text-black rounded-full shadow-lg">
+                            Any Budget
+                          </span>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 pt-6">
+                          <h3 className="font-display font-bold text-base text-[#1B2A4A] dark:text-white leading-snug drop-shadow-sm">
+                            Custom Project
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Gold ornamental divider */}
+                      <div className="flex items-center gap-1.5 px-5 pt-4 pb-0">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#C9A227]/60 to-transparent" />
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0 opacity-80">
+                          <path d="M7 0L8.5 5.5H14L9.5 8.5L11 14L7 10.5L3 14L4.5 8.5L0 5.5H5.5L7 0Z" fill="#C9A227"/>
+                        </svg>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-[#C9A227]/60 to-transparent" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="px-5 pt-3 pb-5 flex flex-col flex-1 relative">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed flex-1">
+                          Tell us exactly what you need — we&apos;ll build it from scratch
+                        </p>
+
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-[#C9A227]/10 text-amber-700 dark:text-[#C9A227] border border-amber-200/60 dark:border-[#C9A227]/20">
+                            <Star size={8} fill="currentColor" /> Fully tailored to you
+                          </span>
+                          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-[#C9A227]/10 text-amber-700 dark:text-[#C9A227] border border-amber-200/60 dark:border-[#C9A227]/20">
+                            <Star size={8} fill="currentColor" /> Any industry
+                          </span>
+                        </div>
+
+                        <Link
+                          href="/custom-project"
+                          className="w-full py-3 text-center text-sm font-bold rounded-xl bg-gradient-to-r from-[#C9A227] to-amber-600 text-black hover:brightness-110 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(201,162,39,0.35)]"
+                        >
+                          Start Custom Order <ArrowRight size={14} />
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* ── Special Option Card: Website Templates ── */}
+                  <motion.div
+                    key="website-templates"
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (filtered.length + 1) * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    className="h-full"
+                  >
+                    <div className="relative h-full flex flex-col group bg-white dark:bg-[#0D1628] rounded-3xl overflow-hidden border-2 border-indigo-400 dark:border-indigo-500 shadow-[0_2px_16px_rgba(99,102,241,0.12)] dark:shadow-[0_2px_24px_rgba(99,102,241,0.18)] hover:shadow-[0_12px_48px_rgba(99,102,241,0.28)] dark:hover:shadow-[0_12px_48px_rgba(99,102,241,0.22)] transition-all duration-500 hover:-translate-y-1.5">
+
+                      {/* Background glow */}
+                      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-[radial-gradient(circle,rgba(99,102,241,0.10)_0%,transparent_70%)]" />
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-[radial-gradient(circle,rgba(139,92,246,0.08)_0%,transparent_70%)]" />
+                        <svg className="absolute -top-4 -right-4 opacity-[0.12] dark:opacity-[0.18]" width="120" height="120" viewBox="0 0 120 120" fill="none">
+                          <circle cx="120" cy="0" r="40"  stroke="#6366F1" strokeWidth="1.5"/>
+                          <circle cx="120" cy="0" r="65"  stroke="#6366F1" strokeWidth="1"/>
+                          <circle cx="120" cy="0" r="90"  stroke="#6366F1" strokeWidth="0.6"/>
+                        </svg>
+                      </div>
+
+                      {/* Icon area */}
+                      <div className="relative flex items-center justify-center h-52 bg-gradient-to-br from-indigo-50 via-purple-50 to-violet-100/60 dark:from-indigo-500/10 dark:via-purple-500/6 dark:to-violet-500/3 shrink-0">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_8px_32px_rgba(99,102,241,0.4)]">
+                            <LayoutGrid size={36} className="text-white" />
+                          </div>
+                          <span className="px-3 py-1 text-[10px] font-bold tracking-wide bg-indigo-500 text-white rounded-full shadow-lg">
+                            From ₹999
+                          </span>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 pt-6">
+                          <h3 className="font-display font-bold text-base text-[#1B2A4A] dark:text-white leading-snug drop-shadow-sm">
+                            Website Templates
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Indigo ornamental divider */}
+                      <div className="flex items-center gap-1.5 px-5 pt-4 pb-0">
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-indigo-400/60 to-transparent" />
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0 opacity-70">
+                          <path d="M7 0L8.5 5.5H14L9.5 8.5L11 14L7 10.5L3 14L4.5 8.5L0 5.5H5.5L7 0Z" fill="#6366F1"/>
+                        </svg>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-indigo-400/60 to-transparent" />
+                      </div>
+
+                      {/* Content */}
+                      <div className="px-5 pt-3 pb-5 flex flex-col flex-1 relative">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed flex-1">
+                          Choose from 50+ ready templates, customize &amp; download
+                        </p>
+
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20">
+                            <Star size={8} fill="currentColor" /> 50+ templates
+                          </span>
+                          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20">
+                            <Star size={8} fill="currentColor" /> Instant download
+                          </span>
+                        </div>
+
+                        <Link
+                          href="/templates"
+                          className="w-full py-3 text-center text-sm font-bold rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:brightness-110 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(99,102,241,0.35)]"
+                        >
+                          Browse Templates <ArrowRight size={14} />
+                        </Link>
+                      </div>
+                    </div>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>

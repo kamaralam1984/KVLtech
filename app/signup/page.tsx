@@ -136,7 +136,7 @@ export default function SignupPage() {
         otpRefs.current[0]?.focus();
       } else {
         setStep("success");
-        setTimeout(() => { router.push("/client-portal"); router.refresh(); }, 2000);
+        setTimeout(() => { router.push("/products"); router.refresh(); }, 2000);
       }
     } catch {
       setError("Network error. Please try again.");
@@ -406,7 +406,7 @@ export default function SignupPage() {
                   </motion.div>
                   <h2 className="font-display font-bold text-2xl text-[var(--color-text)] mb-2">Account Created!</h2>
                   <p className="text-sm text-[var(--color-text-muted)] mb-1">Welcome to KVL TECH, <strong>{form.name}</strong>!</p>
-                  <p className="text-sm text-[var(--color-text-muted)]">Redirecting to your Client Portal...</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">Redirecting to products...</p>
                   <div className="mt-6">
                     <Loader2 size={20} className="animate-spin text-[var(--color-gold)] mx-auto" />
                   </div>

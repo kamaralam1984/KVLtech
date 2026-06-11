@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
     // 9. Issue JWT for auto-login
     const token = signToken({ id: client.id, email: client.email, type: "client" });
 
-    const res = NextResponse.json({ success: true, orderNumber, clientId: client.id });
+    const res = NextResponse.json({ success: true, redirectUrl: "/client-portal?tab=orders", orderNumber, clientId: client.id });
     res.cookies.set("kvl_token", token, {
       httpOnly: true,
       path: "/",
