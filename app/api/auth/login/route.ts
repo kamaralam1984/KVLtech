@@ -29,8 +29,14 @@ export async function POST(req: NextRequest) {
 
     const token = signToken({ id: client.id, email: client.email, type: "client" });
 
-    // Determine redirect: new clients (no company set) go to onboarding
-    const redirect = !client.company ? "/onboarding" : "/client-portal";
+    // Determine redirect: no company → onboarding, no orders → products, else → client-portal
+    let redirect = "/client-portal";
+    if (!client.company) {
+      redirect = "/onboarding";
+    } else {
+      const orderCount = await db.order.count({ where: { clientId: client.id } });
+      if (orderCount === 0) redirect = "/products";
+    }
 
     const res = NextResponse.json({
       success: true,
