@@ -43,6 +43,7 @@ export default function OrdersPage() {
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [newProgress, setNewProgress] = useState(0);
+  const [updateError, setUpdateError] = useState("");
 
   const [filterValues, setFilterValues] = useState<Record<string, any>>({});
   const [filterOpen, setFilterOpen] = useState(false);
@@ -190,15 +191,25 @@ export default function OrdersPage() {
   const handleUpdateOrder = async () => {
     if (!selected) return;
     setUpdating(true);
+    setUpdateError("");
     try {
       const res = await fetch("/api/admin/orders", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ id: selected.id, status: newStatus, progress: newProgress }),
+        body: JSON.stringify({ id: selected.id, status: newStatus, progress: Number(newProgress) }),
       });
-      if (res.ok) { await fetchOrders(); setSelected(null); }
-    } catch (e) { console.error(e); }
+      const data = await res.json();
+      if (res.ok) {
+        await fetchOrders();
+        setSelected(null);
+      } else {
+        setUpdateError(data.error || `Error ${res.status}: Update failed`);
+      }
+    } catch (e) {
+      console.error("Update order error:", e);
+      setUpdateError("Network error. Please try again.");
+    }
     setUpdating(false);
   };
 
@@ -411,8 +422,13 @@ export default function OrdersPage() {
                   <p className="text-[var(--color-text-secondary)]">Email: <span className="font-semibold text-[var(--color-text)]">{selected.client?.email}</span></p>
                 </div>
               </div>
+              {updateError && (
+                <div className="mx-6 mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400">
+                  {updateError}
+                </div>
+              )}
               <div className="flex gap-3 px-6 pb-6">
-                <button onClick={() => setSelected(null)} className="btn-outline flex-1">Cancel</button>
+                <button onClick={() => { setSelected(null); setUpdateError(""); }} className="btn-outline flex-1">Cancel</button>
                 <button onClick={handleUpdateOrder} disabled={updating}
                   className="btn-gold flex-1 flex items-center justify-center gap-2 disabled:opacity-60">
                   {updating ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}

@@ -119,8 +119,8 @@ export async function PATCH(req: NextRequest) {
     const order = await db.order.update({
       where: { id },
       data: {
-        ...(status && { status }),
-        ...(progress !== undefined && { progress }),
+        ...(status && { status: status as any }),
+        ...(progress !== undefined && { progress: Number(progress) }),
         ...(liveUrl && { liveUrl }),
         ...(filesUrl && { filesUrl }),
         ...(status === "DELIVERED" && { deliveredAt: new Date() }),
@@ -129,7 +129,7 @@ export async function PATCH(req: NextRequest) {
 
     if (status) {
       await db.orderStatusHistory.create({
-        data: { orderId: id, status, note: `Status updated to ${status} by admin` },
+        data: { orderId: id, status: status as any, note: `Status updated to ${status} by admin` },
       });
       // Notify client (in-app)
       await db.notification.create({
