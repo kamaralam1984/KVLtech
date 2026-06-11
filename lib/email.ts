@@ -2,7 +2,6 @@ import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const RESEND_FROM = process.env.EMAIL_FROM || "onboarding@resend.dev";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://kvlbusinesssolutions.com";
 
 export async function sendEmailWithFallback(
@@ -12,11 +11,28 @@ export async function sendEmailWithFallback(
   opts?: { fromName?: string; fromAddr?: string }
 ) {
   const fromName = opts?.fromName || "KVL TECH";
-  const rawFrom = opts?.fromAddr || RESEND_FROM;
+  const rawFrom = opts?.fromAddr || process.env.EMAIL_FROM || "onboarding@resend.dev";
   // Use as-is if already "Name <email>" format, else wrap it
   const fromField = rawFrom.includes("<") ? rawFrom : `${fromName} <${rawFrom}>`;
 
-  // 1. Try Resend (requires verified domain at resend.com/domains)
+  // 1. Gmail SMTP (primary — best inbox delivery until DMARC propagates)
+  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+  if (smtpUser && smtpPass && !smtpPass.includes("xxxx") && !smtpPass.includes("placeholder")) {
+    const gmail = nodemailer.createTransport({
+      host: "smtp.gmail.com", port: 587, secure: false,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+    try {
+      await gmail.sendMail({ from: `"${fromName}" <${smtpUser}>`, to, subject, html });
+      console.log("[GMAIL] Sent →", to);
+      return;
+    } catch (e) {
+      console.error("[GMAIL] Failed:", e instanceof Error ? e.message : e);
+    }
+  }
+
+  // 2. Resend fallback (DMARC missing → may land in spam)
   if (process.env.RESEND_API_KEY) {
     const { data, error } = await resend.emails.send({ from: fromField, to, subject, html });
     if (data?.id) {
@@ -26,7 +42,7 @@ export async function sendEmailWithFallback(
     console.error("[RESEND] Failed:", JSON.stringify(error));
   }
 
-  // 2. Brevo SMTP (free 300/day — no domain verification needed)
+  // 3. Brevo SMTP (free 300/day — no domain verification needed)
   if (process.env.BREVO_EMAIL && process.env.BREVO_SMTP_KEY) {
     const brevo = nodemailer.createTransport({
       host: "smtp-relay.brevo.com",
@@ -99,7 +115,7 @@ export async function sendOrderConfirmationEmail({
   productName: string; plan: string; amount: number;
 }) {
   await resend.emails.send({
-    from: `KVL TECH <${RESEND_FROM}>`,
+    from: `KVL TECH <${process.env.EMAIL_FROM || "onboarding@resend.dev"}>`,
     to,
     subject: `Order Confirmed — ${orderNumber} | KVL TECH`,
     html: `
@@ -147,7 +163,7 @@ export async function sendOrderStatusEmail({
   const label = statusLabels[status] || status.replace(/_/g, " ");
 
   await resend.emails.send({
-    from: `KVL TECH <${RESEND_FROM}>`,
+    from: `KVL TECH <${process.env.EMAIL_FROM || "onboarding@resend.dev"}>`,
     to,
     subject: `Order Update: ${label} — ${orderNumber}`,
     html: `
@@ -203,7 +219,7 @@ export async function sendWelcomeSequenceEmail(client: {
   `);
 
   await resend.emails.send({
-    from: `KVL TECH <${RESEND_FROM}>`,
+    from: `KVL TECH <${process.env.EMAIL_FROM || "onboarding@resend.dev"}>`,
     to: client.email,
     subject: `Welcome to KVL TECH, ${client.name} ji! Aapka portal ready hai`,
     html,
@@ -236,7 +252,7 @@ export async function sendLeadFollowupEmail(lead: {
   `);
 
   await resend.emails.send({
-    from: `KVL TECH <${RESEND_FROM}>`,
+    from: `KVL TECH <${process.env.EMAIL_FROM || "onboarding@resend.dev"}>`,
     to: lead.email,
     subject: `${lead.name} ji, aapki KVL TECH enquiry receive ho gayi ✓`,
     html,
@@ -280,7 +296,7 @@ export async function sendDemoReminderEmail(lead: {
   `);
 
   await resend.emails.send({
-    from: `KVL TECH <${RESEND_FROM}>`,
+    from: `KVL TECH <${process.env.EMAIL_FROM || "onboarding@resend.dev"}>`,
     to: lead.email,
     subject: `${lead.name} ji — ek FREE demo ke liye 15 min doge? 🚀`,
     html,
@@ -343,7 +359,7 @@ export async function sendBrandingReminderEmail(client: {
   `);
 
   await resend.emails.send({
-    from: `KVL TECH <${RESEND_FROM}>`,
+    from: `KVL TECH <${process.env.EMAIL_FROM || "onboarding@resend.dev"}>`,
     to: client.email,
     subject: `Action required: ${client.orderNumber} — Branding form abhi submit karo`,
     html,

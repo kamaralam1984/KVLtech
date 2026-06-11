@@ -80,7 +80,22 @@ async function sendOtpEmail(to: string, name: string, otp: string) {
 
   const subject = `${otp} — Your KVL TECH Verification Code`;
 
-  // 1. Try Resend (requires verified domain at resend.com/domains)
+  // 1. Gmail SMTP (primary — best inbox delivery until DMARC propagates)
+  const smtpPass = process.env.SMTP_PASS || "";
+  if (process.env.SMTP_USER && smtpPass && !smtpPass.includes("xxxx")) {
+    try {
+      await gmailTransport.sendMail({
+        from: `"KVL TECH" <${process.env.SMTP_USER}>`,
+        to, subject, html,
+      });
+      console.log("[send-otp] Gmail OK");
+      return;
+    } catch (e) {
+      console.error("[send-otp] Gmail failed:", e instanceof Error ? e.message : e);
+    }
+  }
+
+  // 2. Resend fallback (DMARC missing → may land in spam)
   if (process.env.RESEND_API_KEY) {
     try {
       const emailFrom = process.env.EMAIL_FROM || "onboarding@resend.dev";
@@ -99,7 +114,7 @@ async function sendOtpEmail(to: string, name: string, otp: string) {
     }
   }
 
-  // 2. Brevo SMTP (free 300/day — no domain verification needed)
+  // 3. Brevo SMTP (free 300/day — no domain verification needed)
   const brevoKey = process.env.BREVO_SMTP_KEY || "";
   if (process.env.BREVO_EMAIL && brevoKey && !brevoKey.includes("placeholder")) {
     try {
@@ -111,21 +126,6 @@ async function sendOtpEmail(to: string, name: string, otp: string) {
       return;
     } catch (e) {
       console.error("[send-otp] Brevo failed:", e instanceof Error ? e.message : e);
-    }
-  }
-
-  // 3. Gmail SMTP (last resort — 500 email/day limit)
-  const smtpPass = process.env.SMTP_PASS || "";
-  if (process.env.SMTP_USER && smtpPass && !smtpPass.includes("xxxx")) {
-    try {
-      await gmailTransport.sendMail({
-        from: `"KVL TECH" <${process.env.SMTP_USER}>`,
-        to, subject, html,
-      });
-      console.log("[send-otp] Gmail OK");
-      return;
-    } catch (e) {
-      console.error("[send-otp] Gmail failed:", e instanceof Error ? e.message : e);
     }
   }
 

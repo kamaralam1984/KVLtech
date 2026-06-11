@@ -45,15 +45,16 @@ function OrbitDots({ radius, count, duration, color, size = 4 }: {
       {Array.from({ length: count }).map((_, i) => {
         const angle = (360 / count) * i
         const rad = (angle * Math.PI) / 180
-        const x = radius * Math.cos(rad)
-        const y = radius * Math.sin(rad)
+        const x = Math.round(radius * Math.cos(rad) * 100) / 100
+        const y = Math.round(radius * Math.sin(rad) * 100) / 100
         return (
           <motion.span
             key={i}
+            suppressHydrationWarning
             style={{
               position: "absolute",
-              width: size,
-              height: size,
+              width: `${size}px`,
+              height: `${size}px`,
               borderRadius: "50%",
               background: color,
               boxShadow: `0 0 ${size * 2}px ${color}`,
@@ -191,8 +192,8 @@ function LoadingDots() {
         <motion.span
           key={i}
           style={{
-            width: i === 2 ? 8 : 5,
-            height: i === 2 ? 8 : 5,
+            width: i === 2 ? "8px" : "5px",
+            height: i === 2 ? "8px" : "5px",
             borderRadius: "50%",
             background: i === 2 ? "#C9A227" : "rgba(201,162,39,0.4)",
             display: "block",
@@ -257,8 +258,12 @@ function TopBar({ show }: { show: boolean }) {
 
 /* ─── Export ───────────────────────────────────────────────────────────────── */
 export function SiteLoader() {
+  const [mounted, setMounted] = useState(false)
   const initial = useInitialLoad()
   const route = useRouteLoader()
+
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
 
   return (
     <>
