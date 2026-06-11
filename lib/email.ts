@@ -55,19 +55,6 @@ export async function sendEmailWithFallback(
     return;
   }
 
-  // 3. Gmail SMTP (last resort — 500/day limit)
-  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
-  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-  if (smtpUser && smtpPass && !smtpPass.includes("xxxx") && !smtpPass.includes("placeholder")) {
-    const gmail = nodemailer.createTransport({
-      host: "smtp.gmail.com", port: 587, secure: false,
-      auth: { user: smtpUser, pass: smtpPass },
-    });
-    await gmail.sendMail({ from: `"${fromName}" <${smtpUser}>`, to, subject, html });
-    console.log("[GMAIL] Sent →", to);
-    return;
-  }
-
   console.warn("[EMAIL] No provider worked. TO:", to, "SUBJECT:", subject);
   const match = html.match(/href="(https?:\/\/[^"]+reset-password[^"]+)"/);
   if (match) console.log("[EMAIL] RESET LINK:", match[1]);
