@@ -41,6 +41,22 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const [authUser, setAuthUser] = useState<{ name: string; email: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/me", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.user) setAuthUser({ name: data.user.name, email: data.user.email });
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    setAuthUser(null);
+    router.push("/");
+  };
 
   const filteredResults = searchQuery.trim().length > 0
     ? SEARCH_ITEMS.filter(item =>
@@ -169,21 +185,40 @@ export function Navbar() {
             <Link href="/contact" className="btn-gold text-sm py-2 px-5 !text-black !font-bold">
               {t.nav_book_demo}
             </Link>
-            <div className="flex items-center rounded-xl border border-[var(--color-border)] overflow-hidden text-sm font-medium">
-              <Link
-                href="/login"
-                className="px-4 py-2 text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] transition-all"
-              >
-                Sign In
-              </Link>
-              <span className="w-px h-5 bg-[var(--color-border)]" />
-              <Link
-                href="/signup"
-                className="px-4 py-2 bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy)]/80 transition-all"
-              >
-                Sign Up
-              </Link>
-            </div>
+            {authUser ? (
+              <div className="flex items-center rounded-xl border border-[var(--color-border)] overflow-hidden text-sm font-medium">
+                <Link
+                  href="/client-portal"
+                  className="px-4 py-2 text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] transition-all truncate max-w-[120px]"
+                  title={authUser.name}
+                >
+                  {authUser.name.split(" ")[0]}
+                </Link>
+                <span className="w-px h-5 bg-[var(--color-border)]" />
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy)]/80 transition-all"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center rounded-xl border border-[var(--color-border)] overflow-hidden text-sm font-medium">
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-[var(--color-text)] hover:bg-[var(--color-bg-secondary)] transition-all"
+                >
+                  Sign In
+                </Link>
+                <span className="w-px h-5 bg-[var(--color-border)]" />
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy)]/80 transition-all"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -224,12 +259,28 @@ export function Navbar() {
                 <Link href="/contact" className="btn-gold text-sm text-center !text-black !font-bold" onClick={() => setMobileOpen(false)}>
                   {t.nav_book_demo}
                 </Link>
-                <Link href="/login" className="btn-outline text-sm text-center" onClick={() => setMobileOpen(false)}>
-                  Sign In
-                </Link>
-                <Link href="/signup" className="text-sm text-center px-4 py-2.5 rounded-xl bg-[var(--color-navy)] text-white font-medium" onClick={() => setMobileOpen(false)}>
-                  Sign Up Free
-                </Link>
+                {authUser ? (
+                  <>
+                    <Link href="/client-portal" className="btn-outline text-sm text-center" onClick={() => setMobileOpen(false)}>
+                      My Portal ({authUser.name.split(" ")[0]})
+                    </Link>
+                    <button
+                      onClick={() => { setMobileOpen(false); handleLogout(); }}
+                      className="text-sm text-center px-4 py-2.5 rounded-xl bg-[var(--color-navy)] text-white font-medium"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="btn-outline text-sm text-center" onClick={() => setMobileOpen(false)}>
+                      Sign In
+                    </Link>
+                    <Link href="/signup" className="text-sm text-center px-4 py-2.5 rounded-xl bg-[var(--color-navy)] text-white font-medium" onClick={() => setMobileOpen(false)}>
+                      Sign Up Free
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
