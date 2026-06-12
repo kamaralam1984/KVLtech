@@ -111,6 +111,7 @@
   --color-navy-light: #162054;
   --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
   --shadow-card-hover: 0 12px 40px rgba(0,0,0,0.6);
+  color: var(--color-text);
 }
 
 /* Scrollbar utility — hides scrollbar while keeping scroll functionality */
