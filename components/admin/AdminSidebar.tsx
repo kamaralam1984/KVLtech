@@ -12,7 +12,7 @@ import {
   Kanban, CreditCard, Zap, FileSignature, ClipboardList, ScrollText, Key,
   Activity, MessageSquare, CalendarDays, PenLine, Webhook, Building2, Puzzle, Palette,
   BookOpen, Timer, HeartPulse, FolderOpen, GitBranch, ExternalLink, Bell, Sparkles,
-  ShoppingCart, Layers, Globe, TrendingUp, Bot,
+  ShoppingCart, Layers, Globe, TrendingUp, Bot, DatabaseBackup,
 } from "lucide-react";
 import { NotificationBell } from "@/components/ui/NotificationBell";
 import { AIAlertsPanel } from "@/components/ui/AIAlertsPanel";
@@ -57,6 +57,7 @@ const NAV = [
   { href: "/admin/team", icon: MessageSquare, label: "Team Chat" },
   { href: "/admin/audit", icon: ScrollText, label: "Audit Logs" },
   { href: "/admin/roles", icon: Shield, label: "Roles & Permissions" },
+  { href: "/admin/backup", icon: DatabaseBackup, label: "Backup & Restore" },
   { href: "/admin/api-keys", icon: Key, label: "API Keys" },
   { href: "/admin/agency", icon: Building2, label: "Agency" },
   { href: "/admin/white-label", icon: Palette, label: "White Label" },
