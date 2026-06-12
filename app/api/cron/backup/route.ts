@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
           const filename = generateFilename("DAILY");
           const filePath = `${BACKUP_DIR}/${filename}`;
           const name = `Daily Backup — ${todayStr}`;
-          await createBackup({ id, name, filename, filePath, schedule: "DAILY", createdBy: "system-cron", notes: "" });
+          await createBackup({ id, name, filename, filePath, schedule: "DAILY", createdBy: "system-cron", createdAt: now.toISOString(), notes: "" });
           applyRetention("DAILY", config.daily.retentionCount);
           ran.push("DAILY");
         } else {
@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
           const filePath = `${BACKUP_DIR}/${filename}`;
           const weekNum = getWeekNumber(now);
           const name = `Weekly Backup — Week ${weekNum} ${currentYear}`;
-          await createBackup({ id, name, filename, filePath, schedule: "WEEKLY", createdBy: "system-cron", notes: "" });
+          await createBackup({ id, name, filename, filePath, schedule: "WEEKLY", createdBy: "system-cron", createdAt: now.toISOString(), notes: "" });
           applyRetention("WEEKLY", config.weekly.retentionCount);
           ran.push("WEEKLY");
         } else {
@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
           const filename = generateFilename("MONTHLY");
           const filePath = `${BACKUP_DIR}/${filename}`;
           const name = `Monthly Backup — ${MONTH_NAMES[currentMonth - 1]} ${currentYear}`;
-          await createBackup({ id, name, filename, filePath, schedule: "MONTHLY", createdBy: "system-cron", notes: "" });
+          await createBackup({ id, name, filename, filePath, schedule: "MONTHLY", createdBy: "system-cron", createdAt: now.toISOString(), notes: "" });
           applyRetention("MONTHLY", config.monthly.retentionCount);
           ran.push("MONTHLY");
         } else {
@@ -137,7 +137,7 @@ export async function GET(req: NextRequest) {
           const filename = generateFilename("YEARLY");
           const filePath = `${BACKUP_DIR}/${filename}`;
           const name = `Yearly Backup — ${currentYear}`;
-          await createBackup({ id, name, filename, filePath, schedule: "YEARLY", createdBy: "system-cron", notes: "" });
+          await createBackup({ id, name, filename, filePath, schedule: "YEARLY", createdBy: "system-cron", createdAt: now.toISOString(), notes: "" });
           applyRetention("YEARLY", config.yearly.retentionCount);
           ran.push("YEARLY");
         } else {
