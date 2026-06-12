@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
@@ -50,14 +51,19 @@ export async function POST(req: NextRequest) {
         where: { id },
         data: { isPublished: true, publishedAt: new Date() },
       });
+      revalidatePath("/blog");
+      revalidatePath(`/blog/${post.slug}`);
       return NextResponse.json({ success: true, post });
     }
     if (action === "unpublish" && id) {
       const post = await db.blogPost.update({ where: { id }, data: { isPublished: false } });
+      revalidatePath("/blog");
+      revalidatePath(`/blog/${post.slug}`);
       return NextResponse.json({ success: true, post });
     }
     if (action === "delete" && id) {
       await db.blogPost.delete({ where: { id } });
+      revalidatePath("/blog");
       return NextResponse.json({ success: true });
     }
 
