@@ -55,6 +55,7 @@ export async function POST(
       filePath,
       schedule: "MANUAL",
       createdBy: admin.name ?? adminData.id,
+      createdAt: new Date().toISOString(),
       notes: "Automatically created before restore",
     });
 
